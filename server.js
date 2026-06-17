@@ -7,9 +7,17 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dbPath = join(__dirname, "data", "shadow-puppet.json");
 const port = Number(process.env.PORT || 3023);
-const steps = ["接收", "清洁", "补片", "补色", "交付"];
+const defaultSteps = ["接收", "清洁", "补片", "补色", "交付"];
+
+const seedTemplates = [
+  { id: "TPL-DEFAULT", name: "标准流程", description: "通用五步修复流程", steps: ["接收", "清洁", "补片", "补色", "交付"] },
+  { id: "TPL-WUSHENG", name: "武生靠旗", description: "武生靠旗类皮影修复", steps: ["接收", "拆解", "清洁", "补片", "缝制靠旗", "补色", "组装", "交付"] },
+  { id: "TPL-DANJIAO", name: "旦角头饰", description: "旦角头饰类精细修复", steps: ["接收", "拆卸头饰", "清洁", "补片", "头饰重绘", "补色", "组装头饰", "交付"] },
+  { id: "TPL-BACKDROP", name: "影窗布景", description: "影窗布景大幅修复", steps: ["接收", "展开检查", "清洁", "拼接补片", "补色", "托裱", "交付"] }
+];
 
 const seed = {
+  stepTemplates: seedTemplates,
   clients: [
     {
       id: "CL-001",
@@ -96,8 +104,24 @@ async function loadDb() {
   if (!existsSync(dbPath)) {
     await mkdir(dirname(dbPath), { recursive: true });
     await writeFile(dbPath, JSON.stringify(seed, null, 2));
+    return JSON.parse(JSON.stringify(seed));
   }
-  return JSON.parse(await readFile(dbPath, "utf8"));
+  const db = JSON.parse(await readFile(dbPath, "utf8"));
+  let migrated = false;
+  if (!db.stepTemplates || !db.stepTemplates.length) {
+    db.stepTemplates = JSON.parse(JSON.stringify(seedTemplates));
+    migrated = true;
+  }
+  if (db.commissions) {
+    for (const c of db.commissions) {
+      if (!c.steps || !Array.isArray(c.steps) || !c.steps.length) {
+        c.steps = [...defaultSteps];
+        migrated = true;
+      }
+    }
+  }
+  if (migrated) await saveDb(db);
+  return db;
 }
 
 async function saveDb(db) { await writeFile(dbPath, JSON.stringify(db, null, 2)); }
@@ -173,6 +197,7 @@ const page = `<!doctype html>
     <div class="tab active" data-tab="commissions">修复委托</div>
     <div class="tab" data-tab="clients">客户档案</div>
     <div class="tab" data-tab="materials">材料台账</div>
+    <div class="tab" data-tab="templates">步骤模板</div>
   </div>
 
   <div class="tab-content active" id="tab-commissions">
@@ -200,6 +225,21 @@ const page = `<!doctype html>
         <label>加固材料</label><input name="reinforcement">
         <label>选用材料</label>
         <div class="material-select" id="materialSelect"></div>
+        <label>修复步骤模板</label>
+        <select id="templateSelect" name="templateId">
+          <option value="">— 标准流程（默认）—</option>
+        </select>
+        <div id="commissionStepsArea" style="margin-top:10px;padding:10px;background:var(--bg);border-radius:6px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span class="meta" style="font-size:12px;">当前步骤（可调整）</span>
+            <button type="button" id="resetStepsBtn" class="small secondary">重置为模板</button>
+          </div>
+          <div id="commissionStepList"></div>
+          <div style="display:flex;gap:6px;margin-top:8px;">
+            <input id="commissionNewStepInput" placeholder="添加自定义步骤" style="flex:1;padding:7px;font-size:13px;">
+            <button type="button" id="commissionAddStepBtn" class="small secondary">添加</button>
+          </div>
+        </div>
         <label>负责人</label><input name="owner" required>
         <label>预计完成日期</label><input name="dueDate" type="date" required>
         <button type="submit">保存委托</button>
@@ -255,13 +295,59 @@ const page = `<!doctype html>
     </div>
   </div>
 
+  <div class="tab-content" id="tab-templates">
+    <div class="two-col">
+      <form id="templateForm">
+        <h2>新增步骤模板</h2>
+        <label>模板名称</label><input name="name" required placeholder="如：武生靠旗">
+        <label>模板说明</label><textarea name="description" placeholder="简要描述适用场景"></textarea>
+        <label>修复步骤（按顺序）</label>
+        <div id="templateStepList" style="margin-bottom:10px;"></div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <input id="newStepInput" placeholder="输入步骤名称" style="flex:1;">
+          <button type="button" id="addStepBtn" class="small secondary">添加步骤</button>
+        </div>
+        <button type="submit">保存模板</button>
+      </form>
+      <section>
+        <h2 style="margin-bottom:12px;">模板列表</h2>
+        <div class="grid" id="templateList"></div>
+        <div id="templateEditor" style="display:none;margin-top:22px;">
+          <div class="client-detail">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <h3 id="editTplTitle">编辑模板</h3>
+              <button class="small secondary" id="cancelEditTplBtn">返回列表</button>
+            </div>
+            <label>模板名称</label><input id="editTplName">
+            <label>模板说明</label><textarea id="editTplDesc"></textarea>
+            <label>修复步骤</label>
+            <div id="editTplSteps" style="margin-bottom:10px;"></div>
+            <div style="display:flex;gap:6px;margin-bottom:10px;">
+              <input id="editNewStepInput" placeholder="输入步骤名称" style="flex:1;">
+              <button type="button" id="editAddStepBtn" class="small secondary">添加步骤</button>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button id="saveTplBtn">保存修改</button>
+              <button class="secondary" id="deleteTplBtn">删除模板</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
   <script>
-    const steps = ${JSON.stringify(steps)};
+    const defaultSteps = ${JSON.stringify(defaultSteps)};
     let commissions = [];
     let materials = [];
     let clients = [];
+    let stepTemplates = [];
     let currentTab = "commissions";
     let selectedClientId = null;
+    let currentCommissionSteps = [...defaultSteps];
+    let editingTemplateId = null;
+    let editingTemplateSteps = [];
+    let newTemplateSteps = ["接收", "清洁", "补片", "补色", "交付"];
 
     async function api(path, options) {
       const res = await fetch(path, options && options.body ? { ...options, headers:{ "Content-Type":"application/json" } } : options);
@@ -283,10 +369,18 @@ const page = `<!doctype html>
     function renderCommissions() {
       const stats = document.querySelector("#stats");
       const list = document.querySelector("#list");
-      stats.innerHTML = steps.map(step => '<div class="stat"><span>'+step+'</span><strong>'+commissions.filter(c => c.status === step).length+'</strong></div>').join("");
+      const stepCounts = {};
+      for (const c of commissions) {
+        (c.steps || defaultSteps).forEach(s => { if (!stepCounts[s]) stepCounts[s] = 0; });
+        if (!stepCounts[c.status]) stepCounts[c.status] = 0;
+      }
+      const allSteps = Object.keys(stepCounts);
+      stats.innerHTML = allSteps.map(step => '<div class="stat"><span>'+step+'</span><strong>'+commissions.filter(c => c.status === step).length+'</strong></div>').join("");
       list.innerHTML = commissions.map(c => {
+        const cSteps = c.steps || defaultSteps;
         const matChips = (c.materials && c.materials.length) ? c.materials.map(m => '<span class="mat-chip">'+m.name+' ×'+m.quantity+(m.batch?' ('+m.batch+')':'')+'</span>').join("") : '';
-        return '<article class="card"><h3>'+c.roleName+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+'<label>更新步骤</label><select data-step="'+c.id+'">'+steps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
+        const tplBadge = c.templateName ? '<span class="pill" style="margin-left:6px;background:var(--bg);">'+c.templateName+'</span>' : '';
+        return '<article class="card"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
       }).join("");
       document.querySelectorAll("[data-step]").forEach(sel => sel.value = commissions.find(c => c.id === sel.dataset.step).status);
       document.querySelectorAll("[data-save]").forEach(btn => btn.onclick = async () => {
@@ -466,19 +560,191 @@ const page = `<!doctype html>
       });
     }
 
+    function renderTemplateSelect() {
+      const select = document.getElementById("templateSelect");
+      if (!select) return;
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">— 标准流程（默认）—</option>' + stepTemplates.map(t => '<option value="'+t.id+'">'+t.name+'</option>').join("");
+      if (currentVal) select.value = currentVal;
+    }
+
+    function renderCommissionStepList() {
+      const container = document.getElementById("commissionStepList");
+      if (!container) return;
+      container.innerHTML = currentCommissionSteps.map((s, i) => {
+        return '<div style="display:flex;gap:6px;align-items:center;margin:4px 0;">' +
+          '<span class="meta" style="width:20px;text-align:right;">'+(i+1)+'.</span>' +
+          '<input data-cstep="'+i+'" value="'+s+'" style="flex:1;padding:6px;font-size:13px;">' +
+          '<button type="button" data-cstep-up="'+i+'" class="small secondary" style="padding:4px 8px;">↑</button>' +
+          '<button type="button" data-cstep-down="'+i+'" class="small secondary" style="padding:4px 8px;">↓</button>' +
+          '<button type="button" data-cstep-del="'+i+'" class="small secondary" style="padding:4px 8px;">×</button>' +
+          '</div>';
+      }).join("");
+      container.querySelectorAll("[data-cstep]").forEach(inp => inp.oninput = e => {
+        const idx = Number(inp.dataset.cstep);
+        currentCommissionSteps[idx] = e.target.value;
+      });
+      container.querySelectorAll("[data-cstep-up]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.cstepUp);
+        if (idx > 0) {
+          [currentCommissionSteps[idx-1], currentCommissionSteps[idx]] = [currentCommissionSteps[idx], currentCommissionSteps[idx-1]];
+          renderCommissionStepList();
+        }
+      });
+      container.querySelectorAll("[data-cstep-down]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.cstepDown);
+        if (idx < currentCommissionSteps.length - 1) {
+          [currentCommissionSteps[idx+1], currentCommissionSteps[idx]] = [currentCommissionSteps[idx], currentCommissionSteps[idx+1]];
+          renderCommissionStepList();
+        }
+      });
+      container.querySelectorAll("[data-cstep-del]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.cstepDel);
+        if (currentCommissionSteps.length > 1) {
+          currentCommissionSteps.splice(idx, 1);
+          renderCommissionStepList();
+        }
+      });
+    }
+
+    function renderTemplateStepList() {
+      const container = document.getElementById("templateStepList");
+      if (!container) return;
+      container.innerHTML = newTemplateSteps.map((s, i) => {
+        return '<div style="display:flex;gap:6px;align-items:center;margin:4px 0;">' +
+          '<span class="meta" style="width:20px;text-align:right;">'+(i+1)+'.</span>' +
+          '<input data-nstep="'+i+'" value="'+s+'" style="flex:1;padding:6px;font-size:13px;">' +
+          '<button type="button" data-nstep-up="'+i+'" class="small secondary" style="padding:4px 8px;">↑</button>' +
+          '<button type="button" data-nstep-down="'+i+'" class="small secondary" style="padding:4px 8px;">↓</button>' +
+          '<button type="button" data-nstep-del="'+i+'" class="small secondary" style="padding:4px 8px;">×</button>' +
+          '</div>';
+      }).join("");
+      container.querySelectorAll("[data-nstep]").forEach(inp => inp.oninput = e => {
+        const idx = Number(inp.dataset.nstep);
+        newTemplateSteps[idx] = e.target.value;
+      });
+      container.querySelectorAll("[data-nstep-up]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.nstepUp);
+        if (idx > 0) {
+          [newTemplateSteps[idx-1], newTemplateSteps[idx]] = [newTemplateSteps[idx], newTemplateSteps[idx-1]];
+          renderTemplateStepList();
+        }
+      });
+      container.querySelectorAll("[data-nstep-down]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.nstepDown);
+        if (idx < newTemplateSteps.length - 1) {
+          [newTemplateSteps[idx+1], newTemplateSteps[idx]] = [newTemplateSteps[idx], newTemplateSteps[idx+1]];
+          renderTemplateStepList();
+        }
+      });
+      container.querySelectorAll("[data-nstep-del]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.nstepDel);
+        if (newTemplateSteps.length > 1) {
+          newTemplateSteps.splice(idx, 1);
+          renderTemplateStepList();
+        }
+      });
+    }
+
+    function renderTemplates() {
+      const list = document.getElementById("templateList");
+      if (!list) return;
+      if (!stepTemplates.length) {
+        list.innerHTML = '<div class="card meta">暂无模板</div>';
+        return;
+      }
+      list.innerHTML = stepTemplates.map(t => {
+        const isDefault = t.id === "TPL-DEFAULT";
+        return '<div class="card" data-tpl-id="'+t.id+'" style="cursor:pointer;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<h3 style="margin:0;font-size:16px;">'+t.name+'</h3>' +
+          (isDefault ? '<span class="pill" style="background:var(--green);color:#fff;">默认</span>' : '') +
+          '</div>' +
+          (t.description ? '<div class="meta">'+t.description+'</div>' : '') +
+          '<div class="meta">共 '+t.steps.length+' 个步骤</div>' +
+          '<div class="meta" style="font-size:12px;">'+t.steps.join(' → ')+'</div>' +
+          '</div>';
+      }).join("");
+      list.querySelectorAll("[data-tpl-id]").forEach(card => card.onclick = () => {
+        openTemplateEditor(card.dataset.tplId);
+      });
+    }
+
+    function openTemplateEditor(id) {
+      const tpl = stepTemplates.find(t => t.id === id);
+      if (!tpl) return;
+      editingTemplateId = id;
+      editingTemplateSteps = [...tpl.steps];
+      document.getElementById("templateEditor").style.display = "block";
+      document.getElementById("editTplTitle").textContent = "编辑模板：" + tpl.name;
+      document.getElementById("editTplName").value = tpl.name;
+      document.getElementById("editTplDesc").value = tpl.description || "";
+      renderEditTplSteps();
+      const delBtn = document.getElementById("deleteTplBtn");
+      if (id === "TPL-DEFAULT") {
+        delBtn.style.display = "none";
+      } else {
+        delBtn.style.display = "inline-block";
+      }
+    }
+
+    function renderEditTplSteps() {
+      const container = document.getElementById("editTplSteps");
+      if (!container) return;
+      container.innerHTML = editingTemplateSteps.map((s, i) => {
+        return '<div style="display:flex;gap:6px;align-items:center;margin:4px 0;">' +
+          '<span class="meta" style="width:20px;text-align:right;">'+(i+1)+'.</span>' +
+          '<input data-etpl-step="'+i+'" value="'+s+'" style="flex:1;padding:6px;font-size:13px;">' +
+          '<button type="button" data-etpl-up="'+i+'" class="small secondary" style="padding:4px 8px;">↑</button>' +
+          '<button type="button" data-etpl-down="'+i+'" class="small secondary" style="padding:4px 8px;">↓</button>' +
+          '<button type="button" data-etpl-del="'+i+'" class="small secondary" style="padding:4px 8px;">'+(editingTemplateId === "TPL-DEFAULT" && editingTemplateSteps.length <= 2 ? '' : '×')+'</button>' +
+          '</div>';
+      }).join("");
+      container.querySelectorAll("[data-etpl-step]").forEach(inp => inp.oninput = e => {
+        const idx = Number(inp.dataset.etplStep);
+        editingTemplateSteps[idx] = e.target.value;
+      });
+      container.querySelectorAll("[data-etpl-up]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.etplUp);
+        if (idx > 0) {
+          [editingTemplateSteps[idx-1], editingTemplateSteps[idx]] = [editingTemplateSteps[idx], editingTemplateSteps[idx-1]];
+          renderEditTplSteps();
+        }
+      });
+      container.querySelectorAll("[data-etpl-down]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.etplDown);
+        if (idx < editingTemplateSteps.length - 1) {
+          [editingTemplateSteps[idx+1], editingTemplateSteps[idx]] = [editingTemplateSteps[idx], editingTemplateSteps[idx+1]];
+          renderEditTplSteps();
+        }
+      });
+      container.querySelectorAll("[data-etpl-del]").forEach(btn => btn.onclick = () => {
+        const idx = Number(btn.dataset.etplDel);
+        if (editingTemplateSteps.length > 1) {
+          editingTemplateSteps.splice(idx, 1);
+          renderEditTplSteps();
+        }
+      });
+    }
+
     function render() {
       renderCommissions();
       renderClientSelect();
       renderClients();
       renderMaterialSelect();
       renderMaterials();
+      renderTemplateSelect();
+      renderCommissionStepList();
+      renderTemplates();
+      renderTemplateStepList();
     }
 
     async function loadAll() {
-      const [c, cl, m] = await Promise.all([api("/api/commissions"), api("/api/clients"), api("/api/materials")]);
+      const [c, cl, m, t] = await Promise.all([api("/api/commissions"), api("/api/clients"), api("/api/materials"), api("/api/step-templates")]);
       commissions = c;
       clients = cl;
       materials = m;
+      stepTemplates = t;
       render();
     }
 
@@ -505,15 +771,76 @@ const page = `<!doctype html>
         }
       });
       data.materials = selectedMats;
+      data.steps = currentCommissionSteps.filter(s => s.trim());
+      if (!data.steps.length) return alert("至少需要一个步骤");
       try {
         await api("/api/commissions", { method:"POST", body: JSON.stringify(data) });
         event.target.reset();
         document.getElementById("clientNewFields").classList.remove("visible");
+        currentCommissionSteps = [...defaultSteps];
+        renderCommissionStepList();
         await loadAll();
       } catch (e) {
         alert(e.message);
       }
     };
+
+    const templateSelect = document.getElementById("templateSelect");
+    if (templateSelect) {
+      templateSelect.onchange = () => {
+        const tplId = templateSelect.value;
+        if (tplId) {
+          const tpl = stepTemplates.find(t => t.id === tplId);
+          if (tpl) {
+            currentCommissionSteps = [...tpl.steps];
+            renderCommissionStepList();
+          }
+        } else {
+          currentCommissionSteps = [...defaultSteps];
+          renderCommissionStepList();
+        }
+      };
+    }
+
+    const resetStepsBtn = document.getElementById("resetStepsBtn");
+    if (resetStepsBtn) {
+      resetStepsBtn.onclick = () => {
+        const tplId = document.getElementById("templateSelect")?.value;
+        if (tplId) {
+          const tpl = stepTemplates.find(t => t.id === tplId);
+          if (tpl) {
+            currentCommissionSteps = [...tpl.steps];
+            renderCommissionStepList();
+          }
+        } else {
+          currentCommissionSteps = [...defaultSteps];
+          renderCommissionStepList();
+        }
+      };
+    }
+
+    const commissionAddStepBtn = document.getElementById("commissionAddStepBtn");
+    if (commissionAddStepBtn) {
+      commissionAddStepBtn.onclick = () => {
+        const inp = document.getElementById("commissionNewStepInput");
+        const val = inp?.value.trim();
+        if (val) {
+          currentCommissionSteps.push(val);
+          inp.value = "";
+          renderCommissionStepList();
+        }
+      };
+    }
+
+    const commissionNewStepInput = document.getElementById("commissionNewStepInput");
+    if (commissionNewStepInput) {
+      commissionNewStepInput.addEventListener("keypress", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.getElementById("commissionAddStepBtn").click();
+        }
+      });
+    }
 
     document.querySelector("#clientForm").onsubmit = async event => {
       event.preventDefault();
@@ -542,6 +869,118 @@ const page = `<!doctype html>
         alert(e.message);
       }
     };
+
+    document.querySelector("#templateForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const data = Object.fromEntries(formData.entries());
+      data.steps = newTemplateSteps.filter(s => s.trim());
+      if (!data.steps.length) return alert("至少需要一个步骤");
+      try {
+        await api("/api/step-templates", { method: "POST", body: JSON.stringify(data) });
+        event.target.reset();
+        newTemplateSteps = ["接收", "清洁", "补片", "补色", "交付"];
+        renderTemplateStepList();
+        await loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    });
+
+    const addStepBtn = document.getElementById("addStepBtn");
+    if (addStepBtn) {
+      addStepBtn.onclick = () => {
+        const inp = document.getElementById("newStepInput");
+        const val = inp?.value.trim();
+        if (val) {
+          newTemplateSteps.push(val);
+          inp.value = "";
+          renderTemplateStepList();
+        }
+      };
+    }
+
+    const newStepInput = document.getElementById("newStepInput");
+    if (newStepInput) {
+      newStepInput.addEventListener("keypress", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.getElementById("addStepBtn").click();
+        }
+      });
+    }
+
+    const cancelEditTplBtn = document.getElementById("cancelEditTplBtn");
+    if (cancelEditTplBtn) {
+      cancelEditTplBtn.onclick = () => {
+        document.getElementById("templateEditor").style.display = "none";
+        editingTemplateId = null;
+        editingTemplateSteps = [];
+      };
+    }
+
+    const saveTplBtn = document.getElementById("saveTplBtn");
+    if (saveTplBtn) {
+      saveTplBtn.onclick = async () => {
+        if (!editingTemplateId) return;
+        const name = document.getElementById("editTplName").value.trim();
+        const description = document.getElementById("editTplDesc").value.trim();
+        const steps = editingTemplateSteps.filter(s => s.trim());
+        if (!name) return alert("模板名称不能为空");
+        if (!steps.length) return alert("至少需要一个步骤");
+        try {
+          await api("/api/step-templates/" + editingTemplateId, {
+            method: "PUT",
+            body: JSON.stringify({ name, description, steps })
+          });
+          await loadAll();
+          alert("保存成功");
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+    }
+
+    const deleteTplBtn = document.getElementById("deleteTplBtn");
+    if (deleteTplBtn) {
+      deleteTplBtn.onclick = async () => {
+        if (!editingTemplateId) return;
+        if (editingTemplateId === "TPL-DEFAULT") return alert("默认模板不能删除");
+        if (!confirm("确定要删除这个模板吗？")) return;
+        try {
+          await api("/api/step-templates/" + editingTemplateId, { method: "DELETE" });
+          document.getElementById("templateEditor").style.display = "none";
+          editingTemplateId = null;
+          editingTemplateSteps = [];
+          await loadAll();
+        } catch (e) {
+          alert(e.message);
+        }
+      };
+    }
+
+    const editAddStepBtn = document.getElementById("editAddStepBtn");
+    if (editAddStepBtn) {
+      editAddStepBtn.onclick = () => {
+        const inp = document.getElementById("editNewStepInput");
+        const val = inp?.value.trim();
+        if (val) {
+          editingTemplateSteps.push(val);
+          inp.value = "";
+          renderEditTplSteps();
+        }
+      };
+    }
+
+    const editNewStepInput = document.getElementById("editNewStepInput");
+    if (editNewStepInput) {
+      editNewStepInput.addEventListener("keypress", e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.getElementById("editAddStepBtn").click();
+        }
+      });
+    }
 
     loadAll();
   </script>
@@ -608,6 +1047,17 @@ const server = http.createServer(async (req, res) => {
           clientId = newClient.id;
         }
       }
+      let commissionSteps = [...defaultSteps];
+      if (input.templateId) {
+        const tpl = db.stepTemplates.find(t => t.id === input.templateId);
+        if (tpl) {
+          commissionSteps = [...tpl.steps];
+        }
+      }
+      if (input.steps && Array.isArray(input.steps) && input.steps.length) {
+        commissionSteps = input.steps;
+      }
+      const firstStep = commissionSteps[0];
       const selectedMaterials = [];
       if (Array.isArray(input.materials)) {
         for (const m of input.materials) {
@@ -620,7 +1070,7 @@ const server = http.createServer(async (req, res) => {
           }
         }
       }
-      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: "接收", records: [{ at: new Date().toISOString(), step: "接收", note: "登记委托" }] };
+      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }] };
       for (const m of selectedMaterials) {
         const mat = db.materials.find(item => item.id === m.materialId);
         if (mat) mat.stock -= m.quantity;
@@ -638,6 +1088,38 @@ const server = http.createServer(async (req, res) => {
       commission.records.push({ at: new Date().toISOString(), step: input.step, note: input.note || "" });
       await saveDb(db);
       return sendJson(res, 200, commission);
+    }
+    if (req.method === "GET" && url.pathname === "/api/step-templates") return sendJson(res, 200, db.stepTemplates);
+    if (req.method === "POST" && url.pathname === "/api/step-templates") {
+      const input = await body(req);
+      if (!input.name || !input.steps || !Array.isArray(input.steps) || !input.steps.length) {
+        return sendJson(res, 400, { error: "模板名称和步骤列表不能为空" });
+      }
+      const tpl = { id: `TPL-${Date.now()}`, name: input.name, description: input.description || "", steps: input.steps };
+      db.stepTemplates.unshift(tpl);
+      await saveDb(db);
+      return sendJson(res, 201, tpl);
+    }
+    const tplMatch = url.pathname.match(/^\/api\/step-templates\/([^/]+)$/);
+    if (tplMatch && req.method === "PUT") {
+      const tpl = db.stepTemplates.find(t => t.id === tplMatch[1]);
+      if (!tpl) return sendJson(res, 404, { error: "template_not_found" });
+      const input = await body(req);
+      if (input.name !== undefined) tpl.name = input.name;
+      if (input.description !== undefined) tpl.description = input.description;
+      if (input.steps !== undefined && Array.isArray(input.steps) && input.steps.length) tpl.steps = input.steps;
+      await saveDb(db);
+      return sendJson(res, 200, tpl);
+    }
+    if (tplMatch && req.method === "DELETE") {
+      const idx = db.stepTemplates.findIndex(t => t.id === tplMatch[1]);
+      if (idx === -1) return sendJson(res, 404, { error: "template_not_found" });
+      if (db.stepTemplates[idx].id === "TPL-DEFAULT") {
+        return sendJson(res, 400, { error: "默认模板不能删除" });
+      }
+      db.stepTemplates.splice(idx, 1);
+      await saveDb(db);
+      return sendJson(res, 200, { ok: true });
     }
     if (req.method === "GET" && url.pathname === "/api/materials") return sendJson(res, 200, db.materials);
     if (req.method === "POST" && url.pathname === "/api/materials") {
