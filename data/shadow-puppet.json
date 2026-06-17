@@ -9,6 +9,14 @@
       "missingParts": "右侧靠旗尖",
       "colorNotes": "朱砂区域褪色",
       "reinforcement": "薄驴皮补片",
+      "materials": [
+        {
+          "materialId": "MAT-1",
+          "name": "薄驴皮补片",
+          "batch": "LP-2026-A01",
+          "quantity": 2
+        }
+      ],
       "owner": "许岚",
       "dueDate": "2026-06-28",
       "status": "补片",
@@ -24,6 +32,53 @@
           "note": "完成低湿清洁"
         }
       ]
+    }
+  ],
+  "materials": [
+    {
+      "id": "MAT-1",
+      "name": "薄驴皮补片",
+      "category": "皮料",
+      "batch": "LP-2026-A01",
+      "stock": 50,
+      "unit": "张",
+      "remark": "陕西洛川产，厚度0.8mm"
+    },
+    {
+      "id": "MAT-2",
+      "name": "朱砂矿物颜料",
+      "category": "颜料",
+      "batch": "ZS-2026-B03",
+      "stock": 200,
+      "unit": "克",
+      "remark": "特级纯天然朱砂粉"
+    },
+    {
+      "id": "MAT-3",
+      "name": "石黄矿物颜料",
+      "category": "颜料",
+      "batch": "SH-2026-B01",
+      "stock": 150,
+      "unit": "克",
+      "remark": "老矿坑料，色泽沉稳"
+    },
+    {
+      "id": "MAT-4",
+      "name": "鱼鳔胶",
+      "category": "胶料",
+      "batch": "YJ-2026-C02",
+      "stock": 80,
+      "unit": "克",
+      "remark": "传统手工熬制"
+    },
+    {
+      "id": "MAT-5",
+      "name": "骨胶",
+      "category": "胶料",
+      "batch": "GJ-2026-C01",
+      "stock": 120,
+      "unit": "克",
+      "remark": "高纯度牛骨胶粒"
     }
   ]
 }
