@@ -51,7 +51,56 @@
         "before": [],
         "during": [],
         "after": []
-      }
+      },
+      "quotes": [
+        {
+          "id": "Q-1781698038293-mmas",
+          "version": 1,
+          "status": "superseded",
+          "items": [
+            {
+              "id": "QI-1781698038293-0",
+              "description": "表面有污渍修复",
+              "quantity": 1,
+              "unitPrice": 200,
+              "amount": 200
+            }
+          ],
+          "laborCost": 300,
+          "materialCost": 100,
+          "totalAmount": 600,
+          "estimatedDays": 7,
+          "remark": "根据破损描述、缺失零件、补色记录和加固材料初步估算",
+          "createdAt": "2026-06-17T12:07:18.293Z",
+          "confirmedAt": "2026-06-17T12:07:44.406Z",
+          "createdBy": "",
+          "previousVersionId": ""
+        },
+        {
+          "id": "Q-1781698071790-g646",
+          "version": 2,
+          "status": "draft",
+          "items": [
+            {
+              "id": "QI-1781698071790-tofq",
+              "description": "表面有污渍修复",
+              "quantity": 1,
+              "unitPrice": 200,
+              "amount": 200
+            }
+          ],
+          "laborCost": 300,
+          "materialCost": 100,
+          "totalAmount": 600,
+          "estimatedDays": 7,
+          "remark": "根据破损描述、缺失零件、补色记录和加固材料初步估算",
+          "createdAt": "2026-06-17T12:07:51.790Z",
+          "confirmedAt": null,
+          "createdBy": "",
+          "previousVersionId": "Q-1781698038293-mmas"
+        }
+      ],
+      "currentQuoteId": "Q-1781698071790-g646"
     },
     {
       "id": "SP-001",
@@ -132,7 +181,69 @@
             "size": 2593
           }
         ]
-      }
+      },
+      "quotes": [
+        {
+          "id": "Q-1781692010647-yfl3",
+          "version": 1,
+          "status": "superseded",
+          "items": [
+            {
+              "id": "QI-1781692010646-0",
+              "description": "腿部开裂修复",
+              "quantity": 1,
+              "unitPrice": 300,
+              "amount": 300
+            },
+            {
+              "id": "QI-1781692010646-1",
+              "description": "靠旗缺角补片",
+              "quantity": 1,
+              "unitPrice": 200,
+              "amount": 200
+            }
+          ],
+          "laborCost": 500,
+          "materialCost": 150,
+          "totalAmount": 1150,
+          "estimatedDays": 7,
+          "remark": "测试报价",
+          "createdAt": "2026-06-17T10:26:50.647Z",
+          "confirmedAt": "2026-06-17T10:27:20.337Z",
+          "createdBy": ""
+        },
+        {
+          "id": "Q-1781692051862-p5zx",
+          "version": 2,
+          "status": "draft",
+          "items": [
+            {
+              "id": "QI-1781692010646-0",
+              "description": "腿部开裂修复",
+              "quantity": 1,
+              "unitPrice": 300,
+              "amount": 300
+            },
+            {
+              "id": "QI-1781692010646-1",
+              "description": "靠旗缺角补片",
+              "quantity": 1,
+              "unitPrice": 200,
+              "amount": 200
+            }
+          ],
+          "laborCost": 500,
+          "materialCost": 150,
+          "totalAmount": 1150,
+          "estimatedDays": 7,
+          "remark": "测试报价",
+          "createdAt": "2026-06-17T10:27:31.862Z",
+          "confirmedAt": null,
+          "createdBy": "",
+          "previousVersionId": "Q-1781692010647-yfl3"
+        }
+      ],
+      "currentQuoteId": "Q-1781692051862-p5zx"
     },
     {
       "id": "SP-002",
@@ -209,7 +320,55 @@
         "before": [],
         "during": [],
         "after": []
-      }
+      },
+      "quotes": [
+        {
+          "id": "Q-1781695891248-n5id",
+          "version": 1,
+          "status": "superseded",
+          "items": [
+            {
+              "id": "QI-1781695891248-0",
+              "description": "头饰断裂修复",
+              "quantity": 1,
+              "unitPrice": 500,
+              "amount": 500
+            }
+          ],
+          "laborCost": 300,
+          "materialCost": 100,
+          "totalAmount": 900,
+          "estimatedDays": 5,
+          "remark": "头饰修复报价",
+          "createdAt": "2026-06-17T11:31:31.248Z",
+          "confirmedAt": "2026-06-17T11:31:31.255Z",
+          "createdBy": ""
+        },
+        {
+          "id": "Q-1781695891259-g80i",
+          "version": 2,
+          "status": "draft",
+          "items": [
+            {
+              "id": "QI-1781695891248-0",
+              "description": "头饰断裂修复",
+              "quantity": 1,
+              "unitPrice": 500,
+              "amount": 500
+            }
+          ],
+          "laborCost": 300,
+          "materialCost": 100,
+          "totalAmount": 900,
+          "estimatedDays": 5,
+          "remark": "头饰修复报价",
+          "createdAt": "2026-06-17T11:31:31.259Z",
+          "confirmedAt": null,
+          "createdBy": "",
+          "previousVersionId": "Q-1781695891248-n5id"
+        }
+      ],
+      "currentQuoteId": "Q-1781695891259-g80i"
     },
     {
       "id": "SP-003",
@@ -271,7 +430,9 @@
         "before": [],
         "during": [],
         "after": []
-      }
+      },
+      "quotes": [],
+      "currentQuoteId": ""
     },
     {
       "id": "SP-004",
@@ -327,7 +488,9 @@
         "before": [],
         "during": [],
         "after": []
-      }
+      },
+      "quotes": [],
+      "currentQuoteId": ""
     },
     {
       "id": "SP-005",
@@ -378,7 +541,9 @@
         "before": [],
         "during": [],
         "after": []
-      }
+      },
+      "quotes": [],
+      "currentQuoteId": ""
     },
     {
       "id": "SP-006",
@@ -424,7 +589,9 @@
         "before": [],
         "during": [],
         "after": []
-      }
+      },
+      "quotes": [],
+      "currentQuoteId": ""
     },
     {
       "id": "SP-007",
@@ -465,7 +632,9 @@
         "before": [],
         "during": [],
         "after": []
-      }
+      },
+      "quotes": [],
+      "currentQuoteId": ""
     }
   ],
   "materials": [

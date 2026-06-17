@@ -283,6 +283,14 @@ async function loadDb() {
         if (!Array.isArray(c.images.during)) { c.images.during = []; migrated = true; }
         if (!Array.isArray(c.images.after)) { c.images.after = []; migrated = true; }
       }
+      if (!Array.isArray(c.quotes)) {
+        c.quotes = [];
+        migrated = true;
+      }
+      if (c.currentQuoteId === undefined) {
+        c.currentQuoteId = "";
+        migrated = true;
+      }
     }
   }
   if (migrated) await saveDb(db);
@@ -482,7 +490,79 @@ const page = `<!doctype html>
     .import-item-actions label { display:flex; align-items:center; gap:6px; margin:0; font-size:13px; color:var(--muted); }
     .import-item-actions input[type=checkbox] { width:auto; }
     .field-tag { display:inline-block; padding:1px 6px; background:#fff; border:1px solid var(--line); border-radius:4px; font-size:11px; margin:0 2px; }
-    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} }
+
+    .quote-modal { max-width: 800px; }
+    .quote-info { background: var(--bg); border-radius: 8px; padding: 14px; margin-bottom: 18px; }
+    .quote-info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .quote-info-row:last-child { margin-bottom: 0; }
+    .quote-info .meta { margin-right: 6px; }
+
+    .quote-section { margin-bottom: 20px; }
+    .quote-section h4 { margin: 0 0 12px; font-size: 15px; color: var(--ink); }
+    .quote-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .quote-section-header h4 { margin: 0; }
+
+    .damage-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .damage-item { background: var(--bg); border-radius: 6px; padding: 10px; }
+    .damage-item .meta { font-size: 12px; display: block; margin-bottom: 4px; }
+
+    .quote-items-header { display: grid; grid-template-columns: 1fr 70px 90px 90px 40px; gap: 8px; padding: 8px 10px; background: var(--bg); border-radius: 6px 6px 0 0; font-size: 12px; color: var(--muted); font-weight: 700; }
+    .quote-item-col-desc { grid-column: 1; }
+    .quote-item-col-qty { grid-column: 2; text-align: center; }
+    .quote-item-col-price { grid-column: 3; text-align: right; }
+    .quote-item-col-amount { grid-column: 4; text-align: right; }
+    .quote-item-col-action { grid-column: 5; text-align: center; }
+
+    .quote-item-row { display: grid; grid-template-columns: 1fr 70px 90px 90px 40px; gap: 8px; padding: 10px; border-bottom: 1px solid var(--line); align-items: center; }
+    .quote-item-row:last-child { border-bottom: none; }
+    .quote-item-row input { width: 100%; padding: 6px 8px; font-size: 13px; }
+    .quote-item-row .item-desc { font-size: 14px; }
+    .quote-item-row .item-qty { text-align: center; font-size: 14px; }
+    .quote-item-row .item-price { text-align: right; font-size: 14px; }
+    .quote-item-row .item-amount { text-align: right; font-weight: 700; font-size: 14px; }
+    .quote-item-row .item-action { text-align: center; }
+    .quote-item-row .item-action button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; padding: 0 6px; }
+    .quote-item-row .item-action button:hover { color: #c0392b; }
+    .quote-item-row .item-action button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .quote-summary { background: var(--bg); border-radius: 8px; padding: 14px; }
+    .quote-summary-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 14px; }
+    .quote-summary-row.editable .editable-input { display: flex; align-items: center; gap: 4px; }
+    .quote-summary-row.editable .editable-input input { width: 100px; padding: 6px 8px; text-align: right; font-size: 14px; }
+    .quote-summary-row.total { border-top: 2px solid var(--line); margin-top: 8px; padding-top: 12px; font-size: 16px; }
+    .quote-summary-row.total strong { font-size: 20px; color: var(--accent); }
+
+    .quote-other { display: grid; gap: 12px; }
+    .quote-other-row { display: grid; grid-template-columns: 100px 1fr; gap: 10px; align-items: flex-start; }
+    .quote-other-row label { color: var(--muted); font-size: 13px; margin: 0; padding-top: 8px; }
+    .quote-other-row input, .quote-other-row textarea { width: 100%; padding: 8px; font-size: 14px; }
+
+    .quote-history-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid var(--line); }
+    .quote-history-list { display: flex; flex-direction: column; gap: 10px; }
+    .quote-history-item { background: var(--bg); border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; }
+    .quote-history-item:hover { border-color: var(--accent); }
+    .quote-history-item.active { border-color: var(--accent); background: #fff; }
+    .quote-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .quote-history-title { font-weight: 700; font-size: 14px; }
+    .quote-history-status { font-size: 11px; }
+    .quote-history-meta { font-size: 12px; color: var(--muted); display: flex; gap: 12px; }
+    .quote-history-amount { font-weight: 700; color: var(--accent); }
+
+    .quote-footer { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid var(--line); background: #faf8f5; }
+    .quote-footer > div { display: flex; gap: 8px; }
+
+    .pill.draft { background: #fdebd0; color: #a0522d; border-color: #e67e22; }
+    .pill.confirmed { background: #d5f5e3; color: #1e8449; border-color: var(--green); }
+    .pill.superseded { background: #e8daef; color: #6c3483; border-color: #8e44ad; }
+
+    .quote-empty { text-align: center; padding: 30px 20px; color: var(--muted); background: var(--bg); border-radius: 8px; }
+    .quote-empty .icon { font-size: 36px; margin-bottom: 10px; opacity: 0.5; }
+    .quote-empty button { margin-top: 12px; }
+
+    .quote-btn { margin-top: 8px; background: var(--orange); color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; }
+    .quote-btn:hover { opacity: 0.9; }
+
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} }
   </style>
 </head>
 <body>
@@ -748,6 +828,141 @@ const page = `<!doctype html>
     </div>
   </div>
 
+  <div class="modal-overlay" id="quoteModal">
+    <div class="modal quote-modal">
+      <div class="modal-header">
+        <h3 id="quoteModalTitle">报价单</h3>
+        <button class="modal-close" id="quoteModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="quote-info">
+          <div class="quote-info-row">
+            <div>
+              <span class="meta">委托项目：</span>
+              <strong id="quoteCommissionName">-</strong>
+            </div>
+            <div>
+              <span class="meta">客户：</span>
+              <span id="quoteClientName">-</span>
+            </div>
+          </div>
+          <div class="quote-info-row">
+            <div>
+              <span class="meta">报价版本：</span>
+              <span id="quoteVersion">-</span>
+            </div>
+            <div>
+              <span class="meta">报价状态：</span>
+              <span id="quoteStatus" class="pill">-</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote-section">
+          <h4>破损与修复信息</h4>
+          <div class="damage-info">
+            <div class="damage-item">
+              <span class="meta">破损描述</span>
+              <div id="quoteDamage">-</div>
+            </div>
+            <div class="damage-item">
+              <span class="meta">缺失零件</span>
+              <div id="quoteMissingParts">-</div>
+            </div>
+            <div class="damage-item">
+              <span class="meta">补色记录</span>
+              <div id="quoteColorNotes">-</div>
+            </div>
+            <div class="damage-item">
+              <span class="meta">加固材料</span>
+              <div id="quoteReinforcement">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote-section">
+          <div class="quote-section-header">
+            <h4>项目明细</h4>
+            <button type="button" class="small" id="addQuoteItemBtn" style="display:none;">+ 添加项目</button>
+          </div>
+          <div class="quote-items-header">
+            <div class="quote-item-col-desc">项目描述</div>
+            <div class="quote-item-col-qty">数量</div>
+            <div class="quote-item-col-price">单价(元)</div>
+            <div class="quote-item-col-amount">金额(元)</div>
+            <div class="quote-item-col-action"></div>
+          </div>
+          <div id="quoteItemsList"></div>
+        </div>
+
+        <div class="quote-section">
+          <h4>费用汇总</h4>
+          <div class="quote-summary">
+            <div class="quote-summary-row">
+              <span>项目小计</span>
+              <span id="quoteItemsTotal">¥0.00</span>
+            </div>
+            <div class="quote-summary-row editable">
+              <span>人工费</span>
+              <div class="editable-input">
+                <span>¥</span>
+                <input type="number" id="quoteLaborCost" min="0" step="0.01" value="0" disabled>
+              </div>
+            </div>
+            <div class="quote-summary-row editable">
+              <span>材料费</span>
+              <div class="editable-input">
+                <span>¥</span>
+                <input type="number" id="quoteMaterialCost" min="0" step="0.01" value="0" disabled>
+              </div>
+            </div>
+            <div class="quote-summary-row total">
+              <span>总计</span>
+              <strong id="quoteTotalAmount">¥0.00</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote-section">
+          <h4>其他信息</h4>
+          <div class="quote-other">
+            <div class="quote-other-row">
+              <label>预计工期(天)</label>
+              <input type="number" id="quoteEstimatedDays" min="0" value="0" disabled>
+            </div>
+            <div class="quote-other-row">
+              <label>备注</label>
+              <textarea id="quoteRemark" rows="3" disabled></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote-history-section" id="quoteHistorySection" style="display:none;">
+          <div class="quote-section-header">
+            <h4>历史版本</h4>
+            <span class="meta" id="quoteHistoryCount">共 0 个版本</span>
+          </div>
+          <div id="quoteHistoryList"></div>
+        </div>
+      </div>
+      <div class="modal-footer quote-footer">
+        <button type="button" class="secondary" id="quoteCloseBtn">关闭</button>
+        <button type="button" id="createQuoteBtn" style="display:none;">创建报价</button>
+        <div id="quoteEditActions" style="display:none;">
+          <button type="button" class="secondary" id="quoteCancelEditBtn">取消</button>
+          <button type="button" id="quoteSaveBtn">保存草稿</button>
+        </div>
+        <div id="quoteDraftActions" style="display:none;">
+          <button type="button" id="quoteEditBtn">编辑报价</button>
+          <button type="button" class="secondary" id="quoteConfirmBtn">确认报价</button>
+        </div>
+        <div id="quoteConfirmedActions" style="display:none;">
+          <button type="button" id="quoteReviseBtn">重新报价</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const defaultSteps = ${JSON.stringify(defaultSteps)};
     let commissions = [];
@@ -826,7 +1041,19 @@ const page = `<!doctype html>
           after: c.images.after?.length || 0
         } : { before:0, during:0, after:0 };
         const totalImgs = imgCounts.before + imgCounts.during + imgCounts.after;
-        return '<article class="card"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
+
+        const currentQuote = c.currentQuoteId ? (c.quotes || []).find(q => q.id === c.currentQuoteId) : null;
+        const quoteCount = (c.quotes || []).length;
+        let quoteBadge = '';
+        if (currentQuote) {
+          const statusText = currentQuote.status === 'draft' ? '草稿' : currentQuote.status === 'confirmed' ? '已确认' : '已作废';
+          const statusClass = currentQuote.status;
+          quoteBadge = '<span class="pill ' + statusClass + '" style="margin-left:6px;">报价：¥' + Number(currentQuote.totalAmount).toFixed(2) + '</span>';
+        } else {
+          quoteBadge = '<span class="pill" style="margin-left:6px;background:var(--bg);">未报价</span>';
+        }
+
+        return '<article class="card"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+quoteBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><button class="quote-btn" data-quote="'+c.id+'">💰 报价管理' + (quoteCount > 0 ? ' (' + quoteCount + '版)' : '') + '</button><div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
       }).join("");
       document.querySelectorAll("[data-step]").forEach(sel => sel.value = commissions.find(c => c.id === sel.dataset.step).status);
       document.querySelectorAll("[data-save]").forEach(btn => btn.onclick = async () => {
@@ -837,6 +1064,10 @@ const page = `<!doctype html>
       document.querySelectorAll("[data-images]").forEach(btn => btn.onclick = () => {
         const id = btn.dataset.images;
         openImagesModal(id);
+      });
+      document.querySelectorAll("[data-quote]").forEach(btn => btn.onclick = () => {
+        const id = btn.dataset.quote;
+        openQuoteModal(id);
       });
     }
 
@@ -2171,6 +2402,418 @@ const page = `<!doctype html>
       }
     });
 
+    let currentQuoteCommissionId = null;
+    let currentQuoteData = null;
+    let currentQuoteItems = [];
+    let isQuoteEditing = false;
+    let quoteHistory = [];
+
+    function getStatusText(status) {
+      const statusMap = {
+        draft: "草稿",
+        confirmed: "已确认",
+        superseded: "已作废"
+      };
+      return statusMap[status] || status;
+    }
+
+    function formatMoney(amount) {
+      return "¥" + Number(amount).toFixed(2);
+    }
+
+    function calculateQuoteTotals() {
+      const itemsTotal = currentQuoteItems.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const laborCost = Number(document.getElementById("quoteLaborCost")?.value) || 0;
+      const materialCost = Number(document.getElementById("quoteMaterialCost")?.value) || 0;
+      const total = itemsTotal + laborCost + materialCost;
+
+      const itemsTotalEl = document.getElementById("quoteItemsTotal");
+      const totalEl = document.getElementById("quoteTotalAmount");
+      if (itemsTotalEl) itemsTotalEl.textContent = formatMoney(itemsTotal);
+      if (totalEl) totalEl.textContent = formatMoney(total);
+
+      return { itemsTotal, laborCost, materialCost, total };
+    }
+
+    function renderQuoteItems() {
+      const listEl = document.getElementById("quoteItemsList");
+      if (!listEl) return;
+
+      if (!currentQuoteItems.length) {
+        listEl.innerHTML = '<div class="quote-empty" style="border-radius:0 0 6px 6px;"><div class="icon">📋</div><div>暂无报价项目</div></div>';
+        return;
+      }
+
+      listEl.innerHTML = currentQuoteItems.map((item, idx) => {
+        if (isQuoteEditing) {
+          return '<div class="quote-item-row">' +
+            '<div><input type="text" data-item-desc="' + idx + '" value="' + (item.description || '') + '" placeholder="项目描述"></div>' +
+            '<div><input type="number" data-item-qty="' + idx + '" value="' + (item.quantity || 0) + '" min="0" step="1"></div>' +
+            '<div><input type="number" data-item-price="' + idx + '" value="' + (item.unitPrice || 0) + '" min="0" step="0.01"></div>' +
+            '<div class="item-amount">' + formatMoney(item.amount || 0) + '</div>' +
+            '<div class="item-action"><button data-item-del="' + idx + '" title="删除">×</button></div>' +
+            '</div>';
+        } else {
+          return '<div class="quote-item-row">' +
+            '<div class="item-desc">' + (item.description || '-') + '</div>' +
+            '<div class="item-qty">' + (item.quantity || 0) + '</div>' +
+            '<div class="item-price">' + formatMoney(item.unitPrice || 0) + '</div>' +
+            '<div class="item-amount">' + formatMoney(item.amount || 0) + '</div>' +
+            '<div class="item-action"></div>' +
+            '</div>';
+        }
+      }).join("");
+
+      if (isQuoteEditing) {
+        listEl.querySelectorAll("[data-item-desc]").forEach(inp => {
+          inp.oninput = () => {
+            const idx = Number(inp.dataset.itemDesc);
+            currentQuoteItems[idx].description = inp.value;
+          };
+        });
+        listEl.querySelectorAll("[data-item-qty]").forEach(inp => {
+          inp.oninput = () => {
+            const idx = Number(inp.dataset.itemQty);
+            const qty = Number(inp.value) || 0;
+            currentQuoteItems[idx].quantity = qty;
+            currentQuoteItems[idx].amount = qty * (currentQuoteItems[idx].unitPrice || 0);
+            renderQuoteItems();
+            calculateQuoteTotals();
+          };
+        });
+        listEl.querySelectorAll("[data-item-price]").forEach(inp => {
+          inp.oninput = () => {
+            const idx = Number(inp.dataset.itemPrice);
+            const price = Number(inp.value) || 0;
+            currentQuoteItems[idx].unitPrice = price;
+            currentQuoteItems[idx].amount = price * (currentQuoteItems[idx].quantity || 0);
+            renderQuoteItems();
+            calculateQuoteTotals();
+          };
+        });
+        listEl.querySelectorAll("[data-item-del]").forEach(btn => {
+          btn.onclick = () => {
+            const idx = Number(btn.dataset.itemDel);
+            currentQuoteItems.splice(idx, 1);
+            renderQuoteItems();
+            calculateQuoteTotals();
+          };
+        });
+      }
+
+      calculateQuoteTotals();
+    }
+
+    function renderQuoteHistory() {
+      const historySection = document.getElementById("quoteHistorySection");
+      const historyList = document.getElementById("quoteHistoryList");
+      const historyCount = document.getElementById("quoteHistoryCount");
+      if (!historySection || !historyList || !historyCount) return;
+
+      if (!quoteHistory || quoteHistory.length <= 1) {
+        historySection.style.display = "none";
+        return;
+      }
+
+      historySection.style.display = "block";
+      historyCount.textContent = "共 " + quoteHistory.length + " 个版本";
+
+      const sortedHistory = [...quoteHistory].sort((a, b) => b.version - a.version);
+      historyList.innerHTML = sortedHistory.map(q => {
+        const isActive = currentQuoteData && q.id === currentQuoteData.id;
+        return '<div class="quote-history-item' + (isActive ? ' active' : '') + '" data-history-id="' + q.id + '">' +
+          '<div class="quote-history-header">' +
+          '<span class="quote-history-title">第 ' + q.version + ' 版</span>' +
+          '<span class="pill quote-history-status ' + q.status + '">' + getStatusText(q.status) + '</span>' +
+          '</div>' +
+          '<div class="quote-history-meta">' +
+          '<span>创建：' + formatDate(q.createdAt) + '</span>' +
+          (q.confirmedAt ? '<span>确认：' + formatDate(q.confirmedAt) + '</span>' : '') +
+          '<span class="quote-history-amount">' + formatMoney(q.totalAmount) + '</span>' +
+          '</div>' +
+          '</div>';
+      }).join("");
+
+      historyList.querySelectorAll("[data-history-id]").forEach(item => {
+        item.onclick = () => {
+          const quoteId = item.dataset.historyId;
+          const quote = quoteHistory.find(q => q.id === quoteId);
+          if (quote) {
+            currentQuoteData = quote;
+            currentQuoteItems = JSON.parse(JSON.stringify(quote.items || []));
+            isQuoteEditing = false;
+            renderQuoteDetail();
+          }
+        };
+      });
+    }
+
+    function renderQuoteDetail() {
+      const commission = commissions.find(c => c.id === currentQuoteCommissionId);
+      if (!commission) return;
+
+      document.getElementById("quoteCommissionName").textContent = commission.roleName;
+      document.getElementById("quoteClientName").textContent = commission.client;
+      document.getElementById("quoteDamage").textContent = commission.damage || "-";
+      document.getElementById("quoteMissingParts").textContent = commission.missingParts || "-";
+      document.getElementById("quoteColorNotes").textContent = commission.colorNotes || "-";
+      document.getElementById("quoteReinforcement").textContent = commission.reinforcement || "-";
+
+      if (currentQuoteData) {
+        document.getElementById("quoteVersion").textContent = "第 " + currentQuoteData.version + " 版";
+        const statusEl = document.getElementById("quoteStatus");
+        statusEl.textContent = getStatusText(currentQuoteData.status);
+        statusEl.className = "pill " + currentQuoteData.status;
+
+        document.getElementById("quoteLaborCost").value = currentQuoteData.laborCost || 0;
+        document.getElementById("quoteMaterialCost").value = currentQuoteData.materialCost || 0;
+        document.getElementById("quoteEstimatedDays").value = currentQuoteData.estimatedDays || 0;
+        document.getElementById("quoteRemark").value = currentQuoteData.remark || "";
+      } else {
+        document.getElementById("quoteVersion").textContent = "暂无";
+        const statusEl = document.getElementById("quoteStatus");
+        statusEl.textContent = "未报价";
+        statusEl.className = "pill";
+      }
+
+      const addItemBtn = document.getElementById("addQuoteItemBtn");
+      if (addItemBtn) addItemBtn.style.display = isQuoteEditing ? "inline-block" : "none";
+
+      const inputs = ["quoteLaborCost", "quoteMaterialCost", "quoteEstimatedDays", "quoteRemark"];
+      inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !isQuoteEditing;
+      });
+
+      renderQuoteItems();
+      renderQuoteHistory();
+
+      const editActions = document.getElementById("quoteEditActions");
+      const draftActions = document.getElementById("quoteDraftActions");
+      const confirmedActions = document.getElementById("quoteConfirmedActions");
+      const createQuoteBtn = document.getElementById("createQuoteBtn");
+
+      if (!currentQuoteData) {
+        if (editActions) editActions.style.display = "none";
+        if (draftActions) draftActions.style.display = "none";
+        if (confirmedActions) confirmedActions.style.display = "none";
+        if (createQuoteBtn) createQuoteBtn.style.display = "inline-block";
+      } else if (isQuoteEditing) {
+        if (editActions) editActions.style.display = "flex";
+        if (draftActions) draftActions.style.display = "none";
+        if (confirmedActions) confirmedActions.style.display = "none";
+        if (createQuoteBtn) createQuoteBtn.style.display = "none";
+      } else if (currentQuoteData.status === "draft") {
+        if (editActions) editActions.style.display = "none";
+        if (draftActions) draftActions.style.display = "flex";
+        if (confirmedActions) confirmedActions.style.display = "none";
+        if (createQuoteBtn) createQuoteBtn.style.display = "none";
+      } else if (currentQuoteData.status === "confirmed" || currentQuoteData.status === "superseded") {
+        if (editActions) editActions.style.display = "none";
+        if (draftActions) draftActions.style.display = "none";
+        if (confirmedActions) confirmedActions.style.display = "flex";
+        if (createQuoteBtn) createQuoteBtn.style.display = "none";
+      }
+    }
+
+    async function loadQuoteData() {
+      try {
+        const data = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes");
+        quoteHistory = data.quotes || [];
+        if (data.currentQuoteId) {
+          currentQuoteData = quoteHistory.find(q => q.id === data.currentQuoteId) || null;
+        } else {
+          currentQuoteData = null;
+        }
+        if (currentQuoteData) {
+          currentQuoteItems = JSON.parse(JSON.stringify(currentQuoteData.items || []));
+        } else {
+          currentQuoteItems = [];
+        }
+        isQuoteEditing = false;
+        renderQuoteDetail();
+      } catch (e) {
+        alert("加载报价失败：" + e.message);
+      }
+    }
+
+    async function openQuoteModal(commissionId) {
+      currentQuoteCommissionId = commissionId;
+      document.getElementById("quoteModal").classList.add("active");
+      await loadQuoteData();
+    }
+
+    function closeQuoteModal() {
+      document.getElementById("quoteModal").classList.remove("active");
+      currentQuoteCommissionId = null;
+      currentQuoteData = null;
+      currentQuoteItems = [];
+      isQuoteEditing = false;
+      quoteHistory = [];
+    }
+
+    async function createFirstQuote() {
+      const commission = commissions.find(c => c.id === currentQuoteCommissionId);
+      if (!commission) return;
+
+      const defaultItems = [];
+      if (commission.damage) {
+        defaultItems.push({
+          description: commission.damage + "修复",
+          quantity: 1,
+          unitPrice: 200,
+          amount: 200
+        });
+      }
+
+      const quoteData = {
+        items: defaultItems,
+        laborCost: 300,
+        materialCost: 100,
+        estimatedDays: 7,
+        remark: "根据破损描述、缺失零件、补色记录和加固材料初步估算"
+      };
+
+      try {
+        const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes", {
+          method: "POST",
+          body: JSON.stringify(quoteData)
+        });
+        await loadQuoteData();
+        isQuoteEditing = true;
+        renderQuoteDetail();
+        await loadAll();
+      } catch (e) {
+        alert("创建报价失败：" + e.message);
+      }
+    }
+
+    async function saveQuote() {
+      if (!currentQuoteData) return;
+
+      const totals = calculateQuoteTotals();
+
+      try {
+        const updated = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id, {
+          method: "PUT",
+          body: JSON.stringify({
+            items: currentQuoteItems,
+            laborCost: totals.laborCost,
+            materialCost: totals.materialCost,
+            totalAmount: totals.total,
+            estimatedDays: Number(document.getElementById("quoteEstimatedDays").value) || 0,
+            remark: document.getElementById("quoteRemark").value || ""
+          })
+        });
+        currentQuoteData = updated;
+        currentQuoteItems = JSON.parse(JSON.stringify(updated.items || []));
+        isQuoteEditing = false;
+        await loadQuoteData();
+        alert("报价已保存");
+      } catch (e) {
+        alert("保存报价失败：" + e.message);
+      }
+    }
+
+    async function confirmQuote() {
+      if (!currentQuoteData) return;
+      if (!confirm("确认报价后将无法直接编辑，需要重新报价才能修改。确定确认吗？")) return;
+
+      try {
+        const confirmed = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id + "/confirm", {
+          method: "POST"
+        });
+        currentQuoteData = confirmed;
+        await loadQuoteData();
+        alert("报价已确认");
+        await loadAll();
+      } catch (e) {
+        alert("确认报价失败：" + e.message);
+      }
+    }
+
+    async function reviseQuote() {
+      if (!currentQuoteData) return;
+      if (!confirm("将基于当前报价创建新版本，旧版本将保留。确定重新报价吗？")) return;
+
+      try {
+        const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id + "/revise", {
+          method: "POST"
+        });
+        currentQuoteData = newQuote;
+        currentQuoteItems = JSON.parse(JSON.stringify(newQuote.items || []));
+        isQuoteEditing = true;
+        await loadQuoteData();
+        await loadAll();
+      } catch (e) {
+        alert("重新报价失败：" + e.message);
+      }
+    }
+
+    function addQuoteItem() {
+      currentQuoteItems.push({
+        id: "QI-new-" + Date.now(),
+        description: "",
+        quantity: 1,
+        unitPrice: 0,
+        amount: 0
+      });
+      renderQuoteItems();
+      calculateQuoteTotals();
+    }
+
+    function startEditQuote() {
+      isQuoteEditing = true;
+      renderQuoteDetail();
+    }
+
+    function cancelEditQuote() {
+      if (currentQuoteData) {
+        currentQuoteItems = JSON.parse(JSON.stringify(currentQuoteData.items || []));
+      }
+      isQuoteEditing = false;
+      renderQuoteDetail();
+    }
+
+    document.getElementById("quoteModalClose").onclick = closeQuoteModal;
+    document.getElementById("quoteCloseBtn").onclick = closeQuoteModal;
+    document.getElementById("quoteModal").onclick = (e) => {
+      if (e.target.id === "quoteModal") closeQuoteModal();
+    };
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("quoteModal").classList.contains("active")) {
+        closeQuoteModal();
+      }
+    });
+
+    const addQuoteItemBtn = document.getElementById("addQuoteItemBtn");
+    if (addQuoteItemBtn) addQuoteItemBtn.onclick = addQuoteItem;
+
+    const quoteEditBtn = document.getElementById("quoteEditBtn");
+    if (quoteEditBtn) quoteEditBtn.onclick = startEditQuote;
+
+    const quoteSaveBtn = document.getElementById("quoteSaveBtn");
+    if (quoteSaveBtn) quoteSaveBtn.onclick = saveQuote;
+
+    const quoteCancelEditBtn = document.getElementById("quoteCancelEditBtn");
+    if (quoteCancelEditBtn) quoteCancelEditBtn.onclick = cancelEditQuote;
+
+    const quoteConfirmBtn = document.getElementById("quoteConfirmBtn");
+    if (quoteConfirmBtn) quoteConfirmBtn.onclick = confirmQuote;
+
+    const quoteReviseBtn = document.getElementById("quoteReviseBtn");
+    if (quoteReviseBtn) quoteReviseBtn.onclick = reviseQuote;
+
+    const createQuoteBtn = document.getElementById("createQuoteBtn");
+    if (createQuoteBtn) createQuoteBtn.onclick = createFirstQuote;
+
+    ["quoteLaborCost", "quoteMaterialCost"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.oninput = calculateQuoteTotals;
+      }
+    });
+
     loadAll();
   </script>
 </body>
@@ -2569,7 +3212,7 @@ const server = http.createServer(async (req, res) => {
           }
         }
       }
-      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] } };
+      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] }, quotes: [], currentQuoteId: "" };
       for (const m of selectedMaterials) {
         const mat = db.materials.find(item => item.id === m.materialId);
         if (mat) mat.stock -= m.quantity;
@@ -2885,6 +3528,154 @@ const server = http.createServer(async (req, res) => {
       }
       await saveDb(db);
       return sendJson(res, 200, commission);
+    }
+
+    const quotesListMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/quotes$/);
+    if (quotesListMatch && req.method === "GET") {
+      const commission = db.commissions.find(c => c.id === quotesListMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      return sendJson(res, 200, {
+        quotes: commission.quotes || [],
+        currentQuoteId: commission.currentQuoteId || ""
+      });
+    }
+
+    if (quotesListMatch && req.method === "POST") {
+      const commission = db.commissions.find(c => c.id === quotesListMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const input = await body(req);
+
+      const items = Array.isArray(input.items) ? input.items.map((item, idx) => ({
+        id: `QI-${Date.now()}-${idx}`,
+        description: item.description || "",
+        quantity: Number(item.quantity) || 0,
+        unitPrice: Number(item.unitPrice) || 0,
+        amount: Number(item.amount) || 0
+      })) : [];
+
+      const laborCost = Number(input.laborCost) || 0;
+      const materialCost = Number(input.materialCost) || 0;
+      const totalAmount = Number(input.totalAmount) || items.reduce((sum, item) => sum + item.amount, 0) + laborCost + materialCost;
+
+      const quote = {
+        id: `Q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        version: (commission.quotes?.length || 0) + 1,
+        status: "draft",
+        items,
+        laborCost,
+        materialCost,
+        totalAmount,
+        estimatedDays: Number(input.estimatedDays) || 0,
+        remark: input.remark || "",
+        createdAt: new Date().toISOString(),
+        confirmedAt: null,
+        createdBy: input.createdBy || "",
+        previousVersionId: input.previousVersionId || ""
+      };
+
+      if (!commission.quotes) commission.quotes = [];
+      commission.quotes.push(quote);
+      commission.currentQuoteId = quote.id;
+
+      await saveDb(db);
+      return sendJson(res, 201, quote);
+    }
+
+    const quoteDetailMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/quotes\/([^/]+)$/);
+    if (quoteDetailMatch && req.method === "GET") {
+      const commission = db.commissions.find(c => c.id === quoteDetailMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const quote = commission.quotes?.find(q => q.id === quoteDetailMatch[2]);
+      if (!quote) return sendJson(res, 404, { error: "quote_not_found" });
+      return sendJson(res, 200, quote);
+    }
+
+    if (quoteDetailMatch && req.method === "PUT") {
+      const commission = db.commissions.find(c => c.id === quoteDetailMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const quote = commission.quotes?.find(q => q.id === quoteDetailMatch[2]);
+      if (!quote) return sendJson(res, 404, { error: "quote_not_found" });
+      if (quote.status !== "draft") {
+        return sendJson(res, 400, { error: "only_draft_can_be_edited", message: "只有草稿状态的报价才能编辑" });
+      }
+
+      const input = await body(req);
+
+      if (Array.isArray(input.items)) {
+        quote.items = input.items.map((item, idx) => ({
+          id: item.id || `QI-${Date.now()}-${idx}`,
+          description: item.description || "",
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(item.unitPrice) || 0,
+          amount: Number(item.amount) || 0
+        }));
+      }
+      if (input.laborCost !== undefined) quote.laborCost = Number(input.laborCost) || 0;
+      if (input.materialCost !== undefined) quote.materialCost = Number(input.materialCost) || 0;
+      if (input.estimatedDays !== undefined) quote.estimatedDays = Number(input.estimatedDays) || 0;
+      if (input.remark !== undefined) quote.remark = input.remark || "";
+
+      if (input.totalAmount !== undefined) {
+        quote.totalAmount = Number(input.totalAmount) || 0;
+      } else {
+        quote.totalAmount = quote.items.reduce((sum, item) => sum + item.amount, 0) + quote.laborCost + quote.materialCost;
+      }
+
+      await saveDb(db);
+      return sendJson(res, 200, quote);
+    }
+
+    const quoteConfirmMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/quotes\/([^/]+)\/confirm$/);
+    if (quoteConfirmMatch && req.method === "POST") {
+      const commission = db.commissions.find(c => c.id === quoteConfirmMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const quote = commission.quotes?.find(q => q.id === quoteConfirmMatch[2]);
+      if (!quote) return sendJson(res, 404, { error: "quote_not_found" });
+      if (quote.status !== "draft") {
+        return sendJson(res, 400, { error: "only_draft_can_be_confirmed", message: "只有草稿状态的报价才能确认" });
+      }
+
+      quote.status = "confirmed";
+      quote.confirmedAt = new Date().toISOString();
+
+      commission.currentQuoteId = quote.id;
+
+      await saveDb(db);
+      return sendJson(res, 200, quote);
+    }
+
+    const quoteReviseMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/quotes\/([^/]+)\/revise$/);
+    if (quoteReviseMatch && req.method === "POST") {
+      const commission = db.commissions.find(c => c.id === quoteReviseMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const oldQuote = commission.quotes?.find(q => q.id === quoteReviseMatch[2]);
+      if (!oldQuote) return sendJson(res, 404, { error: "quote_not_found" });
+
+      if (oldQuote.status === "confirmed") {
+        oldQuote.status = "superseded";
+      }
+
+      const newQuote = {
+        id: `Q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        version: (commission.quotes?.length || 0) + 1,
+        status: "draft",
+        items: oldQuote.items.map(item => ({ ...item, id: `QI-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` })),
+        laborCost: oldQuote.laborCost,
+        materialCost: oldQuote.materialCost,
+        totalAmount: oldQuote.totalAmount,
+        estimatedDays: oldQuote.estimatedDays,
+        remark: oldQuote.remark,
+        createdAt: new Date().toISOString(),
+        confirmedAt: null,
+        createdBy: "",
+        previousVersionId: oldQuote.id
+      };
+
+      commission.quotes.push(newQuote);
+      commission.currentQuoteId = newQuote.id;
+
+      await saveDb(db);
+      return sendJson(res, 201, newQuote);
     }
 
     sendJson(res, 404, { error: "not_found" });
