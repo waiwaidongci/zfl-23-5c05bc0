@@ -90,6 +90,339 @@
           }
         ]
       }
+    },
+    {
+      "id": "SP-002",
+      "clientId": "CL-001",
+      "client": "洛川民俗馆",
+      "roleName": "旦角凤冠",
+      "era": "清代晚期",
+      "damage": "头饰断裂，珠饰脱落",
+      "missingParts": "三粒珍珠饰珠",
+      "colorNotes": "石青颜料需重绘",
+      "reinforcement": "骨胶加固",
+      "materials": [
+        {
+          "materialId": "MAT-3",
+          "name": "石黄矿物颜料",
+          "batch": "SH-2026-B01",
+          "quantity": 5
+        },
+        {
+          "materialId": "MAT-5",
+          "name": "骨胶",
+          "batch": "GJ-2026-C01",
+          "quantity": 10
+        }
+      ],
+      "owner": "王师傅",
+      "dueDate": "2026-06-25",
+      "status": "补色",
+      "records": [
+        {
+          "at": "2026-06-05T09:00:00.000Z",
+          "step": "接收",
+          "note": "清代旦角头饰，破损严重"
+        },
+        {
+          "at": "2026-06-08T10:00:00.000Z",
+          "step": "拆卸头饰",
+          "note": "小心拆解，配件分类存放"
+        },
+        {
+          "at": "2026-06-10T14:00:00.000Z",
+          "step": "清洁",
+          "note": "完成清洁"
+        },
+        {
+          "at": "2026-06-12T11:00:00.000Z",
+          "step": "补片",
+          "note": "完成补片"
+        },
+        {
+          "at": "2026-06-14T15:00:00.000Z",
+          "step": "头饰重绘",
+          "note": "正在重绘，颜色调配中"
+        },
+        {
+          "at": "2026-06-17T07:04:47.644Z",
+          "step": "补色",
+          "note": "完成头饰重绘，正在进行补色处理"
+        }
+      ],
+      "steps": [
+        "接收",
+        "拆卸头饰",
+        "清洁",
+        "补片",
+        "头饰重绘",
+        "补色",
+        "组装头饰",
+        "交付"
+      ],
+      "templateId": "TPL-DANJIAO",
+      "templateName": "旦角头饰",
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      }
+    },
+    {
+      "id": "SP-003",
+      "clientId": "CL-001",
+      "client": "洛川民俗馆",
+      "roleName": "文官袍服",
+      "era": "民国中期",
+      "damage": "袍服大面积撕裂",
+      "missingParts": "无",
+      "colorNotes": "多处褪色",
+      "reinforcement": "鱼鳔胶",
+      "materials": [
+        {
+          "materialId": "MAT-1",
+          "name": "薄驴皮补片",
+          "batch": "LP-2026-A01",
+          "quantity": 3
+        },
+        {
+          "materialId": "MAT-4",
+          "name": "鱼鳔胶",
+          "batch": "YJ-2026-C02",
+          "quantity": 15
+        }
+      ],
+      "owner": "许岚",
+      "dueDate": "2026-06-18",
+      "status": "补色",
+      "records": [
+        {
+          "at": "2026-06-08T10:00:00.000Z",
+          "step": "接收",
+          "note": "登记"
+        },
+        {
+          "at": "2026-06-10T14:00:00.000Z",
+          "step": "清洁",
+          "note": "完成清洁"
+        },
+        {
+          "at": "2026-06-13T10:00:00.000Z",
+          "step": "补片",
+          "note": "完成补片"
+        },
+        {
+          "at": "2026-06-16T15:00:00.000Z",
+          "step": "补色",
+          "note": "开始补色"
+        }
+      ],
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      }
+    },
+    {
+      "id": "SP-004",
+      "clientId": "CL-001",
+      "client": "洛川民俗馆",
+      "roleName": "影窗布景",
+      "era": "清代中期",
+      "damage": "边缘破损严重",
+      "missingParts": "无",
+      "colorNotes": "大面积褪色",
+      "reinforcement": "托裱加固",
+      "materials": [
+        {
+          "materialId": "MAT-1",
+          "name": "薄驴皮补片",
+          "batch": "LP-2026-A01",
+          "quantity": 8
+        },
+        {
+          "materialId": "MAT-2",
+          "name": "朱砂矿物颜料",
+          "batch": "ZS-2026-B03",
+          "quantity": 30
+        }
+      ],
+      "owner": "李师傅",
+      "dueDate": "2026-06-19",
+      "status": "展开检查",
+      "records": [
+        {
+          "at": "2026-06-12T10:00:00.000Z",
+          "step": "接收",
+          "note": "大幅影窗布景，需全面修复"
+        },
+        {
+          "at": "2026-06-15T09:00:00.000Z",
+          "step": "展开检查",
+          "note": "正在展开检查破损情况"
+        }
+      ],
+      "steps": [
+        "接收",
+        "展开检查",
+        "清洁",
+        "拼接补片",
+        "补色",
+        "托裱",
+        "交付"
+      ],
+      "templateId": "TPL-BACKDROP",
+      "templateName": "影窗布景",
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      }
+    },
+    {
+      "id": "SP-005",
+      "clientId": "CL-001",
+      "client": "洛川民俗馆",
+      "roleName": "武将关羽",
+      "era": "民国晚期",
+      "damage": "刀枪把子断裂",
+      "missingParts": "刀柄装饰",
+      "colorNotes": "绿色颜料需调配",
+      "reinforcement": "薄驴皮补片",
+      "materials": [
+        {
+          "materialId": "MAT-1",
+          "name": "薄驴皮补片",
+          "batch": "LP-2026-A01",
+          "quantity": 1
+        }
+      ],
+      "owner": "王师傅",
+      "dueDate": "2026-06-17",
+      "status": "补片",
+      "records": [
+        {
+          "at": "2026-06-10T10:00:00.000Z",
+          "step": "接收",
+          "note": "登记"
+        },
+        {
+          "at": "2026-06-13T14:00:00.000Z",
+          "step": "清洁",
+          "note": "完成清洁"
+        },
+        {
+          "at": "2026-06-16T10:00:00.000Z",
+          "step": "补片",
+          "note": "正在补片"
+        }
+      ],
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      }
+    },
+    {
+      "id": "SP-006",
+      "clientId": "CL-001",
+      "client": "洛川民俗馆",
+      "roleName": "小生折扇",
+      "era": "民国早期",
+      "damage": "扇面撕裂",
+      "missingParts": "无",
+      "colorNotes": "扇面图案重绘",
+      "reinforcement": "骨胶",
+      "materials": [
+        {
+          "materialId": "MAT-5",
+          "name": "骨胶",
+          "batch": "GJ-2026-C01",
+          "quantity": 8
+        }
+      ],
+      "owner": "李师傅",
+      "dueDate": "2026-07-05",
+      "status": "清洁",
+      "records": [
+        {
+          "at": "2026-06-14T10:00:00.000Z",
+          "step": "接收",
+          "note": "小生折扇，扇面破损"
+        },
+        {
+          "at": "2026-06-16T14:00:00.000Z",
+          "step": "清洁",
+          "note": "正在清洁"
+        }
+      ],
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      }
+    },
+    {
+      "id": "SP-007",
+      "clientId": "CL-001",
+      "client": "洛川民俗馆",
+      "roleName": "丑角官帽",
+      "era": "清代晚期",
+      "damage": "帽檐破损",
+      "missingParts": "帽翅装饰",
+      "colorNotes": "黑色颜料需补色",
+      "reinforcement": "鱼鳔胶",
+      "materials": [
+        {
+          "materialId": "MAT-4",
+          "name": "鱼鳔胶",
+          "batch": "YJ-2026-C02",
+          "quantity": 5
+        }
+      ],
+      "owner": "许岚",
+      "dueDate": "2026-07-10",
+      "status": "接收",
+      "records": [
+        {
+          "at": "2026-06-15T10:00:00.000Z",
+          "step": "接收",
+          "note": "丑角官帽新委托"
+        }
+      ],
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      }
     }
   ],
   "materials": [

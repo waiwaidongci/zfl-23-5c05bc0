@@ -292,7 +292,58 @@ const page = `<!doctype html>
     .empty-state .icon { font-size:48px; margin-bottom:12px; opacity:0.5; }
     .images-btn { margin-top:8px; background:var(--green); color:#fff; border:0; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; }
     .images-btn:hover { opacity:0.9; }
-    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} }
+    .schedule-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
+    .schedule-stats .stat.overdue strong { color:#c0392b; }
+    .schedule-stats .stat.due-soon strong { color:#e67e22; }
+    .schedule-stats .stat.on-track strong { color:var(--green); }
+    .schedule-filter { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center; }
+    .schedule-filter select { width:auto; min-width:150px; }
+    .schedule-filter .filter-label { color:var(--muted); font-size:13px; margin-right:4px; }
+    .kanban { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    .kanban-column { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px; min-height:200px; }
+    .kanban-column-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--line); }
+    .kanban-column-header h3 { margin:0; font-size:15px; }
+    .kanban-column.overdue .kanban-column-header { border-color:#c0392b; }
+    .kanban-column.overdue .kanban-column-header h3 { color:#c0392b; }
+    .kanban-column.due-soon .kanban-column-header { border-color:#e67e22; }
+    .kanban-column.due-soon .kanban-column-header h3 { color:#e67e22; }
+    .kanban-column.on-track .kanban-column-header { border-color:var(--green); }
+    .kanban-column.on-track .kanban-column-header h3 { color:var(--green); }
+    .kanban-count { background:#fff; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:700; }
+    .kanban-card { background:#fff; border:1px solid var(--line); border-radius:6px; padding:12px; margin-bottom:10px; cursor:pointer; transition:all 0.2s; }
+    .kanban-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.1); transform:translateY(-2px); }
+    .kanban-card.expanded { border-color:var(--accent); box-shadow:0 2px 8px rgba(125,63,46,0.2); }
+    .kanban-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+    .kanban-card-title { font-weight:700; font-size:14px; margin:0; }
+    .kanban-card-badge { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; }
+    .kanban-card-badge.overdue { background:#c0392b; color:#fff; }
+    .kanban-card-badge.due-soon { background:#e67e22; color:#fff; }
+    .kanban-card-badge.on-track { background:var(--green); color:#fff; }
+    .kanban-card-meta { font-size:12px; color:var(--muted); margin:3px 0; }
+    .kanban-card-status { display:inline-block; padding:2px 8px; background:var(--bg); border-radius:4px; font-size:12px; margin-top:4px; }
+    .kanban-card-details { display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line); }
+    .kanban-card.expanded .kanban-card-details { display:block; }
+    .kanban-card-details label { font-size:12px; margin:8px 0 4px; }
+    .kanban-card-details input, .kanban-card-details select, .kanban-card-details textarea { font-size:13px; padding:6px; }
+    .kanban-card-actions { display:flex; gap:6px; margin-top:10px; }
+    .kanban-card-actions button { padding:6px 12px; font-size:12px; }
+    .kanban-empty { text-align:center; padding:30px 10px; color:var(--muted); font-size:13px; }
+    .owner-section { margin-bottom:20px; }
+    .owner-header { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; background:var(--bg); border-radius:6px; margin-bottom:10px; }
+    .owner-header h4 { margin:0; font-size:14px; }
+    .owner-stats { display:flex; gap:12px; font-size:12px; }
+    .owner-stats span { color:var(--muted); }
+    .owner-stats .overdue { color:#c0392b; font-weight:700; }
+    .owner-stats .due-soon { color:#e67e22; font-weight:700; }
+    .owner-stats .on-track { color:var(--green); font-weight:700; }
+    .schedule-view-toggle { display:flex; gap:4px; }
+    .schedule-view-toggle button { padding:6px 12px; font-size:12px; background:var(--bg); border:1px solid var(--line); border-radius:6px; cursor:pointer; }
+    .schedule-view-toggle button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .steps-progress { display:flex; gap:2px; margin-top:8px; flex-wrap:wrap; }
+    .steps-progress .step-dot { width:20px; height:6px; border-radius:3px; background:var(--line); }
+    .steps-progress .step-dot.done { background:var(--green); }
+    .steps-progress .step-dot.current { background:var(--accent); }
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} }
   </style>
 </head>
 <body>
@@ -302,6 +353,7 @@ const page = `<!doctype html>
   </header>
   <div class="tabs">
     <div class="tab active" data-tab="commissions">修复委托</div>
+    <div class="tab" data-tab="schedule">修复排期</div>
     <div class="tab" data-tab="clients">客户档案</div>
     <div class="tab" data-tab="materials">材料台账</div>
     <div class="tab" data-tab="templates">步骤模板</div>
@@ -356,6 +408,23 @@ const page = `<!doctype html>
         <div class="grid" id="list"></div>
       </section>
     </div>
+  </div>
+
+  <div class="tab-content" id="tab-schedule">
+    <div class="schedule-stats" id="scheduleStats"></div>
+    <div class="schedule-filter">
+      <span class="filter-label">查看方式：</span>
+      <div class="schedule-view-toggle">
+        <button type="button" class="active" data-schedule-view="status">按状态</button>
+        <button type="button" data-schedule-view="owner">按负责人</button>
+      </div>
+      <span class="filter-label" style="margin-left:10px;">负责人筛选：</span>
+      <select id="ownerFilter">
+        <option value="">全部负责人</option>
+      </select>
+      <button type="button" class="small secondary" id="refreshScheduleBtn" style="margin-left:auto;">🔄 刷新</button>
+    </div>
+    <div id="scheduleView"></div>
   </div>
 
   <div class="tab-content" id="tab-clients">
@@ -504,14 +573,42 @@ const page = `<!doctype html>
     }
 
     document.querySelectorAll(".tab").forEach(tab => {
-      tab.onclick = () => {
+      tab.onclick = async () => {
         document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
         document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
         tab.classList.add("active");
         document.getElementById("tab-" + tab.dataset.tab).classList.add("active");
         currentTab = tab.dataset.tab;
+        if (currentTab === "schedule" && !scheduleData) {
+          await loadSchedule();
+        }
       };
     });
+
+    document.querySelectorAll("[data-schedule-view]").forEach(btn => {
+      btn.onclick = () => {
+        scheduleView = btn.dataset.scheduleView;
+        localStorage.setItem("scheduleView", scheduleView);
+        renderSchedule();
+      };
+    });
+
+    const ownerFilterSelect = document.getElementById("ownerFilter");
+    if (ownerFilterSelect) {
+      ownerFilterSelect.onchange = () => {
+        scheduleOwnerFilter = ownerFilterSelect.value;
+        localStorage.setItem("scheduleOwnerFilter", scheduleOwnerFilter);
+        renderSchedule();
+      };
+    }
+
+    const refreshScheduleBtn = document.getElementById("refreshScheduleBtn");
+    if (refreshScheduleBtn) {
+      refreshScheduleBtn.onclick = async () => {
+        await loadSchedule();
+        await loadAll();
+      };
+    }
 
     function renderCommissions() {
       const stats = document.querySelector("#stats");
@@ -884,6 +981,241 @@ const page = `<!doctype html>
       });
     }
 
+    function getDaysUntilDue(dueDateStr) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const due = new Date(dueDateStr);
+      due.setHours(0, 0, 0, 0);
+      const diffTime = due - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function getStatusBadgeText(category) {
+      switch(category) {
+        case "overdue": return "逾期";
+        case "dueSoon": return "即将到期";
+        case "onTrack": return "正常推进";
+        default: return "正常";
+      }
+    }
+
+    function renderStepsProgress(steps, currentStatus) {
+      const currentIdx = steps.indexOf(currentStatus);
+      return '<div class="steps-progress">' + steps.map((s, i) => {
+        let cls = "step-dot";
+        if (i < currentIdx) cls += " done";
+        else if (i === currentIdx) cls += " current";
+        return '<div class="' + cls + '" title="' + s + '"></div>';
+      }).join("") + '</div>';
+    }
+
+    function renderKanbanCard(item) {
+      const days = getDaysUntilDue(item.dueDate);
+      const daysText = days < 0 ? "逾期 " + Math.abs(days) + " 天" : days === 0 ? "今天到期" : "还剩 " + days + " 天";
+      const isExpanded = expandedScheduleCards.includes(item.id);
+      
+      return '<div class="kanban-card ' + (isExpanded ? 'expanded' : '') + '" data-schedule-id="' + item.id + '">' +
+        '<div class="kanban-card-header">' +
+          '<h4 class="kanban-card-title">' + item.roleName + '</h4>' +
+          '<span class="kanban-card-badge ' + item.statusCategory + '">' + getStatusBadgeText(item.statusCategory) + '</span>' +
+        '</div>' +
+        '<div class="kanban-card-meta">' + item.client + ' · ' + item.era + '</div>' +
+        '<div class="kanban-card-meta">负责人：' + item.owner + '</div>' +
+        '<div class="kanban-card-meta">截止：' + item.dueDate + ' (' + daysText + ')</div>' +
+        '<span class="kanban-card-status">当前：' + item.status + '</span>' +
+        renderStepsProgress(item.steps, item.status) +
+        (item.latestNote ? '<div class="kanban-card-meta" style="margin-top:6px;">备注：' + item.latestNote + '</div>' : '') +
+        '<div class="kanban-card-details">' +
+          '<label>更新步骤</label>' +
+          '<select data-schedule-step="' + item.id + '">' + 
+            item.steps.map(s => '<option value="' + s + '"' + (s === item.status ? ' selected' : '') + '>' + s + '</option>').join("") + 
+          '</select>' +
+          '<label>更新备注</label>' +
+          '<textarea data-schedule-note="' + item.id + '" placeholder="输入当前步骤的工作备注...">' + (item.latestNote || "") + '</textarea>' +
+          '<label>调整负责人</label>' +
+          '<input type="text" data-schedule-owner="' + item.id + '" value="' + item.owner + '">' +
+          '<label>调整截止日期</label>' +
+          '<input type="date" data-schedule-duedate="' + item.id + '" value="' + item.dueDate + '">' +
+          '<div class="kanban-card-actions">' +
+            '<button type="button" data-schedule-save="' + item.id + '">保存更新</button>' +
+            '<button type="button" class="secondary" data-schedule-cancel="' + item.id + '">取消</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
+
+    function renderScheduleByStatus(data, ownerFilter) {
+      let overdue = data.overdue;
+      let dueSoon = data.dueSoon;
+      let onTrack = data.onTrack;
+
+      if (ownerFilter) {
+        overdue = overdue.filter(i => i.owner === ownerFilter);
+        dueSoon = dueSoon.filter(i => i.owner === ownerFilter);
+        onTrack = onTrack.filter(i => i.owner === ownerFilter);
+      }
+
+      return '<div class="kanban">' +
+        '<div class="kanban-column overdue">' +
+          '<div class="kanban-column-header">' +
+            '<h3>⚠️ 逾期</h3>' +
+            '<span class="kanban-count">' + overdue.length + '</span>' +
+          '</div>' +
+          (overdue.length ? overdue.map(renderKanbanCard).join("") : '<div class="kanban-empty">暂无逾期任务</div>') +
+        '</div>' +
+        '<div class="kanban-column due-soon">' +
+          '<div class="kanban-column-header">' +
+            '<h3>⏰ 三天内到期</h3>' +
+            '<span class="kanban-count">' + dueSoon.length + '</span>' +
+          '</div>' +
+          (dueSoon.length ? dueSoon.map(renderKanbanCard).join("") : '<div class="kanban-empty">暂无即将到期任务</div>') +
+        '</div>' +
+        '<div class="kanban-column on-track">' +
+          '<div class="kanban-column-header">' +
+            '<h3>✅ 正常推进</h3>' +
+            '<span class="kanban-count">' + onTrack.length + '</span>' +
+          '</div>' +
+          (onTrack.length ? onTrack.map(renderKanbanCard).join("") : '<div class="kanban-empty">暂无正常推进任务</div>') +
+        '</div>' +
+      '</div>';
+    }
+
+    function renderScheduleByOwner(data, ownerFilter) {
+      let owners = Object.keys(data.byOwner);
+      if (ownerFilter) {
+        owners = owners.filter(o => o === ownerFilter);
+      }
+      owners.sort();
+
+      if (!owners.length) {
+        return '<div class="kanban-empty" style="padding:60px 20px;">暂无排期数据</div>';
+      }
+
+      return owners.map(owner => {
+        const ownerData = data.byOwner[owner];
+        const stats = data.stats.byOwner[owner];
+        return '<div class="owner-section">' +
+          '<div class="owner-header">' +
+            '<h4>👤 ' + owner + '</h4>' +
+            '<div class="owner-stats">' +
+              '<span>共 <strong>' + stats.total + '</strong> 项</span>' +
+              '<span class="overdue">逾期 ' + stats.overdue + '</span>' +
+              '<span class="due-soon">即将到期 ' + stats.dueSoon + '</span>' +
+              '<span class="on-track">正常 ' + stats.onTrack + '</span>' +
+            '</div>' +
+          '</div>' +
+          renderScheduleByStatus({
+            overdue: ownerData.overdue,
+            dueSoon: ownerData.dueSoon,
+            onTrack: ownerData.onTrack
+          }, null) +
+        '</div>';
+      }).join("");
+    }
+
+    function renderScheduleStats(data) {
+      const stats = data.stats;
+      return '<div class="stat"><span>进行中委托</span><strong>' + stats.total + '</strong></div>' +
+        '<div class="stat overdue"><span>逾期</span><strong>' + stats.overdue + '</strong></div>' +
+        '<div class="stat due-soon"><span>三天内到期</span><strong>' + stats.dueSoon + '</strong></div>' +
+        '<div class="stat on-track"><span>正常推进</span><strong>' + stats.onTrack + '</strong></div>';
+    }
+
+    function renderOwnerFilter(data) {
+      const select = document.getElementById("ownerFilter");
+      if (!select) return;
+      const owners = Object.keys(data.byOwner).sort();
+      select.innerHTML = '<option value="">全部负责人</option>' + 
+        owners.map(o => '<option value="' + o + '"' + (o === scheduleOwnerFilter ? ' selected' : '') + '>' + o + '</option>').join("");
+    }
+
+    function renderSchedule() {
+      if (!scheduleData) return;
+
+      const statsEl = document.getElementById("scheduleStats");
+      const viewEl = document.getElementById("scheduleView");
+      
+      if (statsEl) statsEl.innerHTML = renderScheduleStats(scheduleData);
+      
+      renderOwnerFilter(scheduleData);
+
+      if (viewEl) {
+        if (scheduleView === "status") {
+          viewEl.innerHTML = renderScheduleByStatus(scheduleData, scheduleOwnerFilter);
+        } else {
+          viewEl.innerHTML = renderScheduleByOwner(scheduleData, scheduleOwnerFilter);
+        }
+      }
+
+      document.querySelectorAll("[data-schedule-view]").forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.scheduleView === scheduleView);
+      });
+
+      bindScheduleEvents();
+    }
+
+    async function loadSchedule() {
+      try {
+        scheduleData = await api("/api/schedule");
+        renderSchedule();
+      } catch (e) {
+        console.error("加载排期数据失败:", e);
+      }
+    }
+
+    function bindScheduleEvents() {
+      document.querySelectorAll("[data-schedule-id]").forEach(card => {
+        card.onclick = (e) => {
+          if (e.target.closest(".kanban-card-details") || e.target.tagName === "BUTTON" || e.target.tagName === "SELECT" || e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+            return;
+          }
+          const id = card.dataset.scheduleId;
+          if (expandedScheduleCards.includes(id)) {
+            expandedScheduleCards = expandedScheduleCards.filter(i => i !== id);
+          } else {
+            expandedScheduleCards.push(id);
+          }
+          localStorage.setItem("expandedScheduleCards", JSON.stringify(expandedScheduleCards));
+          card.classList.toggle("expanded");
+        };
+      });
+
+      document.querySelectorAll("[data-schedule-save]").forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.scheduleSave;
+          const step = document.querySelector('[data-schedule-step="' + id + '"]').value;
+          const note = document.querySelector('[data-schedule-note="' + id + '"]').value.trim();
+          const owner = document.querySelector('[data-schedule-owner="' + id + '"]').value.trim();
+          const dueDate = document.querySelector('[data-schedule-duedate="' + id + '"]').value;
+
+          if (!owner) return alert("负责人不能为空");
+          if (!dueDate) return alert("截止日期不能为空");
+
+          try {
+            await api('/api/commissions/' + id + '/schedule', { 
+              method:'PUT', 
+              body: JSON.stringify({ status: step, note: note || "步骤更新", owner, dueDate }) 
+            });
+            await Promise.all([loadSchedule(), loadAll()]);
+          } catch (e) {
+            alert(e.message);
+          }
+        };
+      });
+
+      document.querySelectorAll("[data-schedule-cancel]").forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.scheduleCancel;
+          expandedScheduleCards = expandedScheduleCards.filter(i => i !== id);
+          localStorage.setItem("expandedScheduleCards", JSON.stringify(expandedScheduleCards));
+          const card = document.querySelector('[data-schedule-id="' + id + '"]');
+          if (card) card.classList.remove("expanded");
+        };
+      });
+    }
+
     function render() {
       renderCommissions();
       renderClientSelect();
@@ -894,6 +1226,7 @@ const page = `<!doctype html>
       renderCommissionStepList();
       renderTemplates();
       renderTemplateStepList();
+      if (scheduleData) renderSchedule();
     }
 
     async function loadAll() {
@@ -902,6 +1235,9 @@ const page = `<!doctype html>
       clients = cl;
       materials = m;
       stepTemplates = t;
+      if (currentTab === "schedule") {
+        await loadSchedule();
+      }
       render();
     }
 
@@ -1139,6 +1475,10 @@ const page = `<!doctype html>
       });
     }
 
+    let scheduleData = null;
+    let scheduleView = localStorage.getItem("scheduleView") || "status";
+    let scheduleOwnerFilter = localStorage.getItem("scheduleOwnerFilter") || "";
+    let expandedScheduleCards = JSON.parse(localStorage.getItem("expandedScheduleCards") || "[]");
     let currentImageCommissionId = null;
     let currentImageStage = "before";
     let currentImages = { before: [], during: [], after: [] };
@@ -1650,6 +1990,111 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 404, { error: "image_not_found" });
     }
     
+    if (req.method === "GET" && url.pathname === "/api/schedule") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const threeDaysLater = new Date(today);
+      threeDaysLater.setDate(today.getDate() + 3);
+
+      const grouped = {
+        overdue: [],
+        dueSoon: [],
+        onTrack: [],
+        byOwner: {}
+      };
+
+      for (const c of db.commissions) {
+        if (!c.dueDate || c.status === "交付") continue;
+        
+        const dueDate = new Date(c.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        
+        let statusCategory = "onTrack";
+        if (dueDate < today) {
+          statusCategory = "overdue";
+        } else if (dueDate <= threeDaysLater) {
+          statusCategory = "dueSoon";
+        }
+
+        const item = {
+          id: c.id,
+          roleName: c.roleName,
+          client: c.client,
+          owner: c.owner,
+          dueDate: c.dueDate,
+          status: c.status,
+          statusCategory,
+          era: c.era,
+          damage: c.damage,
+          steps: c.steps || defaultSteps,
+          records: c.records || [],
+          latestNote: c.records && c.records.length ? c.records[c.records.length - 1].note : ""
+        };
+
+        grouped[statusCategory].push(item);
+
+        if (!grouped.byOwner[c.owner]) {
+          grouped.byOwner[c.owner] = { overdue: [], dueSoon: [], onTrack: [] };
+        }
+        grouped.byOwner[c.owner][statusCategory].push(item);
+      }
+
+      Object.values(grouped.byOwner).forEach(ownerGroup => {
+        ownerGroup.overdue.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+        ownerGroup.dueSoon.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+        ownerGroup.onTrack.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      });
+
+      grouped.overdue.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      grouped.dueSoon.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      grouped.onTrack.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+      grouped.stats = {
+        total: grouped.overdue.length + grouped.dueSoon.length + grouped.onTrack.length,
+        overdue: grouped.overdue.length,
+        dueSoon: grouped.dueSoon.length,
+        onTrack: grouped.onTrack.length,
+        byOwner: {}
+      };
+
+      for (const owner of Object.keys(grouped.byOwner)) {
+        grouped.stats.byOwner[owner] = {
+          total: grouped.byOwner[owner].overdue.length + grouped.byOwner[owner].dueSoon.length + grouped.byOwner[owner].onTrack.length,
+          overdue: grouped.byOwner[owner].overdue.length,
+          dueSoon: grouped.byOwner[owner].dueSoon.length,
+          onTrack: grouped.byOwner[owner].onTrack.length
+        };
+      }
+
+      return sendJson(res, 200, grouped);
+    }
+
+    const scheduleUpdateMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/schedule$/);
+    if (scheduleUpdateMatch && req.method === "PUT") {
+      const commission = db.commissions.find(item => item.id === scheduleUpdateMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const input = await body(req);
+      if (input.status !== undefined) {
+        commission.status = input.status;
+        commission.records.push({ 
+          at: new Date().toISOString(), 
+          step: input.status, 
+          note: input.note || "步骤更新" 
+        });
+      }
+      if (input.owner !== undefined) {
+        commission.owner = input.owner;
+      }
+      if (input.dueDate !== undefined) {
+        commission.dueDate = input.dueDate;
+      }
+      if (input.remark !== undefined) {
+        commission.remark = input.remark;
+      }
+      await saveDb(db);
+      return sendJson(res, 200, commission);
+    }
+
     sendJson(res, 404, { error: "not_found" });
   } catch (error) {
     sendJson(res, 500, { error: error.message });
