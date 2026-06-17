@@ -542,8 +542,53 @@
         "during": [],
         "after": []
       },
-      "quotes": [],
-      "currentQuoteId": ""
+      "quotes": [
+        {
+          "id": "Q-1781705495836-mwxb",
+          "version": 1,
+          "status": "draft",
+          "items": [
+            {
+              "id": "QI-1781705495836-0",
+              "description": "刀枪把子断裂断裂修复",
+              "quantity": 1,
+              "unitPrice": 500,
+              "amount": 500
+            },
+            {
+              "id": "QI-1781705495836-1",
+              "description": "刀柄装饰配补",
+              "quantity": 1,
+              "unitPrice": 120,
+              "amount": 120
+            },
+            {
+              "id": "QI-1781705495836-2",
+              "description": "绿色颜料需调配补色",
+              "quantity": 1,
+              "unitPrice": 80,
+              "amount": 80
+            },
+            {
+              "id": "QI-1781705495836-3",
+              "description": "薄驴皮补片加固",
+              "quantity": 1,
+              "unitPrice": 120,
+              "amount": 120
+            }
+          ],
+          "laborCost": 1250,
+          "materialCost": 468,
+          "totalAmount": 2538,
+          "estimatedDays": 7,
+          "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约7天",
+          "createdAt": "2026-06-17T14:11:35.836Z",
+          "confirmedAt": null,
+          "createdBy": "",
+          "previousVersionId": ""
+        }
+      ],
+      "currentQuoteId": "Q-1781705495836-mwxb"
     },
     {
       "id": "SP-006",

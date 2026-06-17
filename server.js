@@ -2146,8 +2146,18 @@ const page = `<!doctype html>
         const a = document.createElement("a");
         a.href = url;
         const disposition = res.headers.get("Content-Disposition");
-        const match = disposition && disposition.match(/filename="?([^"]+)"?/);
-        a.download = match ? match[1] : "shadow-puppet-commissions-" + new Date().toISOString().slice(0, 10) + ".json";
+        let filename = null;
+        if (disposition) {
+          const idx1 = disposition.indexOf('filename="');
+          if (idx1 >= 0) {
+            const idx2 = disposition.indexOf('"', idx1 + 10);
+            if (idx2 >= 0) filename = disposition.substring(idx1 + 10, idx2);
+          } else {
+            const idx3 = disposition.indexOf("filename=");
+            if (idx3 >= 0) filename = disposition.substring(idx3 + 9).trim();
+          }
+        }
+        a.download = filename || "shadow-puppet-commissions-" + new Date().toISOString().slice(0, 10) + ".json";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -2652,27 +2662,332 @@ const page = `<!doctype html>
       quoteHistory = [];
     }
 
+    const DAMAGE_RULES = [
+      { keywords: ["污渍", "灰尘", "霉斑", "发霉", "脏", "污垢", "尘垢"], level: "simple", basePrice: 150, label: "清洁除污" },
+      { keywords: ["褪色", "变色", "发暗", "掉色", "失去光泽"], level: "simple", basePrice: 180, label: "色泽恢复" },
+      { keywords: ["小裂", "微裂", "细纹", "裂纹", "裂痕", "轻微开裂"], level: "medium", basePrice: 250, label: "裂纹粘合" },
+      { keywords: ["开裂", "撕裂", "撕开", "裂缝"], level: "medium", basePrice: 350, label: "开裂修复" },
+      { keywords: ["破损", "破洞", "穿孔", "残缺"], level: "medium", basePrice: 400, label: "破损补片" },
+      { keywords: ["断裂", "折断", "断开", "断成"], level: "complex", basePrice: 500, label: "断裂修复" },
+      { keywords: ["缺角", "缺口", "边角缺损", "角缺失"], level: "complex", basePrice: 450, label: "缺角补片" },
+      { keywords: ["磨损", "磨蚀", "磨破", "摩擦损耗"], level: "medium", basePrice: 300, label: "磨损修复" },
+      { keywords: ["虫蛀", "蛀洞", "虫蚀", "鼠咬"], level: "complex", basePrice: 450, label: "虫蛀修复" },
+      { keywords: ["变形", "翘曲", "起翘", "卷曲", "不平"], level: "medium", basePrice: 280, label: "平整校正" },
+      { keywords: ["脱胶", "开胶", "脱层", "分层"], level: "simple", basePrice: 200, label: "脱胶重粘" }
+    ];
+
+    const SMALL_PART_KEYWORDS = ["珠", "饰珠", "珍珠", "扣", "铆钉", "钉", "小饰", "流苏", "穗", "线", "绳"];
+    const MEDIUM_PART_KEYWORDS = ["头饰", "发饰", "帽子", "冠", "簪", "钗", "环", "佩", "带", "腰带", "衣袖", "袖口", "领"];
+    const LARGE_PART_KEYWORDS = ["靠旗", "旗杆", "兵器", "武器", "扇子", "折扇", "伞", "车", "马", "座椅", "大型装饰"];
+
+    function parseChineseNumber(str) {
+      const map = { "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10, "百": 100, "千": 1000 };
+      let n = 0, temp = 0;
+      for (let i = 0; i < str.length; i++) {
+        const c = str[i];
+        if (map[c] !== undefined) {
+          if (map[c] >= 100) {
+            temp = (temp || 1) * map[c];
+            n += temp; temp = 0;
+          } else if (map[c] >= 10) {
+            temp = (temp || 1) * map[c];
+          } else {
+            temp = map[c];
+          }
+        }
+      }
+      return n + temp || 0;
+    }
+
+    function parseQuantity(text) {
+      if (!text) return 1;
+      const unitChars = ["个", "粒", "颗", "件", "片", "块", "只", "条", "根", "副", "套", "组"];
+      const hasUnit = unitChars.some(u => text.includes(u));
+      if (!hasUnit) return 1;
+      const digits = "0123456789";
+      let digitStr = "";
+      for (const c of text) {
+        if (digits.includes(c)) digitStr += c;
+      }
+      if (digitStr) return parseInt(digitStr);
+      const vagueQtyWords = ["数", "若干", "多", "几个", "数个"];
+      for (const w of vagueQtyWords) {
+        if (text.includes(w)) return 3;
+      }
+      const cnNums = ["一", "二", "两", "三", "四", "五", "六", "七", "八", "九", "十"];
+      let foundCn = "";
+      for (const c of text) {
+        if (cnNums.includes(c) || c === "百" || c === "千") {
+          foundCn += c;
+        }
+      }
+      if (foundCn) return parseChineseNumber(foundCn) || 1;
+      return 1;
+    }
+
+    function classifyPartSize(desc) {
+      if (!desc) return { size: "medium", price: 120 };
+      for (const kw of LARGE_PART_KEYWORDS) {
+        if (desc.includes(kw)) return { size: "large", price: 300 };
+      }
+      for (const kw of SMALL_PART_KEYWORDS) {
+        if (desc.includes(kw)) return { size: "small", price: 50 };
+      }
+      for (const kw of MEDIUM_PART_KEYWORDS) {
+        if (desc.includes(kw)) return { size: "medium", price: 150 };
+      }
+      return { size: "medium", price: 120 };
+    }
+
+    const COLOR_RULES = [
+      { keywords: ["局部", "小面积", "点补", "小范围", "局部补"], level: "partial", basePrice: 80, perColor: 40 },
+      { keywords: ["大面积", "较多", "范围大", "大块", "大片"], level: "large", basePrice: 200, perColor: 80 },
+      { keywords: ["重绘", "全部", "整套", "整体重绘", "全面"], level: "full", basePrice: 400, perColor: 120 }
+    ];
+    const SPECIAL_PIGMENT_MARKUP = ["矿物", "石青", "石绿", "朱砂", "石黄", "雄黄", "靛蓝", "天然"];
+
+    const REINFORCE_RULES = [
+      { keywords: ["骨胶"], name: "骨胶加固", basePrice: 80 },
+      { keywords: ["鱼鳔胶", "鱼胶"], name: "鱼鳔胶加固", basePrice: 120 },
+      { keywords: ["托裱", "裱褙", "装裱"], name: "托裱加固", basePrice: 250 },
+      { keywords: ["衬纸", "内衬", "纸衬"], name: "衬纸加固", basePrice: 150 },
+      { keywords: ["绢", "绫", "锦绫"], name: "绢绫托裱", basePrice: 350 },
+      { keywords: ["丝线", "线缝", "缝线", "缝制"], name: "缝线加固", basePrice: 100 }
+    ];
+
+    const MATERIAL_PRICE_MAP = {
+      "薄驴皮补片": { unit: 180, type: "repair" },
+      "朱砂矿物颜料": { unit: 80, type: "pigment" },
+      "石黄矿物颜料": { unit: 60, type: "pigment" },
+      "鱼鳔胶": { unit: 50, type: "adhesive" },
+      "骨胶": { unit: 30, type: "adhesive" }
+    };
+
+    function splitTextSmart(text) {
+      if (!text) return [];
+      const SEP = "__SPLIT_MARK__";
+      let normalized = text.split("\\r").join(SEP).split("\\n").join(SEP);
+      const separators = [",", "，", "。", "、", ";", "；"];
+      for (const s of separators) {
+        normalized = normalized.split(s).join(SEP);
+      }
+      return normalized.split(SEP).filter(p => p.trim());
+    }
+
+    function analyzeDamage(damageText) {
+      const items = [];
+      let totalDays = 0;
+      if (!damageText || damageText === "-") return { items, totalDays };
+
+      const parts = splitTextSmart(damageText);
+      for (const part of parts) {
+        const text = part.trim();
+        if (!text) continue;
+        let matched = null;
+        for (const rule of DAMAGE_RULES) {
+          if (rule.keywords.some(kw => text.includes(kw))) {
+            matched = rule;
+            break;
+          }
+        }
+        if (matched) {
+          items.push({
+            description: text + matched.label,
+            quantity: 1,
+            unitPrice: matched.basePrice,
+            amount: matched.basePrice
+          });
+          totalDays += matched.level === "simple" ? 1 : matched.level === "medium" ? 2 : 3;
+        } else {
+          items.push({
+            description: text + "修复",
+            quantity: 1,
+            unitPrice: 250,
+            amount: 250
+          });
+          totalDays += 2;
+        }
+      }
+      return { items, totalDays };
+    }
+
+    function analyzeMissingParts(missingText) {
+      const items = [];
+      let materialCost = 0;
+      let totalDays = 0;
+      if (!missingText || missingText === "-") return { items, materialCost, totalDays };
+
+      const parts = splitTextSmart(missingText);
+      for (const part of parts) {
+        const text = part.trim();
+        if (!text) continue;
+        const qty = parseQuantity(text);
+        const { size, price } = classifyPartSize(text);
+        const unitPrice = price;
+        const amount = qty * unitPrice;
+        items.push({
+          description: text + "配补",
+          quantity: qty,
+          unitPrice: unitPrice,
+          amount: amount
+        });
+        materialCost += Math.round(amount * 0.35);
+        totalDays += size === "small" ? 1 : size === "medium" ? 2 : 3;
+      }
+      return { items, materialCost, totalDays };
+    }
+
+    function analyzeColorNotes(colorText) {
+      const items = [];
+      let materialCost = 0;
+      let totalDays = 0;
+      if (!colorText || colorText === "-") return { items, materialCost, totalDays };
+
+      const parts = splitTextSmart(colorText);
+      for (const part of parts) {
+        const text = part.trim();
+        if (!text) continue;
+        let matched = null;
+        for (const rule of COLOR_RULES) {
+          if (rule.keywords.some(kw => text.includes(kw))) {
+            matched = rule;
+            break;
+          }
+        }
+        if (!matched) matched = COLOR_RULES[0];
+        let price = matched.basePrice;
+        const hasSpecial = SPECIAL_PIGMENT_MARKUP.some(kw => text.includes(kw));
+        if (hasSpecial) price = Math.round(price * 1.4);
+        const colorKeywords = ["石青", "石绿", "朱砂", "石黄", "雄黄", "靛蓝", "红", "绿", "蓝", "黄", "黑", "白", "紫", "粉", "金", "银"];
+        const colorCount = colorKeywords.filter(kw => text.includes(kw)).length;
+        if (colorCount > 1) price += (colorCount - 1) * matched.perColor;
+        items.push({
+          description: text + "补色",
+          quantity: 1,
+          unitPrice: price,
+          amount: price
+        });
+        materialCost += Math.round(price * 0.4);
+        totalDays += matched.level === "partial" ? 1 : matched.level === "large" ? 3 : 5;
+      }
+      return { items, materialCost, totalDays };
+    }
+
+    function analyzeReinforcement(reinforceText, materialsArr) {
+      const items = [];
+      let materialCost = 0;
+      let totalDays = 0;
+      if ((!reinforceText || reinforceText === "-") && (!materialsArr || materialsArr.length === 0)) {
+        return { items, materialCost, totalDays };
+      }
+      if (reinforceText && reinforceText !== "-") {
+        const parts = splitTextSmart(reinforceText);
+        for (const part of parts) {
+          const text = part.trim();
+          if (!text) continue;
+          let matched = null;
+          for (const rule of REINFORCE_RULES) {
+            if (rule.keywords.some(kw => text.includes(kw))) {
+              matched = rule;
+              break;
+            }
+          }
+          if (matched) {
+            items.push({
+              description: matched.name,
+              quantity: 1,
+              unitPrice: matched.basePrice,
+              amount: matched.basePrice
+            });
+            materialCost += Math.round(matched.basePrice * 0.45);
+            totalDays += matched.basePrice >= 250 ? 2 : 1;
+          } else {
+            items.push({
+              description: text + "加固",
+              quantity: 1,
+              unitPrice: 120,
+              amount: 120
+            });
+            materialCost += 50;
+            totalDays += 1;
+          }
+        }
+      }
+      if (materialsArr && materialsArr.length > 0) {
+        for (const mat of materialsArr) {
+          const info = MATERIAL_PRICE_MAP[mat.name] || { unit: 50 };
+          const matCost = info.unit * (mat.quantity || 1);
+          materialCost += matCost;
+        }
+      }
+      return { items, materialCost, totalDays };
+    }
+
+    function generateSmartQuote(commission) {
+      const allItems = [];
+      let totalMaterialCost = 0;
+      let totalBaseDays = 0;
+
+      const damageResult = analyzeDamage(commission.damage);
+      allItems.push(...damageResult.items);
+      totalBaseDays += damageResult.totalDays;
+
+      const missingResult = analyzeMissingParts(commission.missingParts);
+      allItems.push(...missingResult.items);
+      totalMaterialCost += missingResult.materialCost;
+      totalBaseDays += missingResult.totalDays;
+
+      const colorResult = analyzeColorNotes(commission.colorNotes);
+      allItems.push(...colorResult.items);
+      totalMaterialCost += colorResult.materialCost;
+      totalBaseDays += colorResult.totalDays;
+
+      const reinforceResult = analyzeReinforcement(commission.reinforcement, commission.materials);
+      allItems.push(...reinforceResult.items);
+      totalMaterialCost += reinforceResult.materialCost;
+      totalBaseDays += reinforceResult.totalDays;
+
+      const itemsSum = allItems.reduce((s, it) => s + it.amount, 0);
+      const projectLaborCost = Math.round(itemsSum * 0.5);
+
+      const dailyLaborRate = 120;
+      const estimatedDays = Math.max(3, Math.min(30, totalBaseDays + (commission.dueDate ? 0 : 2)));
+      const durationLaborCost = estimatedDays * dailyLaborRate;
+
+      const laborCost = projectLaborCost + durationLaborCost;
+      const baseItemMaterialCost = Math.round(itemsSum * 0.2);
+      const materialCost = baseItemMaterialCost + totalMaterialCost;
+
+      let itemIdCounter = 0;
+      const finalItems = allItems.map(it => ({
+        id: "QI-auto-" + Date.now() + "-" + (itemIdCounter++),
+        description: it.description,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        amount: it.amount
+      }));
+
+      const remarkLines = [];
+      if (commission.damage && commission.damage !== "-") remarkLines.push("破损修复");
+      if (commission.missingParts && commission.missingParts !== "-") remarkLines.push("缺失零件配补");
+      if (commission.colorNotes && commission.colorNotes !== "-") remarkLines.push("补色重绘");
+      if (commission.reinforcement && commission.reinforcement !== "-") remarkLines.push("加固处理");
+      remarkLines.push("含人工及材料");
+
+      return {
+        items: finalItems,
+        laborCost: laborCost,
+        materialCost: materialCost,
+        estimatedDays: estimatedDays,
+        remark: remarkLines.join("、") + "，工期约" + estimatedDays + "天"
+      };
+    }
+
     async function createFirstQuote() {
       const commission = commissions.find(c => c.id === currentQuoteCommissionId);
       if (!commission) return;
 
-      const defaultItems = [];
-      if (commission.damage) {
-        defaultItems.push({
-          description: commission.damage + "修复",
-          quantity: 1,
-          unitPrice: 200,
-          amount: 200
-        });
-      }
-
-      const quoteData = {
-        items: defaultItems,
-        laborCost: 300,
-        materialCost: 100,
-        estimatedDays: 7,
-        remark: "根据破损描述、缺失零件、补色记录和加固材料初步估算"
-      };
+      const quoteData = generateSmartQuote(commission);
 
       try {
         const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes", {
