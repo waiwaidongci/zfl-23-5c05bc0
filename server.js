@@ -2774,6 +2774,15 @@ const page = `<!doctype html>
       return normalized.split(SEP).filter(p => p.trim());
     }
 
+    function joinRepairLabel(text, label, keywords) {
+      for (const keyword of keywords) {
+        if (text.endsWith(keyword) && label.startsWith(keyword)) {
+          return text + label.slice(keyword.length);
+        }
+      }
+      return text + label;
+    }
+
     function analyzeDamage(damageText) {
       const items = [];
       let totalDays = 0;
@@ -2792,7 +2801,7 @@ const page = `<!doctype html>
         }
         if (matched) {
           items.push({
-            description: text + matched.label,
+            description: joinRepairLabel(text, matched.label, matched.keywords),
             quantity: 1,
             unitPrice: matched.basePrice,
             amount: matched.basePrice
