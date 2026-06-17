@@ -11,40 +11,6 @@
   ],
   "commissions": [
     {
-      "id": "SP-1781674639722",
-      "clientId": "CL-001",
-      "client": "洛川民俗馆",
-      "roleName": "测试旦角头饰",
-      "era": "清代",
-      "damage": "头饰脱落，颜色褪色",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [],
-      "owner": "李师傅",
-      "dueDate": "2026-07-15",
-      "status": "接收",
-      "steps": [
-        "接收",
-        "拆卸头饰",
-        "清洁",
-        "补片",
-        "头饰重绘",
-        "补色",
-        "组装头饰",
-        "交付"
-      ],
-      "templateId": "TPL-DANJIAO",
-      "templateName": "旦角头饰",
-      "records": [
-        {
-          "at": "2026-06-17T05:37:19.722Z",
-          "step": "接收",
-          "note": "登记委托"
-        }
-      ]
-    },
-    {
       "id": "SP-001",
       "clientId": "CL-001",
       "client": "洛川民俗馆",
