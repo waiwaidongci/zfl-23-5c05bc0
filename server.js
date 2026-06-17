@@ -18,12 +18,24 @@ const requiredCommissionFields = ["roleName", "era", "damage", "owner", "dueDate
 
 function validateCommission(commission, existingCommissions, allSteps) {
   const issues = [];
+
+  if (!commission || typeof commission !== "object" || Array.isArray(commission)) {
+    issues.push({ type: "notAnObject", value: String(commission) });
+    return issues;
+  }
+
   const missingFields = [];
 
   for (const field of requiredCommissionFields) {
     if (!commission[field] || String(commission[field]).trim() === "") {
       missingFields.push(field);
     }
+  }
+
+  const hasClient = (commission.clientId && String(commission.clientId).trim() !== "") || 
+                    (commission.client && String(commission.client).trim() !== "");
+  if (!hasClient) {
+    missingFields.push("client");
   }
 
   if (missingFields.length > 0) {
@@ -1919,7 +1931,8 @@ const page = `<!doctype html>
       era: "年代",
       damage: "破损部位",
       owner: "负责人",
-      dueDate: "截止日期"
+      dueDate: "截止日期",
+      client: "客户"
     };
 
     function getCategoryLabel(cat) {
@@ -1970,6 +1983,10 @@ const page = `<!doctype html>
         }).join("");
 
         var issuesHtml = item.issues.map(function(issue) {
+          if (issue.type === "notAnObject") {
+            var displayVal = issue.value.length > 50 ? issue.value.substring(0, 50) + "..." : issue.value;
+            return '<div class="issue">⚠️ 数据格式错误：不是有效的委托对象（原始值：' + displayVal + '）</div>';
+          }
           if (issue.type === "missingFields") {
             var fields = issue.fields.map(function(f) {
               return '<span class="field-tag">' + (fieldNames[f] || f) + '</span>';
@@ -2001,8 +2018,22 @@ const page = `<!doctype html>
         }).join("");
 
         var c = item.data;
-        var metaText = (c.client || "未指定客户") + " · " + (c.era || "未知年代") + " · " + (c.owner || "未指定负责人");
-        var canOverwrite = item.categories.includes("duplicate") && 
+        var isNotAnObject = item.issues.some(function(issue) { return issue.type === "notAnObject"; });
+        var title, metaText, damageText, dueDateText;
+        
+        if (isNotAnObject) {
+          title = "无效数据条目";
+          metaText = "第 " + (item.index + 1) + " 条数据格式错误";
+          damageText = "";
+          dueDateText = "";
+        } else {
+          title = c.roleName || "未命名角色";
+          metaText = (c.client || "未指定客户") + " · " + (c.era || "未知年代") + " · " + (c.owner || "未指定负责人");
+          damageText = c.damage ? '<div><b>破损：</b>' + c.damage + '</div>' : "";
+          dueDateText = c.dueDate ? '<div class="import-item-meta" style="margin-top:4px;">截止日期：' + c.dueDate + '</div>' : "";
+        }
+
+        var canOverwrite = !isNotAnObject && item.categories.includes("duplicate") && 
           !item.categories.includes("missingFields") && 
           !item.categories.includes("invalidSteps");
 
@@ -2010,12 +2041,12 @@ const page = `<!doctype html>
 
         var html = '<div class="import-item">' +
           '<div class="import-item-header">' +
-            '<h4 class="import-item-title">' + (c.roleName || "未命名角色") + '</h4>' +
+            '<h4 class="import-item-title">' + title + '</h4>' +
             '<div class="import-item-badges">' + badges + '</div>' +
           '</div>' +
           '<div class="import-item-meta">' + metaText + '</div>' +
-          (c.damage ? '<div><b>破损：</b>' + c.damage + '</div>' : "") +
-          (c.dueDate ? '<div class="import-item-meta" style="margin-top:4px;">截止日期：' + c.dueDate + '</div>' : "") +
+          damageText +
+          dueDateText +
           (issuesHtml ? '<div class="import-item-issues">' + issuesHtml + '</div>' : "") +
           (canOverwrite ? 
             '<div class="import-item-actions">' +
@@ -2232,7 +2263,8 @@ const server = http.createServer(async (req, res) => {
         const issues = validateCommission(item, db.commissions, allSteps);
         
         const categories = [];
-        const hasBlockingIssues = issues.some(issue => 
+        const hasNotAnObject = issues.some(issue => issue.type === "notAnObject");
+        const hasBlockingIssues = hasNotAnObject || issues.some(issue => 
           issue.type === "missingFields" || 
           issue.type === "invalidStep" || 
           issue.type === "invalidRecordStep" ||
@@ -2242,7 +2274,10 @@ const server = http.createServer(async (req, res) => {
           issue.type === "invalidMaterialQuantity"
         );
 
-        if (!hasBlockingIssues) {
+        if (hasNotAnObject) {
+          categories.push("invalidSteps");
+          preview.categories.invalidSteps.push(i);
+        } else if (!hasBlockingIssues) {
           const hasDuplicate = issues.some(issue => issue.type === "duplicate");
           if (hasDuplicate) {
             categories.push("duplicate");
@@ -2284,9 +2319,10 @@ const server = http.createServer(async (req, res) => {
           preview.categories.valid.push(i);
         }
 
+        const safeData = hasNotAnObject ? { _raw: String(item) } : item;
         preview.items.push({
           index: i,
-          data: item,
+          data: safeData,
           categories,
           issues
         });
@@ -2323,6 +2359,7 @@ const server = http.createServer(async (req, res) => {
 
           const issues = validateCommission(item.data, dbCopy.commissions, allSteps);
           const hasBlockingIssues = issues.some(issue => 
+            issue.type === "notAnObject" ||
             issue.type === "missingFields" || 
             issue.type === "invalidStep" || 
             issue.type === "invalidRecordStep" ||
