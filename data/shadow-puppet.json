@@ -1,0 +1,29 @@
+{
+  "commissions": [
+    {
+      "id": "SP-001",
+      "client": "洛川民俗馆",
+      "roleName": "武生靠旗",
+      "era": "民国早期",
+      "damage": "腿部开裂，靠旗缺角",
+      "missingParts": "右侧靠旗尖",
+      "colorNotes": "朱砂区域褪色",
+      "reinforcement": "薄驴皮补片",
+      "owner": "许岚",
+      "dueDate": "2026-06-28",
+      "status": "补片",
+      "records": [
+        {
+          "at": "2026-06-10T10:00:00.000Z",
+          "step": "接收",
+          "note": "登记尺寸和破损"
+        },
+        {
+          "at": "2026-06-12T14:30:00.000Z",
+          "step": "清洁",
+          "note": "完成低湿清洁"
+        }
+      ]
+    }
+  ]
+}
