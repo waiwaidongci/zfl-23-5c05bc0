@@ -10,9 +10,20 @@ const port = Number(process.env.PORT || 3023);
 const steps = ["接收", "清洁", "补片", "补色", "交付"];
 
 const seed = {
+  clients: [
+    {
+      id: "CL-001",
+      name: "洛川民俗馆",
+      contact: "张馆长",
+      phone: "0911-3821234",
+      address: "陕西省延安市洛川县凤栖街道",
+      remark: "长期合作客户，主要修复民国时期皮影"
+    }
+  ],
   commissions: [
     {
       id: "SP-001",
+      clientId: "CL-001",
       client: "洛川民俗馆",
       roleName: "武生靠旗",
       era: "民国早期",
@@ -139,6 +150,17 @@ const page = `<!doctype html>
     .material-select-item input[type=number] { width:80px; }
     .mat-chips { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
     .mat-chip { background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:2px 8px; font-size:11px; color:var(--muted); }
+    .client-detail { background:#fff; border:1px solid var(--line); border-radius:8px; padding:20px; }
+    .client-detail h3 { margin:0 0 12px; font-size:18px; }
+    .client-info-row { display:grid; grid-template-columns:80px 1fr; gap:6px 12px; margin:4px 0; font-size:14px; }
+    .client-info-row .label { color:var(--muted); text-align:right; }
+    .client-commission-list { margin-top:16px; }
+    .client-commission-item { background:var(--bg); border-radius:6px; padding:10px 14px; margin:8px 0; }
+    .client-select-area { margin:8px 0; padding:10px; background:var(--bg); border-radius:6px; }
+    .client-new-fields { display:none; margin-top:8px; padding:10px; background:#fff; border:1px solid var(--line); border-radius:6px; }
+    .client-new-fields.visible { display:block; }
+    .client-new-fields label { margin:6px 0 3px; }
+    .client-new-fields input { padding:7px; }
     @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} }
   </style>
 </head>
@@ -149,6 +171,7 @@ const page = `<!doctype html>
   </header>
   <div class="tabs">
     <div class="tab active" data-tab="commissions">修复委托</div>
+    <div class="tab" data-tab="clients">客户档案</div>
     <div class="tab" data-tab="materials">材料台账</div>
   </div>
 
@@ -156,7 +179,19 @@ const page = `<!doctype html>
     <div class="two-col">
       <form id="form">
         <h2>新增修复委托</h2>
-        <label>委托人</label><input name="client" required>
+        <label>委托人</label>
+        <div class="client-select-area">
+          <select id="clientSelect" name="clientId">
+            <option value="">— 选择已有客户 —</option>
+          </select>
+          <div style="text-align:center;color:var(--muted);margin:6px 0;font-size:13px;">或录入新客户</div>
+          <input id="newClientName" name="client" placeholder="客户名称">
+          <div class="client-new-fields" id="clientNewFields">
+            <label>联系人</label><input name="clientContact" placeholder="联系人姓名">
+            <label>电话</label><input name="clientPhone" placeholder="联系电话">
+            <label>地址</label><input name="clientAddress" placeholder="地址">
+          </div>
+        </div>
         <label>皮影角色名称</label><input name="roleName" required>
         <label>年代估计</label><input name="era" required>
         <label>破损部位</label><textarea name="damage" required></textarea>
@@ -172,6 +207,24 @@ const page = `<!doctype html>
       <section>
         <div class="stats" id="stats"></div>
         <div class="grid" id="list"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-clients">
+    <div class="two-col">
+      <form id="clientForm">
+        <h2>新增客户</h2>
+        <label>客户名称</label><input name="name" required>
+        <label>联系人</label><input name="contact" placeholder="联系人姓名">
+        <label>电话</label><input name="phone" placeholder="联系电话">
+        <label>地址</label><input name="address" placeholder="地址">
+        <label>备注</label><textarea name="remark"></textarea>
+        <button type="submit">保存客户</button>
+      </form>
+      <section>
+        <div class="grid" id="clientList"></div>
+        <div id="clientDetail" style="display:none;margin-top:22px;"></div>
       </section>
     </div>
   </div>
@@ -206,7 +259,9 @@ const page = `<!doctype html>
     const steps = ${JSON.stringify(steps)};
     let commissions = [];
     let materials = [];
+    let clients = [];
     let currentTab = "commissions";
+    let selectedClientId = null;
 
     async function api(path, options) {
       const res = await fetch(path, options && options.body ? { ...options, headers:{ "Content-Type":"application/json" } } : options);
@@ -239,6 +294,118 @@ const page = `<!doctype html>
         await api('/api/commissions/'+id+'/records', { method:'POST', body: JSON.stringify({ step: document.querySelector('[data-step="'+id+'"]').value, note: document.querySelector('[data-note="'+id+'"]').value || "步骤完成" }) });
         await loadAll();
       });
+    }
+
+    function renderClientSelect() {
+      const select = document.getElementById("clientSelect");
+      const currentVal = select.value;
+      select.innerHTML = '<option value="">— 选择已有客户 —</option>' + clients.map(c => '<option value="'+c.id+'">'+c.name+(c.contact?' ('+c.contact+')':'')+'</option>').join("");
+      if (currentVal) select.value = currentVal;
+      const nameInput = document.getElementById("newClientName");
+      const newFields = document.getElementById("clientNewFields");
+      select.onchange = () => {
+        if (select.value) {
+          nameInput.value = "";
+          nameInput.removeAttribute("required");
+          newFields.classList.remove("visible");
+        } else {
+          nameInput.setAttribute("required", "required");
+        }
+      };
+      nameInput.oninput = () => {
+        if (nameInput.value.trim()) {
+          newFields.classList.add("visible");
+        } else {
+          newFields.classList.remove("visible");
+        }
+      };
+    }
+
+    function renderClients() {
+      const list = document.getElementById("clientList");
+      if (!clients.length) {
+        list.innerHTML = '<div class="card meta">暂无客户档案</div>';
+        return;
+      }
+      list.innerHTML = clients.map(c => {
+        return '<div class="card" style="cursor:pointer;" data-client-id="'+c.id+'">' +
+          '<h3 style="margin:0;font-size:16px;">'+c.name+'</h3>' +
+          (c.contact ? '<div class="meta">联系人：'+c.contact+'</div>' : '') +
+          (c.phone ? '<div class="meta">电话：'+c.phone+'</div>' : '') +
+          '<div class="meta">历史委托：<strong>'+c.commissionCount+'</strong> 条</div>' +
+          '</div>';
+      }).join("");
+      document.querySelectorAll("[data-client-id]").forEach(card => card.onclick = async () => {
+        selectedClientId = card.dataset.clientId;
+        await renderClientDetail(selectedClientId);
+      });
+    }
+
+    async function renderClientDetail(id) {
+      const detail = document.getElementById("clientDetail");
+      try {
+        const client = await api("/api/clients/" + id);
+        detail.style.display = "block";
+        detail.innerHTML = '<div class="client-detail">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<h3>'+client.name+'</h3>' +
+          '<button class="small secondary" id="editClientBtn">编辑</button>' +
+          '</div>' +
+          '<div class="client-info-row"><span class="label">联系人</span><span>'+(client.contact||'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">电话</span><span>'+(client.phone||'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">地址</span><span>'+(client.address||'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">备注</span><span>'+(client.remark||'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">委托数</span><span><strong>'+client.commissionCount+'</strong> 条</span></div>' +
+          '<div class="client-commission-list">' +
+          '<h4 style="margin:12px 0 8px;">关联修复记录</h4>' +
+          (client.commissions && client.commissions.length ? client.commissions.map(c =>
+            '<div class="client-commission-item">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<strong>'+c.roleName+'</strong>' +
+            '<span class="pill">'+c.status+'</span>' +
+            '</div>' +
+            '<div class="meta">'+c.era+' · 负责人：'+c.owner+' · 截止：'+c.dueDate+'</div>' +
+            '<div class="meta">破损：'+c.damage+'</div>' +
+            (c.records && c.records.length ? '<div class="meta" style="margin-top:4px;">'+c.records.map(r=>r.step+'：'+r.note).join(' → ')+'</div>' : '') +
+            '</div>'
+          ).join("") : '<div class="meta">暂无关联修复记录</div>') +
+          '</div>' +
+          '<div id="editClientForm" style="display:none;margin-top:16px;padding:16px;background:var(--bg);border-radius:6px;">' +
+          '<h4>编辑客户信息</h4>' +
+          '<label>名称</label><input id="editName" value="'+client.name+'">' +
+          '<label>联系人</label><input id="editContact" value="'+(client.contact||'')+'">' +
+          '<label>电话</label><input id="editPhone" value="'+(client.phone||'')+'">' +
+          '<label>地址</label><input id="editAddress" value="'+(client.address||'')+'">' +
+          '<label>备注</label><textarea id="editRemark">'+(client.remark||'')+'</textarea>' +
+          '<div style="display:flex;gap:8px;margin-top:10px;">' +
+          '<button id="saveClientBtn">保存修改</button>' +
+          '<button class="secondary" id="cancelEditBtn">取消</button>' +
+          '</div>' +
+          '</div>' +
+          '</div>';
+        document.getElementById("editClientBtn").onclick = () => {
+          document.getElementById("editClientForm").style.display = "block";
+        };
+        document.getElementById("cancelEditBtn").onclick = () => {
+          document.getElementById("editClientForm").style.display = "none";
+        };
+        document.getElementById("saveClientBtn").onclick = async () => {
+          await api("/api/clients/" + id, {
+            method: "PUT",
+            body: JSON.stringify({
+              name: document.getElementById("editName").value,
+              contact: document.getElementById("editContact").value,
+              phone: document.getElementById("editPhone").value,
+              address: document.getElementById("editAddress").value,
+              remark: document.getElementById("editRemark").value
+            })
+          });
+          await loadAll();
+          await renderClientDetail(id);
+        };
+      } catch (e) {
+        alert(e.message);
+      }
     }
 
     function renderMaterialSelect() {
@@ -301,13 +468,16 @@ const page = `<!doctype html>
 
     function render() {
       renderCommissions();
+      renderClientSelect();
+      renderClients();
       renderMaterialSelect();
       renderMaterials();
     }
 
     async function loadAll() {
-      const [c, m] = await Promise.all([api("/api/commissions"), api("/api/materials")]);
+      const [c, cl, m] = await Promise.all([api("/api/commissions"), api("/api/clients"), api("/api/materials")]);
       commissions = c;
+      clients = cl;
       materials = m;
       render();
     }
@@ -316,6 +486,16 @@ const page = `<!doctype html>
       event.preventDefault();
       const formData = new FormData(event.target);
       const data = Object.fromEntries(formData.entries());
+      const clientSelect = document.getElementById("clientSelect");
+      const newClientName = document.getElementById("newClientName");
+      if (clientSelect.value) {
+        data.clientId = clientSelect.value;
+        delete data.client;
+      } else if (newClientName.value.trim()) {
+        data.client = newClientName.value.trim();
+      } else {
+        return alert("请选择已有客户或输入新客户名称");
+      }
       const selectedMats = [];
       document.querySelectorAll('.material-select-item input[type="checkbox"]:checked').forEach(cb => {
         const qtyInput = document.querySelector('[data-qty="'+cb.value+'"]');
@@ -327,6 +507,20 @@ const page = `<!doctype html>
       data.materials = selectedMats;
       try {
         await api("/api/commissions", { method:"POST", body: JSON.stringify(data) });
+        event.target.reset();
+        document.getElementById("clientNewFields").classList.remove("visible");
+        await loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    document.querySelector("#clientForm").onsubmit = async event => {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const data = Object.fromEntries(formData.entries());
+      try {
+        await api("/api/clients", { method:"POST", body: JSON.stringify(data) });
         event.target.reset();
         await loadAll();
       } catch (e) {
@@ -362,9 +556,58 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type":"text/html; charset=utf-8" });
       return res.end(page);
     }
+    if (req.method === "GET" && url.pathname === "/api/clients") {
+      const clientsWithCount = db.clients.map(c => ({
+        ...c,
+        commissionCount: db.commissions.filter(com => com.clientId === c.id).length
+      }));
+      return sendJson(res, 200, clientsWithCount);
+    }
+    const clientMatch = url.pathname.match(/^\/api\/clients\/([^/]+)$/);
+    if (clientMatch && req.method === "GET") {
+      const client = db.clients.find(c => c.id === clientMatch[1]);
+      if (!client) return sendJson(res, 404, { error: "client_not_found" });
+      const relatedCommissions = db.commissions.filter(c => c.clientId === client.id);
+      return sendJson(res, 200, { ...client, commissionCount: relatedCommissions.length, commissions: relatedCommissions });
+    }
+    if (req.method === "POST" && url.pathname === "/api/clients") {
+      const input = await body(req);
+      const client = { id: `CL-${Date.now()}`, name: input.name, contact: input.contact || "", phone: input.phone || "", address: input.address || "", remark: input.remark || "" };
+      db.clients.unshift(client);
+      await saveDb(db);
+      return sendJson(res, 201, client);
+    }
+    if (clientMatch && req.method === "PUT") {
+      const client = db.clients.find(c => c.id === clientMatch[1]);
+      if (!client) return sendJson(res, 404, { error: "client_not_found" });
+      const input = await body(req);
+      if (input.name) client.name = input.name;
+      if (input.contact !== undefined) client.contact = input.contact;
+      if (input.phone !== undefined) client.phone = input.phone;
+      if (input.address !== undefined) client.address = input.address;
+      if (input.remark !== undefined) client.remark = input.remark;
+      await saveDb(db);
+      return sendJson(res, 200, client);
+    }
     if (req.method === "GET" && url.pathname === "/api/commissions") return sendJson(res, 200, db.commissions);
     if (req.method === "POST" && url.pathname === "/api/commissions") {
       const input = await body(req);
+      let clientId = input.clientId || "";
+      let clientName = input.client || "";
+      if (clientId) {
+        const existingClient = db.clients.find(c => c.id === clientId);
+        if (existingClient) clientName = existingClient.name;
+      } else if (clientName) {
+        const existingClient = db.clients.find(c => c.name === clientName);
+        if (existingClient) {
+          clientId = existingClient.id;
+          clientName = existingClient.name;
+        } else {
+          const newClient = { id: `CL-${Date.now()}`, name: clientName, contact: input.clientContact || "", phone: input.clientPhone || "", address: input.clientAddress || "", remark: "" };
+          db.clients.unshift(newClient);
+          clientId = newClient.id;
+        }
+      }
       const selectedMaterials = [];
       if (Array.isArray(input.materials)) {
         for (const m of input.materials) {
@@ -377,7 +620,7 @@ const server = http.createServer(async (req, res) => {
           }
         }
       }
-      const commission = { id: `SP-${Date.now()}`, client: input.client, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: "接收", records: [{ at: new Date().toISOString(), step: "接收", note: "登记委托" }] };
+      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: "接收", records: [{ at: new Date().toISOString(), step: "接收", note: "登记委托" }] };
       for (const m of selectedMaterials) {
         const mat = db.materials.find(item => item.id === m.materialId);
         if (mat) mat.stock -= m.quantity;

@@ -1,7 +1,18 @@
 {
+  "clients": [
+    {
+      "id": "CL-001",
+      "name": "洛川民俗馆",
+      "contact": "张馆长",
+      "phone": "0911-3821234",
+      "address": "陕西省延安市洛川县凤栖街道",
+      "remark": "长期合作客户，主要修复民国时期皮影"
+    }
+  ],
   "commissions": [
     {
       "id": "SP-001",
+      "clientId": "CL-001",
       "client": "洛川民俗馆",
       "roleName": "武生靠旗",
       "era": "民国早期",
