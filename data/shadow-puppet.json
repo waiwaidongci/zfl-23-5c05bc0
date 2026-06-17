@@ -49,7 +49,47 @@
         "补片",
         "补色",
         "交付"
-      ]
+      ],
+      "images": {
+        "before": [
+          {
+            "id": "IMG-1781677917196-h1j4so",
+            "filename": "/uploads/SP-001/before/105e0091-988b-468e-b049-8830b3bd99fd.jpg",
+            "originalName": "puppet.jpg",
+            "caption": "皮影整体外观",
+            "uploadedAt": "2026-06-17T06:31:57.196Z",
+            "size": 2708
+          },
+          {
+            "id": "IMG-1781677918209-qey9fw",
+            "filename": "/uploads/SP-001/before/53e344ee-0e73-4f6b-ad37-6e03d292d5be.jpg",
+            "originalName": "puppet.jpg",
+            "caption": "腿部破损细节",
+            "uploadedAt": "2026-06-17T06:31:58.209Z",
+            "size": 2723
+          }
+        ],
+        "during": [
+          {
+            "id": "IMG-1781677919230-uzuuwj",
+            "filename": "/uploads/SP-001/during/116ee263-e7af-4232-8321-e2cd1736b517.jpg",
+            "originalName": "repairing.jpg",
+            "caption": "正在进行补片修复",
+            "uploadedAt": "2026-06-17T06:31:59.230Z",
+            "size": 2468
+          }
+        ],
+        "after": [
+          {
+            "id": "IMG-1781677920239-wdbdvk",
+            "filename": "/uploads/SP-001/after/0523b7a7-acb1-4723-a1db-6324f57031f6.jpg",
+            "originalName": "finished.jpg",
+            "caption": "修复完成，焕然一新",
+            "uploadedAt": "2026-06-17T06:32:00.239Z",
+            "size": 2593
+          }
+        ]
+      }
     }
   ],
   "materials": [

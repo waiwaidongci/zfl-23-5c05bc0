@@ -1,13 +1,74 @@
 import http from "node:http";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { mkdir, readFile, writeFile, unlink, readdir, stat } from "node:fs/promises";
+import { existsSync, createReadStream } from "node:fs";
+import { dirname, join, extname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dbPath = join(__dirname, "data", "shadow-puppet.json");
+const uploadsDir = join(__dirname, "uploads");
 const port = Number(process.env.PORT || 3023);
 const defaultSteps = ["接收", "清洁", "补片", "补色", "交付"];
+const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+const maxFileSize = 10 * 1024 * 1024;
+
+async function ensureUploadsDir() {
+  if (!existsSync(uploadsDir)) await mkdir(uploadsDir, { recursive: true });
+}
+
+function parseMultipart(body, boundary) {
+  const parts = [];
+  const boundaryBuffer = Buffer.from("--" + boundary);
+  const endBoundaryBuffer = Buffer.from("--" + boundary + "--");
+  
+  let start = 0;
+  while (start < body.length) {
+    const boundaryIdx = body.indexOf(boundaryBuffer, start);
+    if (boundaryIdx === -1) break;
+    
+    const nextBoundaryIdx = body.indexOf(boundaryBuffer, boundaryIdx + boundaryBuffer.length);
+    const isEnd = body.indexOf(endBoundaryBuffer, boundaryIdx) === boundaryIdx;
+    if (isEnd) break;
+    
+    const partStart = boundaryIdx + boundaryBuffer.length + 2;
+    const partEnd = nextBoundaryIdx !== -1 ? nextBoundaryIdx - 2 : body.length;
+    
+    const headersEnd = body.indexOf("\r\n\r\n", partStart);
+    if (headersEnd === -1) break;
+    
+    const headersRaw = body.slice(partStart, headersEnd).toString("utf8");
+    const contentStart = headersEnd + 4;
+    const content = body.slice(contentStart, partEnd);
+    
+    const headers = {};
+    headersRaw.split("\r\n").forEach(line => {
+      const [key, val] = line.split(": ");
+      if (key && val) headers[key.toLowerCase()] = val;
+    });
+    
+    const disposition = headers["content-disposition"] || "";
+    const nameMatch = disposition.match(/name="([^"]+)"/);
+    const filenameMatch = disposition.match(/filename="([^"]+)"/);
+    
+    parts.push({
+      name: nameMatch ? nameMatch[1] : null,
+      filename: filenameMatch ? filenameMatch[1] : null,
+      contentType: headers["content-type"],
+      content
+    });
+    
+    start = nextBoundaryIdx !== -1 ? nextBoundaryIdx : body.length;
+  }
+  
+  return parts;
+}
+
+function sanitizeFilename(filename) {
+  const ext = extname(filename).toLowerCase();
+  const name = basename(filename, extname(filename)).replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, "_");
+  return `${name}${ext}`;
+}
 
 const seedTemplates = [
   { id: "TPL-DEFAULT", name: "标准流程", description: "通用五步修复流程", steps: ["接收", "清洁", "补片", "补色", "交付"] },
@@ -48,7 +109,12 @@ const seed = {
       records: [
         { at: "2026-06-10T10:00:00.000Z", step: "接收", note: "登记尺寸和破损" },
         { at: "2026-06-12T14:30:00.000Z", step: "清洁", note: "完成低湿清洁" }
-      ]
+      ],
+      images: {
+        before: [],
+        during: [],
+        after: []
+      }
     }
   ],
   materials: [
@@ -118,6 +184,14 @@ async function loadDb() {
         c.steps = [...defaultSteps];
         migrated = true;
       }
+      if (!c.images || typeof c.images !== "object") {
+        c.images = { before: [], during: [], after: [] };
+        migrated = true;
+      } else {
+        if (!Array.isArray(c.images.before)) { c.images.before = []; migrated = true; }
+        if (!Array.isArray(c.images.during)) { c.images.during = []; migrated = true; }
+        if (!Array.isArray(c.images.after)) { c.images.after = []; migrated = true; }
+      }
     }
   }
   if (migrated) await saveDb(db);
@@ -185,7 +259,40 @@ const page = `<!doctype html>
     .client-new-fields.visible { display:block; }
     .client-new-fields label { margin:6px 0 3px; }
     .client-new-fields input { padding:7px; }
-    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} }
+    .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
+    .modal-overlay.active { display:flex; }
+    .modal { background:#fff; border-radius:12px; width:90%; max-width:900px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; }
+    .modal-header { padding:18px 24px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; }
+    .modal-header h3 { margin:0; font-size:20px; }
+    .modal-close { background:none; border:0; font-size:28px; cursor:pointer; color:var(--muted); padding:0; line-height:1; }
+    .modal-body { padding:20px 24px; overflow-y:auto; }
+    .stage-tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:20px; }
+    .stage-tab { padding:10px 20px; background:var(--bg); border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; cursor:pointer; font-size:14px; position:relative; }
+    .stage-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .stage-tab .count { display:inline-block; margin-left:8px; padding:1px 8px; background:rgba(0,0,0,0.1); border-radius:999px; font-size:12px; }
+    .stage-tab.active .count { background:rgba(255,255,255,0.25); }
+    .stage-content { display:none; }
+    .stage-content.active { display:block; }
+    .image-upload-area { border:2px dashed var(--line); border-radius:8px; padding:30px; text-align:center; cursor:pointer; transition:all 0.2s; margin-bottom:20px; }
+    .image-upload-area:hover { border-color:var(--accent); background:var(--bg); }
+    .image-upload-area.dragover { border-color:var(--accent); background:var(--bg); }
+    .image-upload-area input { display:none; }
+    .image-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+    .image-card { background:var(--bg); border:1px solid var(--line); border-radius:8px; overflow:hidden; position:relative; }
+    .image-thumb { width:100%; height:140px; background:#eee; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .image-thumb img { width:100%; height:100%; object-fit:cover; }
+    .image-card-body { padding:10px; }
+    .image-card-body .filename { font-size:12px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:6px; }
+    .image-card-body textarea { width:100%; padding:6px; border:1px solid var(--line); border-radius:4px; font-size:12px; min-height:50px; resize:vertical; }
+    .image-card-body .date { font-size:11px; color:var(--muted); margin-top:6px; }
+    .image-actions { position:absolute; top:6px; right:6px; display:flex; gap:4px; }
+    .image-actions button { background:rgba(0,0,0,0.7); color:#fff; border:0; width:28px; height:28px; border-radius:4px; cursor:pointer; font-size:14px; padding:0; }
+    .image-actions button:hover { background:var(--accent); }
+    .empty-state { text-align:center; padding:40px 20px; color:var(--muted); }
+    .empty-state .icon { font-size:48px; margin-bottom:12px; opacity:0.5; }
+    .images-btn { margin-top:8px; background:var(--green); color:#fff; border:0; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; }
+    .images-btn:hover { opacity:0.9; }
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} }
   </style>
 </head>
 <body>
@@ -336,6 +443,46 @@ const page = `<!doctype html>
     </div>
   </div>
 
+  <div class="modal-overlay" id="imagesModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">影像档案</h3>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="stage-tabs" id="stageTabs">
+          <div class="stage-tab active" data-stage="before">修复前 <span class="count" id="count-before">0</span></div>
+          <div class="stage-tab" data-stage="during">修复中 <span class="count" id="count-during">0</span></div>
+          <div class="stage-tab" data-stage="after">修复后 <span class="count" id="count-after">0</span></div>
+        </div>
+        <div class="stage-content active" id="stage-before">
+          <div class="image-upload-area" data-upload="before">
+            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+            <div>📷 点击或拖拽上传修复前的图片</div>
+            <div class="meta" style="margin-top:6px;">支持 JPG、PNG、GIF、WebP，单张最大 10MB</div>
+          </div>
+          <div class="image-grid" id="grid-before"></div>
+        </div>
+        <div class="stage-content" id="stage-during">
+          <div class="image-upload-area" data-upload="during">
+            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+            <div>📷 点击或拖拽上传修复中的图片</div>
+            <div class="meta" style="margin-top:6px;">支持 JPG、PNG、GIF、WebP，单张最大 10MB</div>
+          </div>
+          <div class="image-grid" id="grid-during"></div>
+        </div>
+        <div class="stage-content" id="stage-after">
+          <div class="image-upload-area" data-upload="after">
+            <input type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+            <div>📷 点击或拖拽上传修复后的图片</div>
+            <div class="meta" style="margin-top:6px;">支持 JPG、PNG、GIF、WebP，单张最大 10MB</div>
+          </div>
+          <div class="image-grid" id="grid-after"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const defaultSteps = ${JSON.stringify(defaultSteps)};
     let commissions = [];
@@ -380,13 +527,23 @@ const page = `<!doctype html>
         const cSteps = c.steps || defaultSteps;
         const matChips = (c.materials && c.materials.length) ? c.materials.map(m => '<span class="mat-chip">'+m.name+' ×'+m.quantity+(m.batch?' ('+m.batch+')':'')+'</span>').join("") : '';
         const tplBadge = c.templateName ? '<span class="pill" style="margin-left:6px;background:var(--bg);">'+c.templateName+'</span>' : '';
-        return '<article class="card"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
+        const imgCounts = c.images ? {
+          before: c.images.before?.length || 0,
+          during: c.images.during?.length || 0,
+          after: c.images.after?.length || 0
+        } : { before:0, during:0, after:0 };
+        const totalImgs = imgCounts.before + imgCounts.during + imgCounts.after;
+        return '<article class="card"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
       }).join("");
       document.querySelectorAll("[data-step]").forEach(sel => sel.value = commissions.find(c => c.id === sel.dataset.step).status);
       document.querySelectorAll("[data-save]").forEach(btn => btn.onclick = async () => {
         const id = btn.dataset.save;
         await api('/api/commissions/'+id+'/records', { method:'POST', body: JSON.stringify({ step: document.querySelector('[data-step="'+id+'"]').value, note: document.querySelector('[data-note="'+id+'"]').value || "步骤完成" }) });
         await loadAll();
+      });
+      document.querySelectorAll("[data-images]").forEach(btn => btn.onclick = () => {
+        const id = btn.dataset.images;
+        openImagesModal(id);
       });
     }
 
@@ -982,6 +1139,216 @@ const page = `<!doctype html>
       });
     }
 
+    let currentImageCommissionId = null;
+    let currentImageStage = "before";
+    let currentImages = { before: [], during: [], after: [] };
+    let captionSaveTimers = {};
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+
+    function formatDate(isoStr) {
+      const d = new Date(isoStr);
+      return d.toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+    }
+
+    function openImagesModal(commissionId) {
+      const commission = commissions.find(c => c.id === commissionId);
+      if (!commission) return;
+      currentImageCommissionId = commissionId;
+      currentImageStage = "before";
+      document.getElementById("modalTitle").textContent = "影像档案 - " + commission.roleName;
+      document.getElementById("imagesModal").classList.add("active");
+      loadImages(commissionId);
+    }
+
+    function closeImagesModal() {
+      document.getElementById("imagesModal").classList.remove("active");
+      currentImageCommissionId = null;
+      currentImages = { before: [], during: [], after: [] };
+    }
+
+    async function loadImages(commissionId) {
+      try {
+        const data = await api("/api/commissions/" + commissionId + "/images");
+        currentImages = data || { before: [], during: [], after: [] };
+        updateStageCounts();
+        renderStage(currentImageStage);
+      } catch (e) {
+        alert("加载影像失败：" + e.message);
+      }
+    }
+
+    function updateStageCounts() {
+      document.getElementById("count-before").textContent = currentImages.before?.length || 0;
+      document.getElementById("count-during").textContent = currentImages.during?.length || 0;
+      document.getElementById("count-after").textContent = currentImages.after?.length || 0;
+    }
+
+    function renderStage(stage) {
+      const grid = document.getElementById("grid-" + stage);
+      const images = currentImages[stage] || [];
+      if (!images.length) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🖼️</div><div>暂无'+ (stage==="before"?"修复前":stage==="during"?"修复中":"修复后") +'图片</div><div class="meta" style="margin-top:8px;">点击上方区域上传图片</div></div>';
+        return;
+      }
+      grid.innerHTML = images.map(img => '\
+        <div class="image-card" data-image-id="' + img.id + '">\
+          <div class="image-actions">\
+            <button title="查看大图" data-view="' + img.id + '">🔍</button>\
+            <button title="删除图片" data-del="' + img.id + '">🗑️</button>\
+          </div>\
+          <div class="image-thumb">\
+            <img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">\
+          </div>\
+          <div class="image-card-body">\
+            <div class="filename" title="' + img.originalName + '">' + img.originalName + '</div>\
+            <textarea placeholder="添加图片说明..." data-caption="' + img.id + '">' + (img.caption || "") + '</textarea>\
+            <div class="date">' + formatDate(img.uploadedAt) + ' · ' + formatFileSize(img.size || 0) + '</div>\
+          </div>\
+        </div>\
+      ').join("");
+
+      grid.querySelectorAll("[data-caption]").forEach(ta => {
+        ta.oninput = () => {
+          const imgId = ta.dataset.caption;
+          if (captionSaveTimers[imgId]) clearTimeout(captionSaveTimers[imgId]);
+          captionSaveTimers[imgId] = setTimeout(() => {
+            saveCaption(imgId, ta.value.trim());
+          }, 800);
+        };
+      });
+
+      grid.querySelectorAll("[data-del]").forEach(btn => {
+        btn.onclick = async () => {
+          const imgId = btn.dataset.del;
+          if (!confirm("确定要删除这张图片吗？此操作不可恢复。")) return;
+          try {
+            await api("/api/commissions/" + currentImageCommissionId + "/images/" + imgId, { method: "DELETE" });
+            await loadImages(currentImageCommissionId);
+            await loadAll();
+          } catch (e) {
+            alert("删除失败：" + e.message);
+          }
+        };
+      });
+
+      grid.querySelectorAll("[data-view]").forEach(btn => {
+        btn.onclick = () => {
+          const imgId = btn.dataset.view;
+          let img = null;
+          for (const s of ["before", "during", "after"]) {
+            img = currentImages[s]?.find(i => i.id === imgId);
+            if (img) break;
+          }
+          if (img) window.open(img.filename, "_blank");
+        };
+      });
+    }
+
+    async function saveCaption(imageId, caption) {
+      try {
+        await api("/api/commissions/" + currentImageCommissionId + "/images/" + imageId, {
+          method: "PUT",
+          body: JSON.stringify({ caption })
+        });
+      } catch (e) {
+        console.error("保存说明失败:", e);
+      }
+    }
+
+    async function uploadFiles(stage, files) {
+      const validFiles = [];
+      for (const file of files) {
+        if (!allowedImageTypes.includes(file.type)) {
+          alert('文件 "' + file.name + '" 格式不支持，仅支持 JPG、PNG、GIF、WebP');
+          continue;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+          alert('文件 "' + file.name + '" 超过 10MB 限制');
+          continue;
+        }
+        validFiles.push(file);
+      }
+
+      if (!validFiles.length) return;
+
+      for (const file of validFiles) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("stage", stage);
+
+        try {
+          const res = await fetch("/api/commissions/" + currentImageCommissionId + "/images", {
+            method: "POST",
+            body: formData
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "上传失败");
+          if (data.warning) {
+            alert("提示：" + data.warning);
+          }
+        } catch (e) {
+          alert('上传 "' + file.name + '" 失败：' + e.message);
+        }
+      }
+
+      await loadImages(currentImageCommissionId);
+      await loadAll();
+    }
+
+    document.getElementById("modalClose").onclick = closeImagesModal;
+    document.getElementById("imagesModal").onclick = (e) => {
+      if (e.target.id === "imagesModal") closeImagesModal();
+    };
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("imagesModal").classList.contains("active")) {
+        closeImagesModal();
+      }
+    });
+
+    document.querySelectorAll(".stage-tab").forEach(tab => {
+      tab.onclick = () => {
+        const stage = tab.dataset.stage;
+        currentImageStage = stage;
+        document.querySelectorAll(".stage-tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".stage-content").forEach(c => c.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById("stage-" + stage).classList.add("active");
+        renderStage(stage);
+      };
+    });
+
+    document.querySelectorAll("[data-upload]").forEach(area => {
+      const stage = area.dataset.upload;
+      const input = area.querySelector("input");
+
+      area.onclick = () => input.click();
+      input.onchange = () => {
+        if (input.files?.length) uploadFiles(stage, input.files);
+        input.value = "";
+      };
+
+      area.ondragover = (e) => {
+        e.preventDefault();
+        area.classList.add("dragover");
+      };
+      area.ondragleave = () => {
+        area.classList.remove("dragover");
+      };
+      area.ondrop = (e) => {
+        e.preventDefault();
+        area.classList.remove("dragover");
+        if (e.dataTransfer?.files?.length) {
+          uploadFiles(stage, e.dataTransfer.files);
+        }
+      };
+    });
+
     loadAll();
   </script>
 </body>
@@ -1070,7 +1437,7 @@ const server = http.createServer(async (req, res) => {
           }
         }
       }
-      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }] };
+      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] } };
       for (const m of selectedMaterials) {
         const mat = db.materials.find(item => item.id === m.materialId);
         if (mat) mat.stock -= m.quantity;
@@ -1139,10 +1506,158 @@ const server = http.createServer(async (req, res) => {
       await saveDb(db);
       return sendJson(res, 200, material);
     }
+    
+    if (req.method === "GET" && url.pathname.startsWith("/uploads/")) {
+      const filePath = join(__dirname, url.pathname);
+      if (!filePath.startsWith(uploadsDir)) return sendJson(res, 403, { error: "forbidden" });
+      try {
+        const stats = await stat(filePath);
+        if (!stats.isFile()) return sendJson(res, 404, { error: "not_found" });
+        const ext = extname(filePath).toLowerCase();
+        const contentType = {
+          ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+          ".gif": "image/gif", ".webp": "image/webp"
+        }[ext] || "application/octet-stream";
+        res.writeHead(200, { "Content-Type": contentType, "Cache-Control": "public, max-age=86400" });
+        createReadStream(filePath).pipe(res);
+        return;
+      } catch {
+        return sendJson(res, 404, { error: "not_found" });
+      }
+    }
+    
+    const imagesListMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/images$/);
+    if (imagesListMatch && req.method === "GET") {
+      const commission = db.commissions.find(c => c.id === imagesListMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      return sendJson(res, 200, commission.images);
+    }
+    
+    if (imagesListMatch && req.method === "POST") {
+      const commission = db.commissions.find(c => c.id === imagesListMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      
+      const contentType = req.headers["content-type"] || "";
+      if (!contentType.startsWith("multipart/form-data")) {
+        return sendJson(res, 400, { error: "需要 multipart/form-data 格式" });
+      }
+      const boundaryMatch = contentType.match(/boundary=([^;]+)/);
+      if (!boundaryMatch) return sendJson(res, 400, { error: "缺少 boundary" });
+      
+      const chunks = [];
+      let totalSize = 0;
+      for await (const chunk of req) {
+        totalSize += chunk.length;
+        if (totalSize > maxFileSize * 2) return sendJson(res, 413, { error: "请求体过大" });
+        chunks.push(chunk);
+      }
+      const body = Buffer.concat(chunks);
+      const parts = parseMultipart(body, boundaryMatch[1]);
+      
+      const filePart = parts.find(p => p.name === "file");
+      const stagePart = parts.find(p => p.name === "stage");
+      const captionPart = parts.find(p => p.name === "caption");
+      
+      if (!filePart || !filePart.filename) return sendJson(res, 400, { error: "缺少文件" });
+      if (!stagePart) return sendJson(res, 400, { error: "缺少阶段参数" });
+      
+      const stage = stagePart.content.toString("utf8").trim();
+      if (!["before", "during", "after"].includes(stage)) {
+        return sendJson(res, 400, { error: "阶段必须是 before、during 或 after" });
+      }
+      
+      if (!allowedImageTypes.includes(filePart.contentType)) {
+        return sendJson(res, 400, { error: "不支持的文件类型，仅支持 JPG、PNG、GIF、WebP" });
+      }
+      
+      if (filePart.content.length > maxFileSize) {
+        return sendJson(res, 413, { error: "文件大小不能超过 10MB" });
+      }
+      
+      const fileHash = randomUUID();
+      const ext = extname(filePart.filename).toLowerCase();
+      const sanitizedName = sanitizeFilename(filePart.filename);
+      const filename = `${fileHash}${ext}`;
+      const commissionDir = join(uploadsDir, commission.id);
+      const stageDir = join(commissionDir, stage);
+      await mkdir(stageDir, { recursive: true });
+      
+      const filePath = join(stageDir, filename);
+      await writeFile(filePath, filePart.content);
+      
+      const existingSameName = commission.images[stage].find(img => 
+        img.originalName === sanitizedName && img.filename !== filename
+      );
+      
+      const image = {
+        id: `IMG-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        filename: `/uploads/${commission.id}/${stage}/${filename}`,
+        originalName: sanitizedName,
+        caption: captionPart ? captionPart.content.toString("utf8").trim() : "",
+        uploadedAt: new Date().toISOString(),
+        size: filePart.content.length
+      };
+      
+      commission.images[stage].push(image);
+      await saveDb(db);
+      
+      return sendJson(res, 201, {
+        image,
+        warning: existingSameName ? "已存在同名文件，已作为新文件保存" : null
+      });
+    }
+    
+    const imageMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/images\/([^/]+)$/);
+    if (imageMatch && req.method === "PUT") {
+      const commission = db.commissions.find(c => c.id === imageMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      
+      const input = await body(req);
+      const imageId = imageMatch[2];
+      
+      for (const stage of ["before", "during", "after"]) {
+        const img = commission.images[stage].find(i => i.id === imageId);
+        if (img) {
+          if (input.caption !== undefined) img.caption = input.caption;
+          await saveDb(db);
+          return sendJson(res, 200, img);
+        }
+      }
+      return sendJson(res, 404, { error: "image_not_found" });
+    }
+    
+    if (imageMatch && req.method === "DELETE") {
+      const commission = db.commissions.find(c => c.id === imageMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      
+      const imageId = imageMatch[2];
+      
+      for (const stage of ["before", "during", "after"]) {
+        const idx = commission.images[stage].findIndex(i => i.id === imageId);
+        if (idx !== -1) {
+          const img = commission.images[stage][idx];
+          const filePath = join(__dirname, img.filename);
+          try {
+            if (existsSync(filePath)) await unlink(filePath);
+          } catch (e) {
+            console.error("删除文件失败:", e);
+          }
+          commission.images[stage].splice(idx, 1);
+          await saveDb(db);
+          return sendJson(res, 200, { ok: true });
+        }
+      }
+      return sendJson(res, 404, { error: "image_not_found" });
+    }
+    
     sendJson(res, 404, { error: "not_found" });
   } catch (error) {
     sendJson(res, 500, { error: error.message });
   }
 });
 
-server.listen(port, () => console.log(`Shadow puppet restoration app listening on http://localhost:${port}`));
+async function startServer() {
+  await ensureUploadsDir();
+  server.listen(port, () => console.log(`Shadow puppet restoration app listening on http://localhost:${port}`));
+}
+startServer();
