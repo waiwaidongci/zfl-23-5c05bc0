@@ -1,6 +1,14 @@
 {
   "clients": [
     {
+      "id": "CL-1781684862153-yyu8",
+      "name": "测试博物馆",
+      "contact": "",
+      "phone": "",
+      "address": "",
+      "remark": ""
+    },
+    {
       "id": "CL-001",
       "name": "洛川民俗馆",
       "contact": "张馆长",
@@ -11,12 +19,47 @@
   ],
   "commissions": [
     {
+      "id": "SP-1781684862153-x1q9",
+      "clientId": "CL-1781684862153-yyu8",
+      "client": "测试博物馆",
+      "roleName": "导入测试皮影",
+      "era": "清代",
+      "damage": "表面有污渍",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [],
+      "owner": "测试员",
+      "dueDate": "2026-07-15",
+      "status": "接收",
+      "steps": [
+        "接收",
+        "清洁",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-17T10:00:00.000Z",
+          "step": "接收",
+          "note": "导入测试委托"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      }
+    },
+    {
       "id": "SP-001",
       "clientId": "CL-001",
       "client": "洛川民俗馆",
       "roleName": "武生靠旗",
       "era": "民国早期",
-      "damage": "腿部开裂，靠旗缺角",
+      "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
       "missingParts": "右侧靠旗尖",
       "colorNotes": "朱砂区域褪色",
       "reinforcement": "薄驴皮补片",
@@ -30,7 +73,7 @@
       ],
       "owner": "许岚",
       "dueDate": "2026-06-28",
-      "status": "补片",
+      "status": "补色",
       "records": [
         {
           "at": "2026-06-10T10:00:00.000Z",

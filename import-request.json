@@ -1,0 +1,38 @@
+{
+  "items": [
+    {
+      "data": {
+        "roleName": "测试新增皮影",
+        "era": "清代",
+        "damage": "表面有污渍",
+        "missingParts": "",
+        "colorNotes": "",
+        "reinforcement": "",
+        "client": "陕西省博物馆",
+        "owner": "张三",
+        "dueDate": "2026-07-15",
+        "steps": ["接收", "清洁", "补色", "交付"],
+        "status": "接收",
+        "records": [
+          {"at": "2026-06-15T10:00:00.000Z", "step": "接收", "note": "新委托登记"}
+        ],
+        "materials": []
+      },
+      "forceOverwrite": false
+    },
+    {
+      "data": {
+        "id": "SP-001",
+        "roleName": "武生靠旗",
+        "era": "民国早期",
+        "damage": "腿部开裂，靠旗缺角 - 已更新",
+        "client": "洛川民俗馆",
+        "owner": "许岚",
+        "dueDate": "2026-06-28",
+        "steps": ["接收", "清洁", "补片", "补色", "交付"],
+        "status": "补片"
+      },
+      "forceOverwrite": true
+    }
+  ]
+}

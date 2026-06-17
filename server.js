@@ -1,5 +1,5 @@
 import http from "node:http";
-import { mkdir, readFile, writeFile, unlink, readdir, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, unlink, readdir, stat, rename } from "node:fs/promises";
 import { existsSync, createReadStream } from "node:fs";
 import { dirname, join, extname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -12,6 +12,85 @@ const port = Number(process.env.PORT || 3023);
 const defaultSteps = ["接收", "清洁", "补片", "补色", "交付"];
 const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const maxFileSize = 10 * 1024 * 1024;
+const EXPORT_VERSION = "1.0";
+
+const requiredCommissionFields = ["roleName", "era", "damage", "owner", "dueDate"];
+
+function validateCommission(commission, existingCommissions, allSteps) {
+  const issues = [];
+  const missingFields = [];
+
+  for (const field of requiredCommissionFields) {
+    if (!commission[field] || String(commission[field]).trim() === "") {
+      missingFields.push(field);
+    }
+  }
+
+  if (missingFields.length > 0) {
+    issues.push({ type: "missingFields", fields: missingFields });
+  }
+
+  if (commission.dueDate) {
+    const dueDate = new Date(commission.dueDate);
+    if (isNaN(dueDate.getTime())) {
+      issues.push({ type: "invalidDateFormat", field: "dueDate", value: commission.dueDate });
+    }
+  }
+
+  if (commission.steps && Array.isArray(commission.steps)) {
+    if (commission.steps.length === 0) {
+      issues.push({ type: "emptySteps" });
+    }
+  }
+
+  if (commission.status && commission.steps && Array.isArray(commission.steps) && commission.steps.length > 0) {
+    if (!commission.steps.includes(commission.status)) {
+      issues.push({ type: "invalidStep", currentStatus: commission.status, validSteps: commission.steps });
+    }
+  }
+
+  if (commission.records && Array.isArray(commission.records)) {
+    const steps = commission.steps && Array.isArray(commission.steps) && commission.steps.length ? commission.steps : defaultSteps;
+    for (const record of commission.records) {
+      if (record.step && !steps.includes(record.step)) {
+        issues.push({ type: "invalidRecordStep", recordStep: record.step, validSteps: steps });
+        break;
+      }
+      if (record.at) {
+        const recordDate = new Date(record.at);
+        if (isNaN(recordDate.getTime())) {
+          issues.push({ type: "invalidRecordDate", recordStep: record.step, value: record.at });
+          break;
+        }
+      }
+    }
+  }
+
+  if (commission.materials && Array.isArray(commission.materials)) {
+    for (const m of commission.materials) {
+      if (m.quantity !== undefined && (typeof m.quantity !== "number" || m.quantity < 0)) {
+        issues.push({ type: "invalidMaterialQuantity", material: m.name || m.materialId });
+        break;
+      }
+    }
+  }
+
+  const duplicate = existingCommissions.find(c => {
+    if (commission.id && c.id === commission.id) return true;
+    if (commission.roleName && c.roleName === commission.roleName && 
+        commission.client && c.client === commission.client &&
+        commission.era && c.era === commission.era) {
+      return true;
+    }
+    return false;
+  });
+
+  if (duplicate) {
+    issues.push({ type: "duplicate", existingId: duplicate.id });
+  }
+
+  return issues;
+}
 
 async function ensureUploadsDir() {
   if (!existsSync(uploadsDir)) await mkdir(uploadsDir, { recursive: true });
@@ -199,6 +278,16 @@ async function loadDb() {
 }
 
 async function saveDb(db) { await writeFile(dbPath, JSON.stringify(db, null, 2)); }
+
+async function saveDbAtomic(db) {
+  const tempPath = dbPath + ".tmp";
+  await writeFile(tempPath, JSON.stringify(db, null, 2));
+  await rename(tempPath, dbPath);
+}
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
 async function body(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -343,7 +432,45 @@ const page = `<!doctype html>
     .steps-progress .step-dot { width:20px; height:6px; border-radius:3px; background:var(--line); }
     .steps-progress .step-dot.done { background:var(--green); }
     .steps-progress .step-dot.current { background:var(--accent); }
-    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} }
+    .io-actions { display:flex; gap:10px; padding:14px 28px 0; background:#fff; border-bottom:1px solid var(--line); }
+    .io-btn { border:0; border-radius:6px; background:var(--accent); color:#fff; padding:10px 16px; font-weight:700; cursor:pointer; font-size:14px; display:inline-flex; align-items:center; gap:6px; }
+    .io-btn:hover { opacity:0.9; }
+    .io-btn-export { background:var(--green); }
+    .io-btn-import { background:var(--accent); }
+    .io-btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .import-modal { max-width:1000px; }
+    .import-modal .modal-footer { padding:16px 24px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px; background:#faf8f5; }
+    .import-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+    .import-stat { background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px; text-align:center; }
+    .import-stat-label { display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+    .import-stat-count { display:block; font-size:28px; font-weight:700; }
+    .import-stat-new .import-stat-count { color:var(--green); }
+    .import-stat-dup .import-stat-count { color:var(--orange); }
+    .import-stat-missing .import-stat-count { color:#c0392b; }
+    .import-stat-invalid .import-stat-count { color:#8e44ad; }
+    .import-filter-tabs { display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
+    .import-filter-tab { padding:8px 14px; background:var(--bg); border:1px solid var(--line); border-radius:6px; cursor:pointer; font-size:13px; }
+    .import-filter-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .import-filter-tab span { margin-left:4px; padding:1px 7px; background:rgba(0,0,0,0.1); border-radius:999px; font-size:11px; }
+    .import-filter-tab.active span { background:rgba(255,255,255,0.25); }
+    .import-list { max-height:400px; overflow-y:auto; }
+    .import-item { background:#fff; border:1px solid var(--line); border-radius:8px; padding:14px; margin-bottom:10px; }
+    .import-item-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+    .import-item-title { font-weight:700; font-size:15px; margin:0; }
+    .import-item-badges { display:flex; gap:6px; flex-wrap:wrap; }
+    .import-badge { padding:3px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+    .import-badge.new { background:#d5f5e3; color:#1e8449; }
+    .import-badge.duplicate { background:#fdebd0; color:#a0522d; }
+    .import-badge.missingFields { background:#fadbd8; color:#922b21; }
+    .import-badge.invalidSteps { background:#e8daef; color:#6c3483; }
+    .import-item-meta { color:var(--muted); font-size:13px; margin-bottom:8px; }
+    .import-item-issues { background:var(--bg); border-radius:6px; padding:10px; font-size:13px; }
+    .import-item-issues .issue { margin:4px 0; }
+    .import-item-actions { margin-top:10px; display:flex; gap:8px; align-items:center; }
+    .import-item-actions label { display:flex; align-items:center; gap:6px; margin:0; font-size:13px; color:var(--muted); }
+    .import-item-actions input[type=checkbox] { width:auto; }
+    .field-tag { display:inline-block; padding:1px 6px; background:#fff; border:1px solid var(--line); border-radius:4px; font-size:11px; margin:0 2px; }
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} }
   </style>
 </head>
 <body>
@@ -360,6 +487,13 @@ const page = `<!doctype html>
   </div>
 
   <div class="tab-content active" id="tab-commissions">
+    <div class="io-actions">
+      <button type="button" id="exportBtn" class="io-btn io-btn-export">📤 导出委托数据</button>
+      <label class="io-btn io-btn-import">
+        📥 导入委托数据
+        <input type="file" id="importFileInput" accept=".json" style="display:none;">
+      </label>
+    </div>
     <div class="two-col">
       <form id="form">
         <h2>新增修复委托</h2>
@@ -548,6 +682,56 @@ const page = `<!doctype html>
           </div>
           <div class="image-grid" id="grid-after"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="importModal">
+    <div class="modal import-modal">
+      <div class="modal-header">
+        <h3 id="importModalTitle">导入委托数据</h3>
+        <button class="modal-close" id="importModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="importPreview" style="display:none;">
+          <div class="import-stats">
+            <div class="import-stat import-stat-new">
+              <span class="import-stat-label">新增</span>
+              <span class="import-stat-count" id="stat-new">0</span>
+            </div>
+            <div class="import-stat import-stat-dup">
+              <span class="import-stat-label">可能重复</span>
+              <span class="import-stat-count" id="stat-dup">0</span>
+            </div>
+            <div class="import-stat import-stat-missing">
+              <span class="import-stat-label">字段缺失</span>
+              <span class="import-stat-count" id="stat-missing">0</span>
+            </div>
+            <div class="import-stat import-stat-invalid">
+              <span class="import-stat-label">步骤不合法</span>
+              <span class="import-stat-count" id="stat-invalid">0</span>
+            </div>
+          </div>
+          <div class="import-filter">
+            <div class="import-filter-tabs">
+              <button type="button" class="import-filter-tab active" data-import-filter="all">全部 <span id="filter-count-all">0</span></button>
+              <button type="button" class="import-filter-tab" data-import-filter="new">新增 <span id="filter-count-new">0</span></button>
+              <button type="button" class="import-filter-tab" data-import-filter="duplicate">可能重复 <span id="filter-count-dup">0</span></button>
+              <button type="button" class="import-filter-tab" data-import-filter="missingFields">字段缺失 <span id="filter-count-missing">0</span></button>
+              <button type="button" class="import-filter-tab" data-import-filter="invalidSteps">步骤不合法 <span id="filter-count-invalid">0</span></button>
+            </div>
+            <div id="importList" class="import-list"></div>
+          </div>
+        </div>
+        <div id="importEmpty" class="empty-state">
+          <div class="icon">📁</div>
+          <div>请选择JSON文件进行导入</div>
+          <div class="meta" style="margin-top:8px;">支持导出的JSON格式文件</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="secondary" id="cancelImportBtn">取消</button>
+        <button type="button" id="confirmImportBtn" disabled>确认导入</button>
       </div>
     </div>
   </div>
@@ -1689,6 +1873,273 @@ const page = `<!doctype html>
       };
     });
 
+    let importPreviewData = null;
+    let currentImportFilter = "all";
+    let importOverwriteMap = {};
+
+    function openImportModal() {
+      document.getElementById("importModal").classList.add("active");
+      document.getElementById("importEmpty").style.display = "block";
+      document.getElementById("importPreview").style.display = "none";
+      importPreviewData = null;
+      importOverwriteMap = {};
+      currentImportFilter = "all";
+      document.getElementById("confirmImportBtn").disabled = true;
+      document.getElementById("importFileInput").value = "";
+    }
+
+    function closeImportModal() {
+      document.getElementById("importModal").classList.remove("active");
+      importPreviewData = null;
+      importOverwriteMap = {};
+    }
+
+    async function exportCommissions() {
+      try {
+        const res = await fetch("/api/commissions/export");
+        if (!res.ok) throw new Error("导出失败");
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const disposition = res.headers.get("Content-Disposition");
+        const match = disposition && disposition.match(/filename="?([^"]+)"?/);
+        a.download = match ? match[1] : "shadow-puppet-commissions-" + new Date().toISOString().slice(0, 10) + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (e) {
+        alert("导出失败：" + e.message);
+      }
+    }
+
+    const fieldNames = {
+      roleName: "角色名称",
+      era: "年代",
+      damage: "破损部位",
+      owner: "负责人",
+      dueDate: "截止日期"
+    };
+
+    function getCategoryLabel(cat) {
+      const labels = {
+        new: "新增",
+        duplicate: "可能重复",
+        missingFields: "字段缺失",
+        invalidSteps: "步骤不合法"
+      };
+      return labels[cat] || cat;
+    }
+
+    function renderImportPreview() {
+      if (!importPreviewData) return;
+
+      const preview = importPreviewData;
+      document.getElementById("importEmpty").style.display = "none";
+      document.getElementById("importPreview").style.display = "block";
+
+      document.getElementById("stat-new").textContent = preview.categories.new.length;
+      document.getElementById("stat-dup").textContent = preview.categories.duplicate.length;
+      document.getElementById("stat-missing").textContent = preview.categories.missingFields.length;
+      document.getElementById("stat-invalid").textContent = preview.categories.invalidSteps.length;
+
+      document.getElementById("filter-count-all").textContent = preview.total;
+      document.getElementById("filter-count-new").textContent = preview.categories.new.length;
+      document.getElementById("filter-count-dup").textContent = preview.categories.duplicate.length;
+      document.getElementById("filter-count-missing").textContent = preview.categories.missingFields.length;
+      document.getElementById("filter-count-invalid").textContent = preview.categories.invalidSteps.length;
+
+      const hasValidItems = preview.categories.new.length > 0 || preview.categories.duplicate.length > 0;
+      document.getElementById("confirmImportBtn").disabled = !hasValidItems;
+
+      const listEl = document.getElementById("importList");
+      const filteredItems = preview.items.filter(item => {
+        if (currentImportFilter === "all") return true;
+        return item.categories.includes(currentImportFilter);
+      });
+
+      if (filteredItems.length === 0) {
+        listEl.innerHTML = '<div class="empty-state" style="padding:40px 20px;"><div class="icon">📭</div><div>暂无符合条件的数据</div></div>';
+        return;
+      }
+
+      listEl.innerHTML = filteredItems.map(function(item) {
+        var badges = item.categories.map(function(cat) {
+          return '<span class="import-badge ' + cat + '">' + getCategoryLabel(cat) + '</span>';
+        }).join("");
+
+        var issuesHtml = item.issues.map(function(issue) {
+          if (issue.type === "missingFields") {
+            var fields = issue.fields.map(function(f) {
+              return '<span class="field-tag">' + (fieldNames[f] || f) + '</span>';
+            }).join("");
+            return '<div class="issue">⚠️ 缺少必填字段：' + fields + '</div>';
+          }
+          if (issue.type === "invalidStep") {
+            return '<div class="issue">⚠️ 当前状态 "' + issue.currentStatus + '" 不在步骤列表中，有效步骤：' + issue.validSteps.join(" → ") + '</div>';
+          }
+          if (issue.type === "invalidRecordStep") {
+            return '<div class="issue">⚠️ 修复记录中包含非法步骤 "' + issue.recordStep + '"，有效步骤：' + issue.validSteps.join(" → ") + '</div>';
+          }
+          if (issue.type === "invalidDateFormat") {
+            return '<div class="issue">⚠️ 日期格式无效：' + issue.value + '</div>';
+          }
+          if (issue.type === "emptySteps") {
+            return '<div class="issue">⚠️ 修复步骤不能为空</div>';
+          }
+          if (issue.type === "invalidRecordDate") {
+            return '<div class="issue">⚠️ 修复记录日期格式无效："' + issue.recordStep + '" 步骤的日期 "' + issue.value + '" 格式不正确</div>';
+          }
+          if (issue.type === "invalidMaterialQuantity") {
+            return '<div class="issue">⚠️ 材料 "' + (issue.material || "未知") + '" 数量无效</div>';
+          }
+          if (issue.type === "duplicate") {
+            return '<div class="issue">⚠️ 与现有委托 ' + issue.existingId + ' 可能重复（ID或角色+客户+年代相同）</div>';
+          }
+          return "";
+        }).join("");
+
+        var c = item.data;
+        var metaText = (c.client || "未指定客户") + " · " + (c.era || "未知年代") + " · " + (c.owner || "未指定负责人");
+        var canOverwrite = item.categories.includes("duplicate") && 
+          !item.categories.includes("missingFields") && 
+          !item.categories.includes("invalidSteps");
+
+        var overwriteChecked = importOverwriteMap[item.index] ? "checked" : "";
+
+        var html = '<div class="import-item">' +
+          '<div class="import-item-header">' +
+            '<h4 class="import-item-title">' + (c.roleName || "未命名角色") + '</h4>' +
+            '<div class="import-item-badges">' + badges + '</div>' +
+          '</div>' +
+          '<div class="import-item-meta">' + metaText + '</div>' +
+          (c.damage ? '<div><b>破损：</b>' + c.damage + '</div>' : "") +
+          (c.dueDate ? '<div class="import-item-meta" style="margin-top:4px;">截止日期：' + c.dueDate + '</div>' : "") +
+          (issuesHtml ? '<div class="import-item-issues">' + issuesHtml + '</div>' : "") +
+          (canOverwrite ? 
+            '<div class="import-item-actions">' +
+              '<label>' +
+                '<input type="checkbox" data-import-overwrite="' + item.index + '" ' + overwriteChecked + '>' +
+                ' 覆盖现有委托' +
+              '</label>' +
+            '</div>'
+          : "") +
+        '</div>';
+        return html;
+      }).join("");
+
+      document.querySelectorAll("[data-import-overwrite]").forEach(cb => {
+        cb.onchange = () => {
+          const idx = Number(cb.dataset.importOverwrite);
+          importOverwriteMap[idx] = cb.checked;
+        };
+      });
+
+      document.querySelectorAll(".import-filter-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.importFilter === currentImportFilter);
+      });
+    }
+
+    async function handleImportFile(file) {
+      if (!file) return;
+      if (!file.name.endsWith(".json")) {
+        alert("请选择JSON文件");
+        return;
+      }
+
+      try {
+        const text = await file.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          alert("JSON解析失败，请检查文件格式");
+          return;
+        }
+
+        const preview = await api("/api/commissions/import/preview", {
+          method: "POST",
+          body: JSON.stringify(data)
+        });
+
+        importPreviewData = preview;
+        importOverwriteMap = {};
+        currentImportFilter = "all";
+        renderImportPreview();
+      } catch (e) {
+        alert("导入预览失败：" + e.message);
+      }
+    }
+
+    async function confirmImport() {
+      if (!importPreviewData) return;
+
+      const itemsToImport = importPreviewData.items.filter(item => {
+        const hasBlockingIssues = item.categories.includes("missingFields") || item.categories.includes("invalidSteps");
+        if (hasBlockingIssues) return false;
+        const isDuplicate = item.categories.includes("duplicate");
+        if (isDuplicate && !importOverwriteMap[item.index]) return false;
+        return true;
+      }).map(item => ({
+        data: item.data,
+        forceOverwrite: importOverwriteMap[item.index] || false
+      }));
+
+      if (itemsToImport.length === 0) {
+        alert("没有可导入的数据，请检查数据问题");
+        return;
+      }
+
+      if (!confirm("确定要导入 " + itemsToImport.length + " 条委托数据吗？")) return;
+
+      try {
+        const result = await api("/api/commissions/import", {
+          method: "POST",
+          body: JSON.stringify({ items: itemsToImport })
+        });
+
+        if (result.success) {
+          alert("导入成功！共导入 " + result.imported + " 条数据");
+          closeImportModal();
+          await loadAll();
+        } else {
+          alert("导入失败：" + (result.error || "未知错误"));
+        }
+      } catch (e) {
+        alert("导入失败：" + e.message);
+      }
+    }
+
+    document.getElementById("exportBtn").onclick = exportCommissions;
+    document.getElementById("importFileInput").onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        openImportModal();
+        handleImportFile(file);
+      }
+    };
+
+    document.getElementById("importModalClose").onclick = closeImportModal;
+    document.getElementById("cancelImportBtn").onclick = closeImportModal;
+    document.getElementById("importModal").onclick = (e) => {
+      if (e.target.id === "importModal") closeImportModal();
+    };
+    document.getElementById("confirmImportBtn").onclick = confirmImport;
+
+    document.querySelectorAll(".import-filter-tab").forEach(tab => {
+      tab.onclick = () => {
+        currentImportFilter = tab.dataset.importFilter;
+        renderImportPreview();
+      };
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("importModal").classList.contains("active")) {
+        closeImportModal();
+      }
+    });
+
     loadAll();
   </script>
 </body>
@@ -1736,6 +2187,310 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, client);
     }
     if (req.method === "GET" && url.pathname === "/api/commissions") return sendJson(res, 200, db.commissions);
+
+    if (req.method === "GET" && url.pathname === "/api/commissions/export") {
+      const exportData = {
+        version: EXPORT_VERSION,
+        exportedAt: new Date().toISOString(),
+        count: db.commissions.length,
+        commissions: db.commissions
+      };
+      const filename = `shadow-puppet-commissions-${new Date().toISOString().slice(0, 10)}.json`;
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`
+      });
+      return res.end(JSON.stringify(exportData, null, 2));
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/commissions/import/preview") {
+      const input = await body(req);
+      const importedData = Array.isArray(input) ? input : (input.commissions || []);
+      
+      if (!Array.isArray(importedData)) {
+        return sendJson(res, 400, { error: "导入数据格式错误，需要是数组或包含commissions字段的对象" });
+      }
+
+      const allSteps = new Set();
+      db.stepTemplates.forEach(t => t.steps.forEach(s => allSteps.add(s)));
+      defaultSteps.forEach(s => allSteps.add(s));
+
+      const preview = {
+        total: importedData.length,
+        categories: {
+          new: [],
+          duplicate: [],
+          missingFields: [],
+          invalidSteps: [],
+          valid: []
+        },
+        items: []
+      };
+
+      for (let i = 0; i < importedData.length; i++) {
+        const item = importedData[i];
+        const issues = validateCommission(item, db.commissions, allSteps);
+        
+        const categories = [];
+        const hasBlockingIssues = issues.some(issue => 
+          issue.type === "missingFields" || 
+          issue.type === "invalidStep" || 
+          issue.type === "invalidRecordStep" ||
+          issue.type === "invalidDateFormat" ||
+          issue.type === "emptySteps" ||
+          issue.type === "invalidRecordDate" ||
+          issue.type === "invalidMaterialQuantity"
+        );
+
+        if (!hasBlockingIssues) {
+          const hasDuplicate = issues.some(issue => issue.type === "duplicate");
+          if (hasDuplicate) {
+            categories.push("duplicate");
+            preview.categories.duplicate.push(i);
+          } else {
+            categories.push("new");
+            preview.categories.new.push(i);
+          }
+        } else {
+          for (const issue of issues) {
+            if (issue.type === "duplicate") {
+              if (!categories.includes("duplicate")) {
+                categories.push("duplicate");
+                preview.categories.duplicate.push(i);
+              }
+            }
+            if (issue.type === "missingFields") {
+              if (!categories.includes("missingFields")) {
+                categories.push("missingFields");
+                preview.categories.missingFields.push(i);
+              }
+            }
+            if (issue.type === "invalidStep" || 
+                issue.type === "invalidRecordStep" ||
+                issue.type === "invalidDateFormat" ||
+                issue.type === "emptySteps" ||
+                issue.type === "invalidRecordDate" ||
+                issue.type === "invalidMaterialQuantity") {
+              if (!categories.includes("invalidSteps")) {
+                categories.push("invalidSteps");
+                preview.categories.invalidSteps.push(i);
+              }
+            }
+          }
+        }
+
+        if (categories.length === 0) {
+          categories.push("valid");
+          preview.categories.valid.push(i);
+        }
+
+        preview.items.push({
+          index: i,
+          data: item,
+          categories,
+          issues
+        });
+      }
+
+      preview.categories.new = [...new Set(preview.categories.new)];
+      preview.categories.duplicate = [...new Set(preview.categories.duplicate)];
+      preview.categories.missingFields = [...new Set(preview.categories.missingFields)];
+      preview.categories.invalidSteps = [...new Set(preview.categories.invalidSteps)];
+
+      return sendJson(res, 200, preview);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/commissions/import") {
+      const input = await body(req);
+      const itemsToImport = Array.isArray(input) ? input : (input.items || []);
+      
+      if (!Array.isArray(itemsToImport) || itemsToImport.length === 0) {
+        return sendJson(res, 400, { error: "没有可导入的数据" });
+      }
+
+      const allSteps = new Set();
+      db.stepTemplates.forEach(t => t.steps.forEach(s => allSteps.add(s)));
+      defaultSteps.forEach(s => allSteps.add(s));
+
+      const dbCopy = deepClone(db);
+      const newCommissions = [];
+      const processedIds = new Set();
+      let importError = null;
+
+      try {
+        for (const item of itemsToImport) {
+          if (!item.data) continue;
+
+          const issues = validateCommission(item.data, dbCopy.commissions, allSteps);
+          const hasBlockingIssues = issues.some(issue => 
+            issue.type === "missingFields" || 
+            issue.type === "invalidStep" || 
+            issue.type === "invalidRecordStep" ||
+            issue.type === "invalidDateFormat" ||
+            issue.type === "emptySteps" ||
+            issue.type === "invalidRecordDate" ||
+            issue.type === "invalidMaterialQuantity"
+          );
+
+          if (hasBlockingIssues) {
+            continue;
+          }
+
+          const isDuplicate = issues.some(issue => issue.type === "duplicate");
+          if (isDuplicate && !item.forceOverwrite) {
+            continue;
+          }
+
+          const c = item.data;
+          let clientId = c.clientId || "";
+          let clientName = c.client || "";
+
+          if (clientId) {
+            const existingClient = dbCopy.clients.find(cl => cl.id === clientId);
+            if (existingClient) clientName = existingClient.name;
+          } else if (clientName) {
+            const existingClient = dbCopy.clients.find(cl => cl.name === clientName);
+            if (existingClient) {
+              clientId = existingClient.id;
+              clientName = existingClient.name;
+            } else {
+              const newClient = {
+                id: `CL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                name: clientName,
+                contact: c.clientContact || "",
+                phone: c.clientPhone || "",
+                address: c.clientAddress || "",
+                remark: ""
+              };
+              dbCopy.clients.unshift(newClient);
+              clientId = newClient.id;
+            }
+          }
+
+          let commissionSteps = c.steps && Array.isArray(c.steps) && c.steps.length ? [...c.steps] : [...defaultSteps];
+          const firstStep = commissionSteps[0];
+          const currentStatus = c.status && commissionSteps.includes(c.status) ? c.status : firstStep;
+
+          const selectedMaterials = [];
+          if (Array.isArray(c.materials)) {
+            for (const m of c.materials) {
+              const mat = m.materialId ? dbCopy.materials.find(item => item.id === m.materialId) : null;
+              if (mat && m.quantity > 0) {
+                if (mat.stock >= m.quantity) {
+                  selectedMaterials.push({
+                    materialId: mat.id,
+                    name: mat.name,
+                    batch: mat.batch,
+                    quantity: m.quantity
+                  });
+                }
+              } else if (m.name && m.quantity > 0) {
+                selectedMaterials.push({
+                  materialId: m.materialId || "",
+                  name: m.name,
+                  batch: m.batch || "",
+                  quantity: m.quantity
+                });
+              }
+            }
+          }
+
+          let newId;
+          if (isDuplicate && item.forceOverwrite) {
+            const dupIssue = issues.find(issue => issue.type === "duplicate");
+            newId = dupIssue.existingId;
+            const existingIdx = dbCopy.commissions.findIndex(com => com.id === newId);
+            if (existingIdx !== -1) {
+              processedIds.add(newId);
+              const existing = dbCopy.commissions[existingIdx];
+              const commission = {
+                ...existing,
+                clientId,
+                client: clientName,
+                roleName: c.roleName || existing.roleName,
+                era: c.era || existing.era,
+                damage: c.damage || existing.damage,
+                missingParts: c.missingParts !== undefined ? c.missingParts : existing.missingParts,
+                colorNotes: c.colorNotes !== undefined ? c.colorNotes : existing.colorNotes,
+                reinforcement: c.reinforcement !== undefined ? c.reinforcement : existing.reinforcement,
+                materials: selectedMaterials.length > 0 ? selectedMaterials : existing.materials,
+                owner: c.owner || existing.owner,
+                dueDate: c.dueDate || existing.dueDate,
+                status: currentStatus,
+                steps: commissionSteps,
+                templateId: c.templateId || existing.templateId,
+                templateName: c.templateName || existing.templateName,
+                records: c.records && Array.isArray(c.records) ? c.records : existing.records,
+                images: c.images || existing.images
+              };
+              dbCopy.commissions[existingIdx] = commission;
+              newCommissions.push(commission);
+              continue;
+            }
+          }
+
+          newId = `SP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          while (processedIds.has(newId) || dbCopy.commissions.some(com => com.id === newId)) {
+            newId = `SP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          }
+          processedIds.add(newId);
+
+          const records = c.records && Array.isArray(c.records) && c.records.length > 0
+            ? c.records
+            : [{ at: new Date().toISOString(), step: firstStep, note: "导入委托" }];
+
+          const commission = {
+            id: newId,
+            clientId,
+            client: clientName,
+            roleName: c.roleName,
+            era: c.era,
+            damage: c.damage,
+            missingParts: c.missingParts || "",
+            colorNotes: c.colorNotes || "",
+            reinforcement: c.reinforcement || "",
+            materials: selectedMaterials,
+            owner: c.owner,
+            dueDate: c.dueDate,
+            status: currentStatus,
+            steps: commissionSteps,
+            templateId: c.templateId || "",
+            templateName: c.templateName || "",
+            records,
+            images: c.images || { before: [], during: [], after: [] }
+          };
+
+          for (const m of selectedMaterials) {
+            if (m.materialId) {
+              const mat = dbCopy.materials.find(item => item.id === m.materialId);
+              if (mat) mat.stock = Math.max(0, mat.stock - m.quantity);
+            }
+          }
+
+          dbCopy.commissions.unshift(commission);
+          newCommissions.push(commission);
+        }
+
+        await saveDbAtomic(dbCopy);
+
+        for (const key of Object.keys(db)) {
+          delete db[key];
+        }
+        for (const key of Object.keys(dbCopy)) {
+          db[key] = dbCopy[key];
+        }
+
+        return sendJson(res, 200, {
+          success: true,
+          imported: newCommissions.length,
+          total: itemsToImport.length,
+          commissions: newCommissions
+        });
+      } catch (error) {
+        importError = error;
+        return sendJson(res, 500, { error: "导入失败，现有数据未被修改：" + error.message });
+      }
+    }
     if (req.method === "POST" && url.pathname === "/api/commissions") {
       const input = await body(req);
       let clientId = input.clientId || "";
