@@ -1364,9 +1364,9 @@
       "name": "薄驴皮补片",
       "category": "皮料",
       "batch": "LP-2026-A01",
-      "stock": 70,
+      "stock": 50,
       "unit": "张",
-      "remark": "修改预警线测试",
+      "remark": "陕西洛川产，厚度0.8mm",
       "minStock": 30
     },
     {
