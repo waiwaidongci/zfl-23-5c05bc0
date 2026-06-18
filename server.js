@@ -291,6 +291,10 @@ async function loadDb() {
         c.currentQuoteId = "";
         migrated = true;
       }
+      if (!c.acceptance || typeof c.acceptance !== "object") {
+        c.acceptance = null;
+        migrated = true;
+      }
     }
   }
   if (migrated) await saveDb(db);
@@ -562,6 +566,34 @@ const page = `<!doctype html>
     .quote-btn { margin-top: 8px; background: var(--orange); color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; }
     .quote-btn:hover { opacity: 0.9; }
 
+    .acceptance-btn { margin-top: 8px; background: var(--green); color: #fff; border: 0; border-radius: 6px; padding: 8px 12px; font-size: 13px; cursor: pointer; }
+    .acceptance-btn:hover { opacity: 0.9; }
+    .acceptance-btn:disabled { opacity: 0.5; cursor: not-allowed; background: var(--muted); }
+
+    .card.completed { border: 2px solid var(--green); position: relative; }
+    .card.completed::before { content: "✓ 已完成"; position: absolute; top: -10px; right: 12px; background: var(--green); color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+
+    .acceptance-modal { max-width: 600px; }
+    .acceptance-info { background: var(--bg); border-radius: 8px; padding: 14px; margin-bottom: 18px; }
+    .acceptance-info-row { display: grid; grid-template-columns: 100px 1fr; gap: 8px; margin-bottom: 8px; font-size: 14px; }
+    .acceptance-info-row:last-child { margin-bottom: 0; }
+    .acceptance-info-row .label { color: var(--muted); }
+    .acceptance-section { margin-bottom: 16px; }
+    .acceptance-section h4 { margin: 0 0 10px; font-size: 15px; }
+    .acceptance-result { display: flex; gap: 12px; margin-bottom: 12px; }
+    .acceptance-result label { display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; }
+    .acceptance-result input[type=radio] { width: auto; }
+
+    .stage-filter-tabs { display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; }
+    .stage-filter-tab { padding: 8px 16px; background: #fff; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .stage-filter-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .stage-filter-tab .count { margin-left: 6px; padding: 1px 7px; background: rgba(0,0,0,0.1); border-radius: 999px; font-size: 11px; }
+    .stage-filter-tab.active .count { background: rgba(255,255,255,0.25); }
+
+    .acceptance-detail { background: var(--bg); border-radius: 6px; padding: 10px; margin-top: 8px; font-size: 12px; }
+    .acceptance-detail .row { display: flex; gap: 4px; margin: 3px 0; }
+    .acceptance-detail .row .label { color: var(--muted); min-width: 60px; }
+
     @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} }
   </style>
 </head>
@@ -631,6 +663,10 @@ const page = `<!doctype html>
       </form>
       <section>
         <div class="stats" id="stats"></div>
+        <div class="stage-filter-tabs" id="stageFilterTabs">
+          <button type="button" class="stage-filter-tab active" data-stage-filter="active">进行中 <span class="count" id="countActive">0</span></button>
+          <button type="button" class="stage-filter-tab" data-stage-filter="delivered">已交付 <span class="count" id="countDelivered">0</span></button>
+        </div>
         <div class="grid" id="list"></div>
       </section>
     </div>
@@ -963,6 +999,81 @@ const page = `<!doctype html>
     </div>
   </div>
 
+  <div class="modal-overlay" id="acceptanceModal">
+    <div class="modal acceptance-modal">
+      <div class="modal-header">
+        <h3 id="acceptanceModalTitle">交付验收</h3>
+        <button class="modal-close" id="acceptanceModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="acceptance-info">
+          <div class="acceptance-info-row">
+            <span class="label">委托项目：</span>
+            <strong id="acceptanceCommissionName">-</strong>
+          </div>
+          <div class="acceptance-info-row">
+            <span class="label">客户：</span>
+            <span id="acceptanceClientName">-</span>
+          </div>
+          <div class="acceptance-info-row">
+            <span class="label">当前步骤：</span>
+            <span id="acceptanceCurrentStep" class="pill">-</span>
+          </div>
+        </div>
+
+        <div class="acceptance-section">
+          <h4>验收结果</h4>
+          <div class="acceptance-result">
+            <label><input type="radio" name="acceptanceResult" value="验收通过"> 验收通过</label>
+            <label><input type="radio" name="acceptanceResult" value="有条件通过"> 有条件通过</label>
+            <label><input type="radio" name="acceptanceResult" value="需返修"> 需返修</label>
+          </div>
+        </div>
+
+        <div class="acceptance-section">
+          <h4>交付信息</h4>
+          <label>交付日期</label>
+          <input type="date" id="acceptanceDeliveryDate">
+          <label>领取人</label>
+          <input type="text" id="acceptanceReceiver" placeholder="请输入领取人姓名">
+        </div>
+
+        <div class="acceptance-section">
+          <h4>遗留问题</h4>
+          <textarea id="acceptanceRemainingIssues" rows="3" placeholder="如有遗留问题请在此说明"></textarea>
+        </div>
+
+        <div class="acceptance-section">
+          <h4>后续保养建议</h4>
+          <textarea id="acceptanceMaintenanceAdvice" rows="3" placeholder="请输入保养建议"></textarea>
+        </div>
+
+        <div id="acceptanceDetailView" style="display:none;">
+          <div class="acceptance-section">
+            <h4>验收详情</h4>
+            <div class="acceptance-detail">
+              <div class="row"><span class="label">验收结果：</span><span id="detailResult">-</span></div>
+              <div class="row"><span class="label">交付日期：</span><span id="detailDeliveryDate">-</span></div>
+              <div class="row"><span class="label">领取人：</span><span id="detailReceiver">-</span></div>
+              <div class="row"><span class="label">遗留问题：</span><span id="detailRemainingIssues">-</span></div>
+              <div class="row"><span class="label">保养建议：</span><span id="detailMaintenanceAdvice">-</span></div>
+              <div class="row"><span class="label">验收时间：</span><span id="detailAcceptedAt">-</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer quote-footer">
+        <button type="button" class="secondary" id="acceptanceCloseBtn">关闭</button>
+        <div id="acceptanceEditActions">
+          <button type="button" id="acceptanceSaveBtn">确认验收</button>
+        </div>
+        <div id="acceptanceViewActions" style="display:none;">
+          <button type="button" class="secondary" id="acceptanceDeleteBtn">撤销验收</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const defaultSteps = ${JSON.stringify(defaultSteps)};
     let commissions = [];
@@ -975,6 +1086,7 @@ const page = `<!doctype html>
     let editingTemplateId = null;
     let editingTemplateSteps = [];
     let newTemplateSteps = ["接收", "清洁", "补片", "补色", "交付"];
+    let currentStageFilter = "active";
 
     async function api(path, options) {
       const res = await fetch(path, options && options.body ? { ...options, headers:{ "Content-Type":"application/json" } } : options);
@@ -1025,14 +1137,35 @@ const page = `<!doctype html>
       const stats = document.querySelector("#stats");
       const list = document.querySelector("#list");
       const stepCounts = {};
-      for (const c of commissions) {
+
+      const deliveredCommissions = commissions.filter(c => c.acceptance !== null);
+      const activeCommissions = commissions.filter(c => c.acceptance === null);
+      const countActiveEl = document.getElementById("countActive");
+      const countDeliveredEl = document.getElementById("countDelivered");
+      if (countActiveEl) countActiveEl.textContent = activeCommissions.length;
+      if (countDeliveredEl) countDeliveredEl.textContent = deliveredCommissions.length;
+
+      const filteredCommissions = currentStageFilter === "delivered" ? deliveredCommissions : activeCommissions;
+
+      for (const c of filteredCommissions) {
         (c.steps || defaultSteps).forEach(s => { if (!stepCounts[s]) stepCounts[s] = 0; });
         if (!stepCounts[c.status]) stepCounts[c.status] = 0;
       }
       const allSteps = Object.keys(stepCounts);
-      stats.innerHTML = allSteps.map(step => '<div class="stat"><span>'+step+'</span><strong>'+commissions.filter(c => c.status === step).length+'</strong></div>').join("");
-      list.innerHTML = commissions.map(c => {
+      stats.innerHTML = allSteps.map(step => '<div class="stat"><span>'+step+'</span><strong>'+filteredCommissions.filter(c => c.status === step).length+'</strong></div>').join("");
+
+      if (filteredCommissions.length === 0) {
+        list.innerHTML = '<div class="empty-state"><div class="icon">' + (currentStageFilter === "delivered" ? "📦" : "📋") + '</div><div>' + (currentStageFilter === "delivered" ? "暂无已交付的委托" : "暂无进行中的委托") + '</div></div>';
+        return;
+      }
+
+      list.innerHTML = filteredCommissions.map(c => {
         const cSteps = c.steps || defaultSteps;
+        const lastStep = cSteps[cSteps.length - 1];
+        const isAtDeliveryStep = c.status === lastStep;
+        const hasAcceptance = c.acceptance !== null;
+        const cardClass = hasAcceptance ? "card completed" : "card";
+
         const matChips = (c.materials && c.materials.length) ? c.materials.map(m => '<span class="mat-chip">'+m.name+' ×'+m.quantity+(m.batch?' ('+m.batch+')':'')+'</span>').join("") : '';
         const tplBadge = c.templateName ? '<span class="pill" style="margin-left:6px;background:var(--bg);">'+c.templateName+'</span>' : '';
         const imgCounts = c.images ? {
@@ -1053,9 +1186,24 @@ const page = `<!doctype html>
           quoteBadge = '<span class="pill" style="margin-left:6px;background:var(--bg);">未报价</span>';
         }
 
-        return '<article class="card"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+quoteBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><button class="quote-btn" data-quote="'+c.id+'">💰 报价管理' + (quoteCount > 0 ? ' (' + quoteCount + '版)' : '') + '</button><div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
+        let acceptanceBtn = '';
+        if (isAtDeliveryStep && !hasAcceptance) {
+          acceptanceBtn = '<button class="acceptance-btn" data-acceptance="'+c.id+'">✅ 交付验收</button>';
+        } else if (hasAcceptance) {
+          acceptanceBtn = '<button class="acceptance-btn" data-acceptance="'+c.id+'">📋 查看验收</button>';
+        } else {
+          acceptanceBtn = '<button class="acceptance-btn" data-acceptance="'+c.id+'" disabled>✅ 交付验收</button>';
+        }
+
+        let acceptanceDetail = '';
+        if (hasAcceptance && c.acceptance) {
+          const acc = c.acceptance;
+          acceptanceDetail = '<div class="acceptance-detail"><div class="row"><span class="label">验收：</span><span>'+acc.result+'</span></div><div class="row"><span class="label">交付：</span><span>'+acc.deliveryDate+' · 领取人：'+acc.receiver+'</span></div></div>';
+        }
+
+        return '<article class="'+cardClass+'"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+quoteBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+acceptanceDetail+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><button class="quote-btn" data-quote="'+c.id+'">💰 报价管理' + (quoteCount > 0 ? ' (' + quoteCount + '版)' : '') + '</button>'+acceptanceBtn+'<div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
       }).join("");
-      document.querySelectorAll("[data-step]").forEach(sel => sel.value = commissions.find(c => c.id === sel.dataset.step).status);
+      document.querySelectorAll("[data-step]").forEach(sel => sel.value = filteredCommissions.find(c => c.id === sel.dataset.step).status);
       document.querySelectorAll("[data-save]").forEach(btn => btn.onclick = async () => {
         const id = btn.dataset.save;
         await api('/api/commissions/'+id+'/records', { method:'POST', body: JSON.stringify({ step: document.querySelector('[data-step="'+id+'"]').value, note: document.querySelector('[data-note="'+id+'"]').value || "步骤完成" }) });
@@ -1068,6 +1216,10 @@ const page = `<!doctype html>
       document.querySelectorAll("[data-quote]").forEach(btn => btn.onclick = () => {
         const id = btn.dataset.quote;
         openQuoteModal(id);
+      });
+      document.querySelectorAll("[data-acceptance]").forEach(btn => btn.onclick = () => {
+        const id = btn.dataset.acceptance;
+        openAcceptanceModal(id);
       });
     }
 
@@ -1657,11 +1809,18 @@ const page = `<!doctype html>
     }
 
     async function loadAll() {
-      const [c, cl, m, t] = await Promise.all([api("/api/commissions"), api("/api/clients"), api("/api/materials"), api("/api/step-templates")]);
-      commissions = c;
-      clients = cl;
-      materials = m;
-      stepTemplates = t;
+      try {
+        commissions = await api("/api/commissions");
+        clients = await api("/api/clients");
+        materials = await api("/api/materials");
+        stepTemplates = await api("/api/step-templates");
+      } catch (e) {
+        console.error("loadAll failed, retrying sequentially:", e.message);
+        commissions = commissions || [];
+        clients = clients || [];
+        materials = materials || [];
+        stepTemplates = stepTemplates || [];
+      }
       if (currentTab === "schedule") {
         await loadSchedule();
       }
@@ -3138,6 +3297,165 @@ const page = `<!doctype html>
       }
     });
 
+    let currentAcceptanceCommissionId = null;
+
+    function openAcceptanceModal(commissionId) {
+      const commission = commissions.find(c => c.id === commissionId);
+      if (!commission) return;
+
+      const cSteps = commission.steps || defaultSteps;
+      const lastStep = cSteps[cSteps.length - 1];
+      const isAtDeliveryStep = commission.status === lastStep;
+      const hasAcceptance = commission.acceptance !== null;
+
+      if (!isAtDeliveryStep && !hasAcceptance) {
+        alert("只有进入交付步骤的委托才能填写验收");
+        return;
+      }
+
+      currentAcceptanceCommissionId = commissionId;
+      document.getElementById("acceptanceModal").classList.add("active");
+
+      document.getElementById("acceptanceCommissionName").textContent = commission.roleName;
+      document.getElementById("acceptanceClientName").textContent = commission.client;
+      document.getElementById("acceptanceCurrentStep").textContent = commission.status;
+
+      const detailView = document.getElementById("acceptanceDetailView");
+      const editActions = document.getElementById("acceptanceEditActions");
+      const viewActions = document.getElementById("acceptanceViewActions");
+      const resultRadios = document.querySelectorAll('input[name="acceptanceResult"]');
+      const deliveryDateInput = document.getElementById("acceptanceDeliveryDate");
+      const receiverInput = document.getElementById("acceptanceReceiver");
+      const remainingIssuesInput = document.getElementById("acceptanceRemainingIssues");
+      const maintenanceAdviceInput = document.getElementById("acceptanceMaintenanceAdvice");
+
+      resultRadios.forEach(r => { r.disabled = false; r.checked = false; });
+      deliveryDateInput.disabled = false;
+      deliveryDateInput.value = new Date().toISOString().slice(0, 10);
+      receiverInput.disabled = false;
+      receiverInput.value = "";
+      remainingIssuesInput.disabled = false;
+      remainingIssuesInput.value = "";
+      maintenanceAdviceInput.disabled = false;
+      maintenanceAdviceInput.value = "";
+
+      if (hasAcceptance && commission.acceptance) {
+        const acc = commission.acceptance;
+        detailView.style.display = "block";
+        editActions.style.display = "none";
+        viewActions.style.display = "flex";
+
+        document.getElementById("detailResult").textContent = acc.result || "-";
+        document.getElementById("detailDeliveryDate").textContent = acc.deliveryDate || "-";
+        document.getElementById("detailReceiver").textContent = acc.receiver || "-";
+        document.getElementById("detailRemainingIssues").textContent = acc.remainingIssues || "-";
+        document.getElementById("detailMaintenanceAdvice").textContent = acc.maintenanceAdvice || "-";
+        document.getElementById("detailAcceptedAt").textContent = acc.acceptedAt ? formatDate(acc.acceptedAt) : "-";
+
+        resultRadios.forEach(r => {
+          r.disabled = true;
+          r.checked = r.value === acc.result;
+        });
+        deliveryDateInput.disabled = true;
+        deliveryDateInput.value = acc.deliveryDate || "";
+        receiverInput.disabled = true;
+        receiverInput.value = acc.receiver || "";
+        remainingIssuesInput.disabled = true;
+        remainingIssuesInput.value = acc.remainingIssues || "";
+        maintenanceAdviceInput.disabled = true;
+        maintenanceAdviceInput.value = acc.maintenanceAdvice || "";
+      } else {
+        detailView.style.display = "none";
+        editActions.style.display = "flex";
+        viewActions.style.display = "none";
+      }
+    }
+
+    function closeAcceptanceModal() {
+      document.getElementById("acceptanceModal").classList.remove("active");
+      currentAcceptanceCommissionId = null;
+    }
+
+    async function saveAcceptance() {
+      if (!currentAcceptanceCommissionId) return;
+
+      const result = document.querySelector('input[name="acceptanceResult"]:checked')?.value;
+      const deliveryDate = document.getElementById("acceptanceDeliveryDate").value;
+      const receiver = document.getElementById("acceptanceReceiver").value.trim();
+      const remainingIssues = document.getElementById("acceptanceRemainingIssues").value.trim();
+      const maintenanceAdvice = document.getElementById("acceptanceMaintenanceAdvice").value.trim();
+
+      if (!result) return alert("请选择验收结果");
+      if (!deliveryDate) return alert("请选择交付日期");
+      if (!receiver) return alert("请填写领取人");
+
+      try {
+        await api("/api/commissions/" + currentAcceptanceCommissionId + "/acceptance", {
+          method: "POST",
+          body: JSON.stringify({
+            result,
+            deliveryDate,
+            receiver,
+            remainingIssues,
+            maintenanceAdvice
+          })
+        });
+        await loadAll();
+        closeAcceptanceModal();
+        alert("交付验收已保存");
+      } catch (e) {
+        alert("保存验收失败：" + e.message);
+      }
+    }
+
+    async function deleteAcceptance() {
+      if (!currentAcceptanceCommissionId) return;
+      if (!confirm("确定要撤销验收记录吗？")) return;
+
+      try {
+        await api("/api/commissions/" + currentAcceptanceCommissionId + "/acceptance", {
+          method: "DELETE"
+        });
+        await loadAll();
+        closeAcceptanceModal();
+        alert("验收记录已撤销");
+      } catch (e) {
+        alert("撤销验收失败：" + e.message);
+      }
+    }
+
+    document.getElementById("acceptanceModalClose").onclick = closeAcceptanceModal;
+    document.getElementById("acceptanceCloseBtn").onclick = closeAcceptanceModal;
+    document.getElementById("acceptanceModal").onclick = (e) => {
+      if (e.target.id === "acceptanceModal") closeAcceptanceModal();
+    };
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("acceptanceModal").classList.contains("active")) {
+        closeAcceptanceModal();
+      }
+    });
+
+    document.getElementById("acceptanceSaveBtn").onclick = saveAcceptance;
+    document.getElementById("acceptanceDeleteBtn").onclick = deleteAcceptance;
+
+    document.querySelectorAll(".stage-filter-tab").forEach(tab => {
+      tab.onclick = () => {
+        currentStageFilter = tab.dataset.stageFilter;
+        document.querySelectorAll(".stage-filter-tab").forEach(t => t.classList.remove("active"));
+        tab.classList.add("active");
+        localStorage.setItem("stageFilter", currentStageFilter);
+        renderCommissions();
+      };
+    });
+
+    const savedStageFilter = localStorage.getItem("stageFilter");
+    if (savedStageFilter) {
+      currentStageFilter = savedStageFilter;
+      document.querySelectorAll(".stage-filter-tab").forEach(t => {
+        t.classList.toggle("active", t.dataset.stageFilter === currentStageFilter);
+      });
+    }
+
     loadAll();
   </script>
 </body>
@@ -3555,6 +3873,39 @@ const server = http.createServer(async (req, res) => {
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
+    const acceptanceMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/acceptance$/);
+    if (acceptanceMatch && req.method === "POST") {
+      const commission = db.commissions.find(item => item.id === acceptanceMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const steps = commission.steps && commission.steps.length ? commission.steps : defaultSteps;
+      const lastStep = steps[steps.length - 1];
+      if (commission.status !== lastStep) {
+        return sendJson(res, 400, { error: "status_not_deliverable", message: "只有进入交付步骤的委托才能填写验收" });
+      }
+      const input = await body(req);
+      const acceptance = {
+        result: input.result || "",
+        deliveryDate: input.deliveryDate || "",
+        receiver: input.receiver || "",
+        remainingIssues: input.remainingIssues || "",
+        maintenanceAdvice: input.maintenanceAdvice || "",
+        acceptedAt: new Date().toISOString()
+      };
+      commission.acceptance = acceptance;
+      commission.records.push({ at: new Date().toISOString(), step: lastStep, note: "交付验收完成" });
+      await saveDb(db);
+      return sendJson(res, 200, commission);
+    }
+    if (acceptanceMatch && req.method === "DELETE") {
+      const commission = db.commissions.find(item => item.id === acceptanceMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      if (!commission.acceptance) {
+        return sendJson(res, 400, { error: "no_acceptance", message: "该委托暂无验收记录" });
+      }
+      commission.acceptance = null;
+      await saveDb(db);
+      return sendJson(res, 200, { ok: true });
+    }
     if (req.method === "GET" && url.pathname === "/api/step-templates") return sendJson(res, 200, db.stepTemplates);
     if (req.method === "POST" && url.pathname === "/api/step-templates") {
       const input = await body(req);
@@ -3763,7 +4114,7 @@ const server = http.createServer(async (req, res) => {
       };
 
       for (const c of db.commissions) {
-        if (!c.dueDate || c.status === "交付") continue;
+        if (!c.dueDate || c.acceptance !== null) continue;
         
         const dueDate = new Date(c.dueDate);
         dueDate.setHours(0, 0, 0, 0);
