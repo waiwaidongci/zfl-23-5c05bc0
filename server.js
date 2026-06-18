@@ -233,6 +233,7 @@ const seed = {
       batch: "LP-2026-A01",
       stock: 50,
       unit: "张",
+      minStock: 20,
       remark: "陕西洛川产，厚度0.8mm"
     },
     {
@@ -242,6 +243,7 @@ const seed = {
       batch: "ZS-2026-B03",
       stock: 200,
       unit: "克",
+      minStock: 50,
       remark: "特级纯天然朱砂粉"
     },
     {
@@ -251,6 +253,7 @@ const seed = {
       batch: "SH-2026-B01",
       stock: 150,
       unit: "克",
+      minStock: 30,
       remark: "老矿坑料，色泽沉稳"
     },
     {
@@ -260,6 +263,7 @@ const seed = {
       batch: "YJ-2026-C02",
       stock: 80,
       unit: "克",
+      minStock: 20,
       remark: "传统手工熬制"
     },
     {
@@ -269,6 +273,7 @@ const seed = {
       batch: "GJ-2026-C01",
       stock: 120,
       unit: "克",
+      minStock: 30,
       remark: "高纯度牛骨胶粒"
     }
   ],
@@ -319,6 +324,10 @@ async function loadDb() {
   if (!db.materials || !Array.isArray(db.materials)) {
     db.materials = [];
     migrated = true;
+  } else {
+    for (const m of db.materials) {
+      if (m.minStock === undefined) { m.minStock = 0; migrated = true; }
+    }
   }
   if (!db.commissions || !Array.isArray(db.commissions)) {
     db.commissions = [];
@@ -510,6 +519,18 @@ const page = `<!doctype html>
     .stock-actions input { width:90px; }
     .stock-actions button { padding:8px 10px; font-size:13px; }
     .stock-low { color:var(--orange); font-weight:700; }
+    .stock-warning { color:var(--red); font-weight:700; }
+    .material-card.stock-warning-card { border-left:4px solid var(--red); }
+    .material-card.stock-low-card { border-left:4px solid var(--orange); }
+    .stock-badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11px; font-weight:700; }
+    .stock-badge.normal { background:var(--green-soft); color:var(--green); }
+    .stock-badge.warning { background:var(--orange-soft); color:var(--orange); }
+    .stock-badge.danger { background:var(--red-soft); color:var(--red); }
+    .material-card-actions { display:flex; gap:6px; margin-top:8px; }
+    .material-card-actions button { flex:1; }
+    .material-edit-form { display:grid; gap:10px; }
+    .material-select-item.stock-warning-item { background:var(--red-soft); border-radius:6px; }
+    .material-select-item.stock-low-item { background:var(--orange-soft); border-radius:6px; }
     .material-select { margin:8px 0; padding:10px; background:var(--bg); border-radius:6px; }
     .material-select-item { display:flex; gap:8px; align-items:center; margin:6px 0; }
     .material-select-item input[type=checkbox] { width:auto; }
@@ -1051,6 +1072,7 @@ const page = `<!doctype html>
         <label>批次号</label><input name="batch">
         <label>库存数量</label><input name="stock" type="number" min="0" value="0">
         <label>单位</label><input name="unit" placeholder="如：张、克、个" value="个">
+        <label>最低库存预警线</label><input name="minStock" type="number" min="0" value="0" placeholder="低于此数量时预警">
         <label>备注</label><textarea name="remark"></textarea>
         <button type="submit">添加材料</button>
       </form>
@@ -1425,6 +1447,38 @@ const page = `<!doctype html>
         <div class="detail-section" id="detail-acceptance"></div>
         <div class="detail-section" id="detail-oplogs"></div>
         <div class="detail-section" id="detail-versions"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="materialModal">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 id="materialModalTitle">编辑材料</h3>
+        <button class="modal-close" id="materialModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="materialEditForm" class="material-edit-form">
+          <input type="hidden" name="id">
+          <label>材料名称</label><input name="name" required>
+          <label>类别</label>
+          <select name="category">
+            <option value="皮料">皮料</option>
+            <option value="颜料">颜料</option>
+            <option value="胶料">胶料</option>
+            <option value="工具">工具</option>
+            <option value="其他">其他</option>
+          </select>
+          <label>批次号</label><input name="batch">
+          <label>库存数量</label><input name="stock" type="number" min="0">
+          <label>单位</label><input name="unit" placeholder="如：张、克、个">
+          <label>最低库存预警线</label><input name="minStock" type="number" min="0" placeholder="低于此数量时预警">
+          <label>备注</label><textarea name="remark"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button type="submit">保存修改</button>
+            <button type="button" class="secondary" id="cancelMaterialEdit">取消</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -1952,15 +2006,23 @@ const page = `<!doctype html>
         return;
       }
       container.innerHTML = materials.map(m => {
-        const lowStock = m.stock <= 10;
-        return '<div class="material-select-item">' +
+        const status = getStockStatus(m);
+        const itemClass = status.level === "danger" ? "stock-warning-item" : (status.level === "warning" || status.level === "low" ? "stock-low-item" : "");
+        return '<div class="material-select-item '+itemClass+'" style="padding:6px 8px;">' +
           '<input type="checkbox" id="mat_'+m.id+'" value="'+m.id+'" data-unit="'+m.unit+'" data-name="'+m.name+'">' +
           '<label for="mat_'+m.id+'" style="margin:0;flex:1;">'+m.name+' <span class="meta">('+m.batch+')</span></label>' +
           '<input type="number" min="0" step="1" value="0" data-qty="'+m.id+'" style="width:70px;">' +
           '<span class="meta" style="font-size:12px;">'+m.unit+'</span>' +
-          '<span class="meta" style="font-size:11px;'+(lowStock?'color:var(--orange);font-weight:700;':'')+'">库存 '+m.stock+'</span>' +
+          '<span class="meta" style="font-size:11px;'+(status.level==='danger'?'color:var(--red);font-weight:700;':(status.level==='warning'||status.level==='low'?'color:var(--orange);font-weight:700;':''))+'">库存 '+m.stock+(m.minStock>0?' / 预警 '+m.minStock:'')+'</span>' +
           '</div>';
       }).join("");
+    }
+
+    function getStockStatus(m) {
+      if (m.minStock > 0 && m.stock <= 0) return { level: "danger", label: "已断货", className: "danger" };
+      if (m.minStock > 0 && m.stock < m.minStock) return { level: "warning", label: "库存不足", className: "warning" };
+      if (m.minStock > 0 && m.stock < m.minStock * 1.5) return { level: "low", label: "库存偏低", className: "warning" };
+      return { level: "normal", label: "库存正常", className: "normal" };
     }
 
     function renderMaterials() {
@@ -1970,20 +2032,27 @@ const page = `<!doctype html>
         return;
       }
       list.innerHTML = materials.map(m => {
-        const lowStock = m.stock <= 10;
-        return '<div class="card material-card">' +
+        const status = getStockStatus(m);
+        const cardClass = status.level === "danger" ? "stock-warning-card" : (status.level === "warning" || status.level === "low" ? "stock-low-card" : "");
+        return '<div class="card material-card '+cardClass+'" data-mat-id="'+m.id+'">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;">' +
           '<h3 style="margin:0;font-size:16px;">'+m.name+'</h3>' +
-          '<span class="pill">'+m.category+'</span>' +
+          '<span class="stock-badge '+status.className+'">'+status.label+'</span>' +
           '</div>' +
+          '<div class="meta">类别：'+m.category+'</div>' +
           '<div class="meta">批次：'+m.batch+'</div>' +
           '<div class="meta">单位：'+m.unit+'</div>' +
-          '<div>库存：<span '+(lowStock?'class="stock-low"':'')+'>'+m.stock+' '+m.unit+'</span></div>' +
+          '<div>库存：<span class="'+(status.level==='danger'?'stock-warning':(status.level==='warning'||status.level==='low'?'stock-low':''))+'">'+m.stock+' '+m.unit+'</span></div>' +
+          (m.minStock > 0 ? '<div class="meta">预警线：'+m.minStock+' '+m.unit+'</div>' : '') +
           (m.remark ? '<div class="meta">备注：'+m.remark+'</div>' : '') +
           '<div class="stock-actions">' +
-          '<input type="number" id="stock_'+m.id+'" placeholder="数量" value="1">' +
+          '<input type="number" id="stock_'+m.id+'" placeholder="数量" value="1" min="1">' +
           '<button class="small" data-stock-add="'+m.id+'">入库</button>' +
           '<button class="small secondary" data-stock-sub="'+m.id+'">出库</button>' +
+          '</div>' +
+          '<div class="material-card-actions">' +
+          '<button class="small secondary" data-mat-edit="'+m.id+'">编辑</button>' +
+          '<button class="small secondary" data-mat-delete="'+m.id+'" style="color:var(--red);">删除</button>' +
           '</div>' +
           '</div>';
       }).join("");
@@ -2000,6 +2069,22 @@ const page = `<!doctype html>
         if (val <= 0) return alert("请输入正数");
         await api("/api/materials/"+id+"/stock", { method:"POST", body: JSON.stringify({ change: -val }) });
         await loadAll();
+      });
+      document.querySelectorAll("[data-mat-edit]").forEach(btn => btn.onclick = () => {
+        const id = btn.dataset.matEdit;
+        openMaterialEditor(id);
+      });
+      document.querySelectorAll("[data-mat-delete]").forEach(btn => btn.onclick = async () => {
+        const id = btn.dataset.matDelete;
+        const m = materials.find(item => item.id === id);
+        if (!m) return;
+        if (!confirm('确定要删除材料 "' + m.name + '" 吗？删除后不可恢复。')) return;
+        try {
+          await api("/api/materials/"+id, { method: "DELETE" });
+          await loadAll();
+        } catch (e) {
+          alert(e.message);
+        }
       });
     }
 
@@ -2609,6 +2694,48 @@ const page = `<!doctype html>
         event.target.reset();
         event.target.elements.stock.value = 0;
         event.target.elements.unit.value = "个";
+        event.target.elements.minStock.value = 0;
+        await loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    function openMaterialEditor(id) {
+      const m = materials.find(item => item.id === id);
+      if (!m) return;
+      const form = document.getElementById("materialEditForm");
+      form.elements.id.value = m.id;
+      form.elements.name.value = m.name;
+      form.elements.category.value = m.category || "其他";
+      form.elements.batch.value = m.batch || "";
+      form.elements.stock.value = m.stock || 0;
+      form.elements.unit.value = m.unit || "个";
+      form.elements.minStock.value = m.minStock || 0;
+      form.elements.remark.value = m.remark || "";
+      document.getElementById("materialModalTitle").textContent = "编辑材料：" + m.name;
+      document.getElementById("materialModal").classList.add("active");
+    }
+
+    function closeMaterialEditor() {
+      document.getElementById("materialModal").classList.remove("active");
+    }
+
+    document.getElementById("materialModalClose").onclick = closeMaterialEditor;
+    document.getElementById("cancelMaterialEdit").onclick = closeMaterialEditor;
+    document.getElementById("materialModal").onclick = e => {
+      if (e.target.id === "materialModal") closeMaterialEditor();
+    };
+
+    document.querySelector("#materialEditForm").onsubmit = async event => {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const data = Object.fromEntries(formData.entries());
+      const id = data.id;
+      delete data.id;
+      try {
+        await api("/api/materials/"+id, { method: "PUT", body: JSON.stringify(data) });
+        closeMaterialEditor();
         await loadAll();
       } catch (e) {
         alert(e.message);
@@ -5318,10 +5445,32 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/materials") return sendJson(res, 200, db.materials);
     if (req.method === "POST" && url.pathname === "/api/materials") {
       const input = await body(req);
-      const material = { id: `MAT-${Date.now()}`, name: input.name, category: input.category || "其他", batch: input.batch || "", stock: Number(input.stock) || 0, unit: input.unit || "个", remark: input.remark || "" };
+      const material = { id: `MAT-${Date.now()}`, name: input.name, category: input.category || "其他", batch: input.batch || "", stock: Number(input.stock) || 0, unit: input.unit || "个", minStock: Number(input.minStock) || 0, remark: input.remark || "" };
       db.materials.unshift(material);
       await saveDb(db);
       return sendJson(res, 201, material);
+    }
+    const materialMatch = url.pathname.match(/^\/api\/materials\/([^/]+)$/);
+    if (materialMatch && req.method === "PUT") {
+      const material = db.materials.find(m => m.id === materialMatch[1]);
+      if (!material) return sendJson(res, 404, { error: "material_not_found" });
+      const input = await body(req);
+      if (input.name !== undefined) material.name = input.name;
+      if (input.category !== undefined) material.category = input.category || "其他";
+      if (input.batch !== undefined) material.batch = input.batch || "";
+      if (input.stock !== undefined) material.stock = Math.max(0, Number(input.stock) || 0);
+      if (input.unit !== undefined) material.unit = input.unit || "个";
+      if (input.minStock !== undefined) material.minStock = Math.max(0, Number(input.minStock) || 0);
+      if (input.remark !== undefined) material.remark = input.remark || "";
+      await saveDb(db);
+      return sendJson(res, 200, material);
+    }
+    if (materialMatch && req.method === "DELETE") {
+      const idx = db.materials.findIndex(m => m.id === materialMatch[1]);
+      if (idx === -1) return sendJson(res, 404, { error: "material_not_found" });
+      db.materials.splice(idx, 1);
+      await saveDb(db);
+      return sendJson(res, 200, { ok: true });
     }
     const stockMatch = url.pathname.match(/^\/api\/materials\/([^/]+)\/stock$/);
     if (stockMatch && req.method === "POST") {

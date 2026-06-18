@@ -1364,9 +1364,10 @@
       "name": "薄驴皮补片",
       "category": "皮料",
       "batch": "LP-2026-A01",
-      "stock": 50,
+      "stock": 70,
       "unit": "张",
-      "remark": "陕西洛川产，厚度0.8mm"
+      "remark": "修改预警线测试",
+      "minStock": 30
     },
     {
       "id": "MAT-2",
@@ -1375,7 +1376,8 @@
       "batch": "ZS-2026-B03",
       "stock": 200,
       "unit": "克",
-      "remark": "特级纯天然朱砂粉"
+      "remark": "特级纯天然朱砂粉",
+      "minStock": 0
     },
     {
       "id": "MAT-3",
@@ -1384,7 +1386,8 @@
       "batch": "SH-2026-B01",
       "stock": 150,
       "unit": "克",
-      "remark": "老矿坑料，色泽沉稳"
+      "remark": "老矿坑料，色泽沉稳",
+      "minStock": 0
     },
     {
       "id": "MAT-4",
@@ -1393,7 +1396,8 @@
       "batch": "YJ-2026-C02",
       "stock": 80,
       "unit": "克",
-      "remark": "传统手工熬制"
+      "remark": "传统手工熬制",
+      "minStock": 0
     },
     {
       "id": "MAT-5",
@@ -1402,7 +1406,8 @@
       "batch": "GJ-2026-C01",
       "stock": 120,
       "unit": "克",
-      "remark": "高纯度牛骨胶粒"
+      "remark": "高纯度牛骨胶粒",
+      "minStock": 0
     }
   ],
   "stepTemplates": [
