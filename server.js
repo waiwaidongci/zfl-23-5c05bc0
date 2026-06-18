@@ -1900,7 +1900,7 @@ const page = `<!doctype html>
         if (c.lastFollowUp) {
           const summary = c.lastFollowUp.content.length > 50 ? c.lastFollowUp.content.substring(0, 50) + '...' : c.lastFollowUp.content;
           followupHtml = '<div class="client-followup-summary">' +
-            '<div class="date">📞 最近回访：' + c.lastFollowUp.date + (c.lastFollowUp.operator ? ' · ' + c.lastFollowUp.operator : '') + '</div>' +
+            '<div class="date">📞 最近回访：' + c.lastFollowUp.date + (c.lastFollowUp.operator ? ' · ' + escapeHtml(c.lastFollowUp.operator) : '') + '</div>' +
             '<div class="content">' + escapeHtml(summary) + '</div>' +
             (c.lastFollowUp.nextFollowDate ? '<div class="date" style="margin-top:4px;color:var(--orange);">📅 下次跟进：' + c.lastFollowUp.nextFollowDate + '</div>' : '') +
             '</div>';
