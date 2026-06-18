@@ -13,9 +13,38 @@ const defaultSteps = ["接收", "清洁", "补片", "补色", "交付"];
 const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 const maxFileSize = 10 * 1024 * 1024;
 const EXPORT_VERSION = "1.0";
+const DEFAULT_CONSUME_STEP_NAME = "补片";
 
 const requiredCommissionFields = ["roleName", "era", "damage", "owner", "dueDate"];
 const snapshotTrackedFields = ["roleName", "era", "damage", "missingParts", "colorNotes", "reinforcement", "owner", "dueDate", "status", "client"];
+
+const STOCK_LEDGER_TYPES = {
+  RESERVE: "reserve",
+  RELEASE_RESERVE: "release_reserve",
+  ADJUST_RESERVE: "adjust_reserve",
+  CONSUME: "consume",
+  RESTORE: "restore",
+  MANUAL_IN: "manual_in",
+  MANUAL_OUT: "manual_out",
+  INIT: "init",
+  IMPORT_RESERVE: "import_reserve",
+  IMPORT_CONSUME: "import_consume",
+  UNDO_CONSUME: "undo_consume"
+};
+
+const STOCK_LEDGER_LABELS = {
+  reserve: "占用",
+  release_reserve: "释放占用",
+  adjust_reserve: "调整占用",
+  consume: "实际消耗/出库",
+  restore: "退回/恢复",
+  manual_in: "入库",
+  manual_out: "出库",
+  init: "初始库存",
+  import_reserve: "导入-占用",
+  import_consume: "导入-已消耗",
+  undo_consume: "撤销消耗"
+};
 
 function createFieldSnapshot(commission, operator, operatorId, reason) {
   const snapshot = {};
@@ -31,6 +60,307 @@ function createFieldSnapshot(commission, operator, operatorId, reason) {
     reason: reason || "",
     at: new Date().toISOString()
   };
+}
+
+function createStockLedgerEntry({ materialId, materialName, batch, type, quantity, stockBefore, stockAfter, reservedBefore, reservedAfter, commissionId, commissionName, step, operator, operatorId, note }) {
+  return {
+    id: `LEDGER-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    materialId: materialId || "",
+    materialName: materialName || "",
+    batch: batch || "",
+    type: type || "",
+    quantity: Number(quantity) || 0,
+    stockBefore: Number(stockBefore) || 0,
+    stockAfter: Number(stockAfter) || 0,
+    reservedBefore: Number(reservedBefore) || 0,
+    reservedAfter: Number(reservedAfter) || 0,
+    commissionId: commissionId || "",
+    commissionName: commissionName || "",
+    step: step || "",
+    operator: operator || "未知",
+    operatorId: operatorId || "",
+    note: note || "",
+    at: new Date().toISOString()
+  };
+}
+
+function ensureStockLedger(db) {
+  if (!db || typeof db !== "object") return;
+  if (!Array.isArray(db.stockLedger)) {
+    db.stockLedger = [];
+  }
+}
+
+function addStockLedger(db, entry) {
+  ensureStockLedger(db);
+  db.stockLedger.unshift(entry);
+}
+
+function getMaterialAvailable(material) {
+  if (!material) return 0;
+  const stock = Number(material.stock) || 0;
+  const reserved = Number(material.reserved) || 0;
+  return Math.max(0, stock - reserved);
+}
+
+function reserveCommissionMaterials(db, commission, operator, operatorId) {
+  if (!commission || !Array.isArray(commission.materials)) return;
+  const commissionSteps = commission.steps && commission.steps.length ? commission.steps : defaultSteps;
+  const currentIdx = commissionSteps.indexOf(commission.status);
+  const consumeStepName = commission.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
+  const consumeIdx = commissionSteps.indexOf(consumeStepName);
+  const alreadyPassedConsume = consumeIdx !== -1 && currentIdx >= consumeIdx;
+
+  for (const m of commission.materials) {
+    const mat = db.materials.find(item => item.id === m.materialId);
+    if (!mat) continue;
+    const qty = Number(m.quantity) || 0;
+    if (qty <= 0) continue;
+
+    const stockBefore = Number(mat.stock) || 0;
+    const reservedBefore = Number(mat.reserved) || 0;
+
+    if (alreadyPassedConsume || (commission.acceptance && commission.acceptance.result)) {
+      if (mat.stock < qty) throw new Error(`材料 ${mat.name} 库存不足，当前库存 ${stockBefore}${mat.unit}`);
+      mat.stock = stockBefore - qty;
+      m.consumedQty = qty;
+      m.reservedQty = 0;
+      m.consumedAt = new Date().toISOString();
+      m.consumedBy = operator || "系统";
+      m.consumedStep = consumeStepName;
+      addStockLedger(db, createStockLedgerEntry({
+        materialId: mat.id, materialName: mat.name, batch: mat.batch,
+        type: STOCK_LEDGER_TYPES.CONSUME, quantity: qty,
+        stockBefore, stockAfter: mat.stock,
+        reservedBefore, reservedAfter: reservedBefore,
+        commissionId: commission.id, commissionName: commission.roleName,
+        step: commission.status, operator, operatorId,
+        note: `委托创建时已超过消耗节点，直接出库消耗`
+      }));
+    } else {
+      const available = stockBefore - reservedBefore;
+      if (available < qty) throw new Error(`材料 ${mat.name} 可用量不足，可用 ${available}${mat.unit}（总库存 ${stockBefore}${mat.unit}，已占用 ${reservedBefore}${mat.unit}）`);
+      mat.reserved = reservedBefore + qty;
+      m.reservedQty = qty;
+      m.consumedQty = 0;
+      addStockLedger(db, createStockLedgerEntry({
+        materialId: mat.id, materialName: mat.name, batch: mat.batch,
+        type: STOCK_LEDGER_TYPES.RESERVE, quantity: qty,
+        stockBefore, stockAfter: stockBefore,
+        reservedBefore, reservedAfter: mat.reserved,
+        commissionId: commission.id, commissionName: commission.roleName,
+        step: commission.status, operator, operatorId,
+        note: `委托创建占用`
+      }));
+    }
+  }
+}
+
+function releaseCommissionMaterials(db, commission, operator, operatorId, reason) {
+  if (!commission || !Array.isArray(commission.materials)) return;
+  for (const m of commission.materials) {
+    const mat = db.materials.find(item => item.id === m.materialId);
+    if (!mat) continue;
+    const reservedQty = Number(m.reservedQty) || 0;
+    const consumedQty = Number(m.consumedQty) || 0;
+    const stockBefore = Number(mat.stock) || 0;
+    const reservedBefore = Number(mat.reserved) || 0;
+
+    if (reservedQty > 0) {
+      const releaseQty = Math.min(reservedQty, reservedBefore);
+      mat.reserved = Math.max(0, reservedBefore - releaseQty);
+      m.reservedQty = 0;
+      addStockLedger(db, createStockLedgerEntry({
+        materialId: mat.id, materialName: mat.name, batch: mat.batch,
+        type: STOCK_LEDGER_TYPES.RELEASE_RESERVE, quantity: releaseQty,
+        stockBefore, stockAfter: stockBefore,
+        reservedBefore, reservedAfter: mat.reserved,
+        commissionId: commission.id, commissionName: commission.roleName,
+        step: commission.status, operator, operatorId,
+        note: reason || `释放占用`
+      }));
+    }
+  }
+}
+
+function adjustCommissionMaterials(db, commission, oldMaterials, operator, operatorId) {
+  if (!commission) return;
+  const newMaterials = Array.isArray(commission.materials) ? commission.materials : [];
+  const oldMatList = Array.isArray(oldMaterials) ? oldMaterials : [];
+  const steps = commission.steps && commission.steps.length ? commission.steps : defaultSteps;
+  const currentIdx = steps.indexOf(commission.status);
+  const consumeStepName = commission.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
+  const consumeIdx = steps.indexOf(consumeStepName);
+  const alreadyConsumed = consumeIdx !== -1 && currentIdx >= consumeIdx;
+
+  const oldById = {};
+  for (const om of oldMatList) oldById[om.materialId] = om;
+  const newById = {};
+  for (const nm of newMaterials) newById[nm.materialId] = nm;
+
+  const allIds = new Set([...Object.keys(oldById), ...Object.keys(newById)]);
+
+  for (const mid of allIds) {
+    const mat = db.materials.find(item => item.id === mid);
+    if (!mat) continue;
+    const oldM = oldById[mid];
+    const newM = newById[mid];
+    const oldQty = oldM ? (Number(oldM.quantity) || 0) : 0;
+    const newQty = newM ? (Number(newM.quantity) || 0) : 0;
+    const oldReserved = oldM ? (Number(oldM.reservedQty) || 0) : 0;
+    const oldConsumed = oldM ? (Number(oldM.consumedQty) || 0) : 0;
+    const diff = newQty - oldQty;
+
+    const stockBefore = Number(mat.stock) || 0;
+    const reservedBefore = Number(mat.reserved) || 0;
+
+    if (alreadyConsumed) {
+      if (diff > 0) {
+        if (stockBefore < diff) throw new Error(`材料 ${mat.name} 库存不足，当前库存 ${stockBefore}${mat.unit}`);
+        mat.stock = stockBefore - diff;
+        if (newM) {
+          newM.consumedQty = (oldConsumed || 0) + diff;
+          newM.reservedQty = 0;
+          newM.consumedAt = new Date().toISOString();
+          newM.consumedBy = operator || "系统";
+          newM.consumedStep = consumeStepName;
+        }
+        addStockLedger(db, createStockLedgerEntry({
+          materialId: mat.id, materialName: mat.name, batch: mat.batch,
+          type: STOCK_LEDGER_TYPES.CONSUME, quantity: diff,
+          stockBefore, stockAfter: mat.stock,
+          reservedBefore, reservedAfter: reservedBefore,
+          commissionId: commission.id, commissionName: commission.roleName,
+          step: commission.status, operator, operatorId,
+          note: `调整材料数量-追加消耗（已过消耗节点）`
+        }));
+      } else if (diff < 0) {
+        const returnQty = Math.abs(diff);
+        const canReturn = Math.min(returnQty, oldConsumed || 0);
+        if (canReturn > 0) {
+          mat.stock = stockBefore + canReturn;
+          if (newM) newM.consumedQty = (oldConsumed || 0) - canReturn;
+          addStockLedger(db, createStockLedgerEntry({
+            materialId: mat.id, materialName: mat.name, batch: mat.batch,
+            type: STOCK_LEDGER_TYPES.RESTORE, quantity: canReturn,
+            stockBefore, stockAfter: mat.stock,
+            reservedBefore, reservedAfter: reservedBefore,
+            commissionId: commission.id, commissionName: commission.roleName,
+            step: commission.status, operator, operatorId,
+            note: `调整材料数量-退回库存`
+          }));
+        }
+        if (newM) {
+          newM.reservedQty = 0;
+        }
+      }
+    } else {
+      if (diff > 0) {
+        const available = stockBefore - reservedBefore;
+        if (available < diff) throw new Error(`材料 ${mat.name} 可用量不足，可用 ${available}${mat.unit}（总库存 ${stockBefore}${mat.unit}，已占用 ${reservedBefore}${mat.unit}）`);
+        mat.reserved = reservedBefore + diff;
+        if (newM) newM.reservedQty = (oldReserved || 0) + diff;
+        addStockLedger(db, createStockLedgerEntry({
+          materialId: mat.id, materialName: mat.name, batch: mat.batch,
+          type: STOCK_LEDGER_TYPES.ADJUST_RESERVE, quantity: diff,
+          stockBefore, stockAfter: stockBefore,
+          reservedBefore, reservedAfter: mat.reserved,
+          commissionId: commission.id, commissionName: commission.roleName,
+          step: commission.status, operator, operatorId,
+          note: `调整材料数量-增加占用`
+        }));
+      } else if (diff < 0) {
+        const releaseQty = Math.min(Math.abs(diff), reservedBefore, oldReserved || 0);
+        if (releaseQty > 0) {
+          mat.reserved = reservedBefore - releaseQty;
+          if (newM) newM.reservedQty = Math.max(0, (oldReserved || 0) - releaseQty);
+          addStockLedger(db, createStockLedgerEntry({
+            materialId: mat.id, materialName: mat.name, batch: mat.batch,
+            type: STOCK_LEDGER_TYPES.ADJUST_RESERVE, quantity: -releaseQty,
+            stockBefore, stockAfter: stockBefore,
+            reservedBefore, reservedAfter: mat.reserved,
+            commissionId: commission.id, commissionName: commission.roleName,
+            step: commission.status, operator, operatorId,
+            note: `调整材料数量-减少占用`
+          }));
+        }
+      }
+    }
+  }
+}
+
+function consumeCommissionMaterialsAtStep(db, commission, oldStatus, newStatus, operator, operatorId) {
+  if (!commission || !Array.isArray(commission.materials) || commission.materials.length === 0) return;
+  const steps = commission.steps && commission.steps.length ? commission.steps : defaultSteps;
+  const oldIdx = steps.indexOf(oldStatus);
+  const newIdx = steps.indexOf(newStatus);
+  if (oldIdx === -1 || newIdx === -1) return;
+  const consumeStepName = commission.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
+  const consumeIdx = steps.indexOf(consumeStepName);
+  if (consumeIdx === -1) return;
+  if (oldIdx < consumeIdx && newIdx >= consumeIdx) {
+    for (const m of commission.materials) {
+      const mat = db.materials.find(item => item.id === m.materialId);
+      if (!mat) continue;
+      const reservedQty = Number(m.reservedQty) || 0;
+      const qty = Number(m.quantity) || 0;
+      const toConsume = reservedQty > 0 ? reservedQty : qty;
+      if (toConsume <= 0) continue;
+
+      const stockBefore = Number(mat.stock) || 0;
+      const reservedBefore = Number(mat.reserved) || 0;
+
+      if (stockBefore < toConsume) {
+        throw new Error(`材料 ${mat.name} 库存不足，无法消耗。需要 ${toConsume}${mat.unit}，当前库存 ${stockBefore}${mat.unit}`);
+      }
+      mat.stock = stockBefore - toConsume;
+      const reduceReserve = Math.min(reservedQty, reservedBefore);
+      mat.reserved = Math.max(0, reservedBefore - reduceReserve);
+      m.consumedQty = toConsume;
+      m.reservedQty = Math.max(0, (Number(m.reservedQty) || 0) - reduceReserve);
+      m.consumedAt = new Date().toISOString();
+      m.consumedBy = operator || "系统";
+      m.consumedStep = consumeStepName;
+
+      addStockLedger(db, createStockLedgerEntry({
+        materialId: mat.id, materialName: mat.name, batch: mat.batch,
+        type: STOCK_LEDGER_TYPES.CONSUME, quantity: toConsume,
+        stockBefore, stockAfter: mat.stock,
+        reservedBefore, reservedAfter: mat.reserved,
+        commissionId: commission.id, commissionName: commission.roleName,
+        step: newStatus, operator, operatorId,
+        note: `步骤推进至【${consumeStepName}】，实际出库消耗`
+      }));
+    }
+  }
+}
+
+function undoCommissionMaterialsConsume(db, commission, operator, operatorId, reason) {
+  if (!commission || !Array.isArray(commission.materials)) return;
+  for (const m of commission.materials) {
+    const mat = db.materials.find(item => item.id === m.materialId);
+    if (!mat) continue;
+    const consumedQty = Number(m.consumedQty) || 0;
+    if (consumedQty <= 0) continue;
+    const stockBefore = Number(mat.stock) || 0;
+    const reservedBefore = Number(mat.reserved) || 0;
+    mat.stock = stockBefore + consumedQty;
+    mat.reserved = reservedBefore + consumedQty;
+    m.consumedQty = 0;
+    m.reservedQty = consumedQty;
+    m.consumedAt = "";
+    m.consumedBy = "";
+    m.consumedStep = "";
+    addStockLedger(db, createStockLedgerEntry({
+      materialId: mat.id, materialName: mat.name, batch: mat.batch,
+      type: STOCK_LEDGER_TYPES.UNDO_CONSUME, quantity: consumedQty,
+      stockBefore, stockAfter: mat.stock,
+      reservedBefore, reservedAfter: mat.reserved,
+      commissionId: commission.id, commissionName: commission.roleName,
+      step: commission.status, operator, operatorId,
+      note: reason || `撤销消耗，恢复占用`
+    }));
+  }
 }
 
 function validateCommission(commission, existingCommissions, allSteps) {
@@ -233,6 +563,7 @@ const seed = {
       category: "皮料",
       batch: "LP-2026-A01",
       stock: 50,
+      reserved: 0,
       unit: "张",
       minStock: 20,
       remark: "陕西洛川产，厚度0.8mm"
@@ -243,6 +574,7 @@ const seed = {
       category: "颜料",
       batch: "ZS-2026-B03",
       stock: 200,
+      reserved: 0,
       unit: "克",
       minStock: 50,
       remark: "特级纯天然朱砂粉"
@@ -253,6 +585,7 @@ const seed = {
       category: "颜料",
       batch: "SH-2026-B01",
       stock: 150,
+      reserved: 0,
       unit: "克",
       minStock: 30,
       remark: "老矿坑料，色泽沉稳"
@@ -263,6 +596,7 @@ const seed = {
       category: "胶料",
       batch: "YJ-2026-C02",
       stock: 80,
+      reserved: 0,
       unit: "克",
       minStock: 20,
       remark: "传统手工熬制"
@@ -273,11 +607,13 @@ const seed = {
       category: "胶料",
       batch: "GJ-2026-C01",
       stock: 120,
+      reserved: 0,
       unit: "克",
       minStock: 30,
       remark: "高纯度牛骨胶粒"
     }
   ],
+  stockLedger: [],
   members: [
     { id: "MB-001", name: "许岚", role: "修复师", phone: "", remark: "主修复师" },
     { id: "MB-002", name: "张师傅", role: "补色师", phone: "", remark: "" },
@@ -330,12 +666,18 @@ async function loadDb() {
       }
     }
   }
+  ensureStockLedger(db);
+  if (!Array.isArray(db.stockLedger)) {
+    db.stockLedger = [];
+    migrated = true;
+  }
   if (!db.materials || !Array.isArray(db.materials)) {
     db.materials = [];
     migrated = true;
   } else {
     for (const m of db.materials) {
       if (m.minStock === undefined) { m.minStock = 0; migrated = true; }
+      if (m.reserved === undefined) { m.reserved = 0; migrated = true; }
     }
   }
   if (!db.commissions || !Array.isArray(db.commissions)) {
@@ -399,7 +741,17 @@ async function loadDb() {
     if (!Array.isArray(c.materials)) {
       c.materials = [];
       migrated = true;
+    } else {
+      for (const m of c.materials) {
+        if (!m || typeof m !== "object") continue;
+        if (m.reservedQty === undefined) { m.reservedQty = 0; migrated = true; }
+        if (m.consumedQty === undefined) { m.consumedQty = 0; migrated = true; }
+        if (m.consumedAt === undefined) { m.consumedAt = ""; migrated = true; }
+        if (m.consumedBy === undefined) { m.consumedBy = ""; migrated = true; }
+        if (m.consumedStep === undefined) { m.consumedStep = ""; migrated = true; }
+      }
     }
+    if (c.consumeStepName === undefined) { c.consumeStepName = DEFAULT_CONSUME_STEP_NAME; migrated = true; }
     if (!Array.isArray(c.records)) {
       c.records = [];
       migrated = true;
@@ -469,6 +821,42 @@ async function loadDb() {
       }];
       migrated = true;
     }
+  }
+  if (!db._stockMigratedV2) {
+    let fixed = false;
+    for (const c of db.commissions) {
+      if (!c || !Array.isArray(c.materials) || c.materials.length === 0) continue;
+      const steps = c.steps && c.steps.length ? c.steps : defaultSteps;
+      const currentIdx = steps.indexOf(c.status);
+      const consumeStepName = c.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
+      const consumeIdx = steps.indexOf(consumeStepName);
+      const alreadyPassedConsume = (consumeIdx !== -1 && currentIdx >= consumeIdx) || (c.acceptance && c.acceptance.result);
+      for (const m of c.materials) {
+        const mat = db.materials.find(item => item.id === m.materialId);
+        if (!mat) continue;
+        const qty = Number(m.quantity) || 0;
+        if (qty <= 0) continue;
+        const reservedQty = Number(m.reservedQty) || 0;
+        const consumedQty = Number(m.consumedQty) || 0;
+        if (reservedQty === 0 && consumedQty === 0) {
+          if (alreadyPassedConsume) {
+            m.consumedQty = qty;
+            m.reservedQty = 0;
+            m.consumedStep = consumeStepName;
+            m.consumedBy = "系统迁移";
+            m.consumedAt = new Date().toISOString();
+          } else {
+            mat.stock = (Number(mat.stock) || 0) + qty;
+            mat.reserved = (Number(mat.reserved) || 0) + qty;
+            m.reservedQty = qty;
+            m.consumedQty = 0;
+          }
+          fixed = true;
+        }
+      }
+    }
+    db._stockMigratedV2 = new Date().toISOString();
+    migrated = true;
   }
   if (migrated) await saveDb(db);
   return db;
@@ -963,6 +1351,10 @@ const page = `<!doctype html>
             <button type="button" id="commissionAddStepBtn" class="small secondary">添加</button>
           </div>
         </div>
+        <label>材料消耗节点 <span class="meta" style="font-size:11px;">（推进到该步骤时，被占用的材料会转为实际消耗）</span></label>
+        <select id="consumeStepSelect" name="consumeStepName">
+          <option value="补片">补片（默认）</option>
+        </select>
         <label>负责人</label>
         <select id="ownerSelect" name="owner" required>
           <option value="">— 选择负责人 —</option>
@@ -1104,7 +1496,10 @@ const page = `<!doctype html>
         <button type="submit">添加材料</button>
       </form>
       <section>
-        <h2 style="margin-bottom:12px;">材料库存</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h2 style="margin:0;">材料库存</h2>
+          <button type="button" class="small secondary" id="showAllLedgerBtn">📊 查看全部流水</button>
+        </div>
         <div class="material-list" id="materialList"></div>
       </section>
     </div>
@@ -1509,6 +1904,73 @@ const page = `<!doctype html>
       </div>
     </div>
   </div>
+
+  <div class="modal-overlay" id="stockLedgerModal">
+    <div class="modal" style="max-width:960px;">
+      <div class="modal-header">
+        <h3 id="stockLedgerTitle">材料库存流水</h3>
+        <button class="modal-close" id="stockLedgerModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+          <input id="ledgerFilterMaterial" placeholder="按材料名称搜索" style="flex:1;min-width:180px;">
+          <select id="ledgerFilterType" style="min-width:140px;">
+            <option value="">全部变动类型</option>
+          </select>
+          <button class="small secondary" id="ledgerRefreshBtn">刷新</button>
+        </div>
+        <div id="stockLedgerInfo" class="meta" style="margin-bottom:8px;"></div>
+        <div class="ledger-table-wrap" style="overflow:auto;max-height:60vh;">
+          <table class="ledger-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="background:var(--bg);position:sticky;top:0;z-index:1;">
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;">时间</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;">类型</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;">材料</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;">变动</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;">库存(前/后)</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:right;">占用(前/后)</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;">委托</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;">操作人</th>
+                <th style="padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;">备注</th>
+              </tr>
+            </thead>
+            <tbody id="stockLedgerBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .mat-chip{position:relative;padding-right:8px;}
+    .mat-chip-status{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10px;}
+    .mat-chip-reserved{background:rgba(255,152,0,.12);color:#c77700;border:1px solid rgba(255,152,0,.3);}
+    .mat-chip-reserved .mat-chip-status{background:#fff3e0;color:#e65100;}
+    .mat-chip-consumed{background:rgba(76,175,80,.12);color:#2e7d32;border:1px solid rgba(76,175,80,.3);}
+    .mat-chip-consumed .mat-chip-status{background:#e8f5e9;color:#2e7d32;}
+    .mat-chip-pending{background:rgba(158,158,158,.1);color:#616161;}
+    .mat-chip-pending .mat-chip-status{background:#f5f5f5;color:#757575;}
+    .ledger-type-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;}
+    .ledger-type-reserve{background:#fff3e0;color:#ef6c00;}
+    .ledger-type-release_reserve{background:#f1f8e9;color:#558b2f;}
+    .ledger-type-adjust_reserve{background:#fff8e1;color:#f57f17;}
+    .ledger-type-consume{background:#e8f5e9;color:#2e7d32;}
+    .ledger-type-undo_consume{background:#e0f7fa;color:#00838f;}
+    .ledger-type-restore{background:#e3f2fd;color:#1565c0;}
+    .ledger-type-manual_in{background:#e8eaf6;color:#283593;}
+    .ledger-type-manual_out{background:#fce4ec;color:#ad1457;}
+    .ledger-type-init{background:#eceff1;color:#455a64;}
+    .ledger-type-import_reserve,.ledger-type-import_consume{background:#f3e5f5;color:#6a1b9a;}
+    .ledger-qty-pos{color:#2e7d32;font-weight:700;}
+    .ledger-qty-neg{color:#c62828;font-weight:700;}
+    .ledger-link{color:var(--accent);cursor:pointer;text-decoration:underline;}
+    .io-actions{display:flex;gap:10px;align-items:center;padding:16px 28px 0;flex-wrap:wrap;}
+    .io-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--text);cursor:pointer;}
+    .io-btn:hover{background:var(--bg);}
+    .io-btn-export{border-color:rgba(33,150,243,.3);color:#1976d2;}
+    .io-btn-import{border-color:rgba(76,175,80,.3);color:#2e7d32;}
+  </style>
 
   <script>
     const defaultSteps = ${JSON.stringify(defaultSteps)};
@@ -2129,15 +2591,16 @@ const page = `<!doctype html>
           '<label for="mat_'+m.id+'" style="margin:0;flex:1;">'+m.name+' <span class="meta">('+m.batch+')</span></label>' +
           '<input type="number" min="0" step="1" value="0" data-qty="'+m.id+'" style="width:70px;">' +
           '<span class="meta" style="font-size:12px;">'+m.unit+'</span>' +
-          '<span class="meta" style="font-size:11px;'+(status.level==='danger'?'color:var(--red);font-weight:700;':(status.level==='warning'||status.level==='low'?'color:var(--orange);font-weight:700;':''))+'">库存 '+m.stock+(m.minStock>0?' / 预警 '+m.minStock:'')+'</span>' +
+          '<span class="meta" style="font-size:11px;'+(status.level==='danger'?'color:var(--red);font-weight:700;':(status.level==='warning'||status.level==='low'?'color:var(--orange);font-weight:700;':''))+'">可用 '+m.available+' / 库存 '+m.stock+' / 占用 '+(m.reserved||0)+(m.minStock>0?' / 预警 '+m.minStock:'')+'</span>' +
           '</div>';
       }).join("");
     }
 
     function getStockStatus(m) {
-      if (m.minStock > 0 && m.stock <= 0) return { level: "danger", label: "已断货", className: "danger" };
-      if (m.minStock > 0 && m.stock < m.minStock) return { level: "warning", label: "库存不足", className: "warning" };
-      if (m.minStock > 0 && m.stock < m.minStock * 1.5) return { level: "low", label: "库存偏低", className: "warning" };
+      const available = typeof m.available === "number" ? m.available : ((Number(m.stock)||0) - (Number(m.reserved)||0));
+      if (m.minStock > 0 && available <= 0) return { level: "danger", label: "已无可用", className: "danger" };
+      if (m.minStock > 0 && available < m.minStock) return { level: "warning", label: "可用不足", className: "warning" };
+      if (m.minStock > 0 && available < m.minStock * 1.5) return { level: "low", label: "可用偏低", className: "warning" };
       return { level: "normal", label: "库存正常", className: "normal" };
     }
 
@@ -2158,13 +2621,15 @@ const page = `<!doctype html>
           '<div class="meta">类别：'+m.category+'</div>' +
           '<div class="meta">批次：'+m.batch+'</div>' +
           '<div class="meta">单位：'+m.unit+'</div>' +
-          '<div>库存：<span class="'+(status.level==='danger'?'stock-warning':(status.level==='warning'||status.level==='low'?'stock-low':''))+'">'+m.stock+' '+m.unit+'</span></div>' +
+          '<div>可用量：<span class="'+(status.level==='danger'?'stock-warning':(status.level==='warning'||status.level==='low'?'stock-low':''))+'"><b>'+m.available+'</b> '+m.unit+'</span></div>' +
+          '<div class="meta">库存：'+m.stock+' '+m.unit+'　占用：'+(m.reserved||0)+' '+m.unit+'</div>' +
           (m.minStock > 0 ? '<div class="meta">预警线：'+m.minStock+' '+m.unit+'</div>' : '') +
           (m.remark ? '<div class="meta">备注：'+m.remark+'</div>' : '') +
           '<div class="stock-actions">' +
           '<input type="number" id="stock_'+m.id+'" placeholder="数量" value="1" min="1">' +
           '<button class="small" data-stock-add="'+m.id+'">入库</button>' +
           '<button class="small secondary" data-stock-sub="'+m.id+'">出库</button>' +
+          '<button class="small secondary" data-ledger-mat="'+m.id+'">查看流水</button>' +
           '</div>' +
           '<div class="material-card-actions">' +
           '<button class="small secondary" data-mat-edit="'+m.id+'">编辑</button>' +
@@ -2176,15 +2641,21 @@ const page = `<!doctype html>
         const id = btn.dataset.stockAdd;
         const val = Number(document.getElementById("stock_"+id).value) || 0;
         if (val <= 0) return alert("请输入正数");
-        await api("/api/materials/"+id+"/stock", { method:"POST", body: JSON.stringify({ change: val }) });
+        await api("/api/materials/"+id+"/stock", { method:"POST", body: JSON.stringify({ change: val, operator: currentOperator, operatorId: currentOperatorId }) });
         await loadAll();
       });
       document.querySelectorAll("[data-stock-sub]").forEach(btn => btn.onclick = async () => {
         const id = btn.dataset.stockSub;
         const val = Number(document.getElementById("stock_"+id).value) || 0;
         if (val <= 0) return alert("请输入正数");
-        await api("/api/materials/"+id+"/stock", { method:"POST", body: JSON.stringify({ change: -val }) });
-        await loadAll();
+        try {
+          await api("/api/materials/"+id+"/stock", { method:"POST", body: JSON.stringify({ change: -val, operator: currentOperator, operatorId: currentOperatorId }) });
+          await loadAll();
+        } catch (e) { alert(e.message); }
+      });
+      document.querySelectorAll("[data-ledger-mat]").forEach(btn => btn.onclick = () => {
+        const id = btn.dataset.ledgerMat;
+        showStockLedger({ materialId: id });
       });
       document.querySelectorAll("[data-mat-edit]").forEach(btn => btn.onclick = () => {
         const id = btn.dataset.matEdit;
@@ -2212,6 +2683,19 @@ const page = `<!doctype html>
       if (currentVal) select.value = currentVal;
     }
 
+    function renderConsumeStepSelect() {
+      const sel = document.getElementById("consumeStepSelect");
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = currentCommissionSteps.filter(s=>s.trim()).map((s,i) => {
+        const isDefault = s === "补片";
+        return '<option value="'+s+'">'+(i+1)+'. '+s+(isDefault?'（默认消耗点）':'')+'</option>';
+      }).join("");
+      if (currentCommissionSteps.includes(prev)) sel.value = prev;
+      else if (currentCommissionSteps.includes("补片")) sel.value = "补片";
+      else if (currentCommissionSteps.length) sel.value = currentCommissionSteps[Math.min(2, currentCommissionSteps.length-1)];
+    }
+
     function renderCommissionStepList() {
       const container = document.getElementById("commissionStepList");
       if (!container) return;
@@ -2227,12 +2711,14 @@ const page = `<!doctype html>
       container.querySelectorAll("[data-cstep]").forEach(inp => inp.oninput = e => {
         const idx = Number(inp.dataset.cstep);
         currentCommissionSteps[idx] = e.target.value;
+        renderConsumeStepSelect();
       });
       container.querySelectorAll("[data-cstep-up]").forEach(btn => btn.onclick = () => {
         const idx = Number(btn.dataset.cstepUp);
         if (idx > 0) {
           [currentCommissionSteps[idx-1], currentCommissionSteps[idx]] = [currentCommissionSteps[idx], currentCommissionSteps[idx-1]];
           renderCommissionStepList();
+          renderConsumeStepSelect();
         }
       });
       container.querySelectorAll("[data-cstep-down]").forEach(btn => btn.onclick = () => {
@@ -2240,6 +2726,7 @@ const page = `<!doctype html>
         if (idx < currentCommissionSteps.length - 1) {
           [currentCommissionSteps[idx+1], currentCommissionSteps[idx]] = [currentCommissionSteps[idx], currentCommissionSteps[idx+1]];
           renderCommissionStepList();
+          renderConsumeStepSelect();
         }
       });
       container.querySelectorAll("[data-cstep-del]").forEach(btn => btn.onclick = () => {
@@ -2247,6 +2734,7 @@ const page = `<!doctype html>
         if (currentCommissionSteps.length > 1) {
           currentCommissionSteps.splice(idx, 1);
           renderCommissionStepList();
+          renderConsumeStepSelect();
         }
       });
     }
@@ -2654,6 +3142,113 @@ const page = `<!doctype html>
       });
     }
 
+    let stockLedgerLabels = {};
+    let stockLedgerCurrentFilter = { materialId: "", commissionId: "" };
+    async function showStockLedger(options = {}) {
+      const modal = document.getElementById("stockLedgerModal");
+      if (!modal) return;
+      const titleEl = document.getElementById("stockLedgerTitle");
+      if (titleEl) titleEl.textContent = options.title || "材料库存流水";
+      stockLedgerCurrentFilter = {
+        materialId: options.materialId || "",
+        commissionId: options.commissionId || ""
+      };
+      modal.classList.add("active");
+      await refreshStockLedger();
+      document.getElementById("ledgerFilterMaterial").value = "";
+      document.getElementById("ledgerFilterType").value = "";
+    }
+    function closeStockLedger() {
+      document.getElementById("stockLedgerModal").classList.remove("active");
+    }
+    document.getElementById("stockLedgerModalClose").onclick = closeStockLedger;
+    document.getElementById("stockLedgerModal").onclick = e => { if (e.target.id === "stockLedgerModal") closeStockLedger(); };
+    document.getElementById("ledgerRefreshBtn").onclick = refreshStockLedger;
+    document.getElementById("ledgerFilterMaterial").oninput = renderStockLedgerBody;
+    document.getElementById("ledgerFilterType").onchange = renderStockLedgerBody;
+    let currentLedgerData = [];
+    async function refreshStockLedger() {
+      try {
+        const params = new URLSearchParams();
+        if (stockLedgerCurrentFilter.materialId) params.set("materialId", stockLedgerCurrentFilter.materialId);
+        if (stockLedgerCurrentFilter.commissionId) params.set("commissionId", stockLedgerCurrentFilter.commissionId);
+        params.set("limit", "1000");
+        const data = await api("/api/stock-ledger?" + params.toString());
+        stockLedgerLabels = data.labels || {};
+        currentLedgerData = data.items || [];
+        const infoEl = document.getElementById("stockLedgerInfo");
+        if (infoEl) infoEl.textContent = "共 " + (data.total || 0) + " 条流水，当前显示 " + currentLedgerData.length + " 条";
+        const typeSel = document.getElementById("ledgerFilterType");
+        if (typeSel) {
+          const curVal = typeSel.value;
+          typeSel.innerHTML = '<option value="">全部变动类型</option>' +
+            Object.entries(stockLedgerLabels).map(([k, v]) => '<option value="' + k + '">' + v + '</option>').join("");
+          if (curVal && stockLedgerLabels[curVal]) typeSel.value = curVal;
+        }
+        renderStockLedgerBody();
+      } catch (e) {
+        alert("加载流水失败：" + e.message);
+      }
+    }
+    function renderStockLedgerBody() {
+      const tbody = document.getElementById("stockLedgerBody");
+      if (!tbody) return;
+      const nameKw = document.getElementById("ledgerFilterMaterial")?.value.trim() || "";
+      const typeKw = document.getElementById("ledgerFilterType")?.value || "";
+      const list = currentLedgerData.filter(l => {
+        if (nameKw && !(l.materialName || "").includes(nameKw)) return false;
+        if (typeKw && l.type !== typeKw) return false;
+        return true;
+      });
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="9" style="padding:32px;text-align:center;color:var(--muted);">暂无流水记录</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(l => {
+        const typeLabel = stockLedgerLabels[l.type] || l.type;
+        const qty = Number(l.quantity) || 0;
+        const qtyClass = qty >= 0 ? "ledger-qty-pos" : "ledger-qty-neg";
+        const qtyStr = (qty > 0 ? "+" : "") + qty;
+        const commissionCell = l.commissionId
+          ? '<span class="ledger-link" data-commission-ledger="' + l.commissionId + '">' + (l.commissionRoleName || l.commissionId) + '</span>'
+          : '—';
+        return '<tr style="border-bottom:1px solid var(--line);">' +
+          '<td style="padding:6px;white-space:nowrap;font-size:12px;color:var(--muted);">' + (l.at ? formatDate(l.at) : '') + '</td>' +
+          '<td style="padding:6px;"><span class="ledger-type-badge ledger-type-' + l.type + '">' + typeLabel + '</span></td>' +
+          '<td style="padding:6px;">' +
+            '<div style="font-weight:600;">' + (l.materialName || '—') + '</div>' +
+            (l.batch ? '<div style="font-size:11px;color:var(--muted);">批次：' + l.batch + '</div>' : '') +
+          '</td>' +
+          '<td style="padding:6px;text-align:right;" class="' + qtyClass + '">' + qtyStr + '</td>' +
+          '<td style="padding:6px;text-align:right;font-size:12px;">' +
+            '<div>' + (l.stockBefore ?? 0) + ' → <b>' + (l.stockAfter ?? 0) + '</b></div>' +
+          '</td>' +
+          '<td style="padding:6px;text-align:right;font-size:12px;">' +
+            '<div>' + (l.reservedBefore ?? 0) + ' → <b>' + (l.reservedAfter ?? 0) + '</b></div>' +
+          '</td>' +
+          '<td style="padding:6px;">' + commissionCell + '</td>' +
+          '<td style="padding:6px;white-space:nowrap;">' + (l.operator || '—') + '</td>' +
+          '<td style="padding:6px;font-size:12px;color:var(--muted);">' + (l.note || '—') + '</td>' +
+          '</tr>';
+      }).join("");
+      tbody.querySelectorAll("[data-commission-ledger]").forEach(el => {
+        el.onclick = () => {
+          const id = el.dataset.commissionLedger;
+          closeStockLedger();
+          openDetailModal(id);
+        };
+      });
+    }
+    function openDetailModalByLedger(id) {
+      closeStockLedger();
+      openDetailModal(id);
+    }
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") {
+        const m1 = document.getElementById("stockLedgerModal"); if (m1?.classList.contains("active")) closeStockLedger();
+      }
+    });
+
     function render() {
       renderCommissions();
       renderClientSelect();
@@ -2665,6 +3260,7 @@ const page = `<!doctype html>
       renderMaterials();
       renderTemplateSelect();
       renderCommissionStepList();
+      renderConsumeStepSelect();
       renderTemplates();
       renderTemplateStepList();
       if (scheduleData) renderSchedule();
@@ -2727,6 +3323,7 @@ const page = `<!doctype html>
         if (tipDiv) tipDiv.style.display = "none";
         currentCommissionSteps = [...defaultSteps];
         renderCommissionStepList();
+        renderConsumeStepSelect();
         await loadAll();
       } catch (e) {
         alert(e.message);
@@ -2742,10 +3339,12 @@ const page = `<!doctype html>
           if (tpl) {
             currentCommissionSteps = [...tpl.steps];
             renderCommissionStepList();
+            renderConsumeStepSelect();
           }
         } else {
           currentCommissionSteps = [...defaultSteps];
           renderCommissionStepList();
+          renderConsumeStepSelect();
         }
       };
     }
@@ -2759,10 +3358,12 @@ const page = `<!doctype html>
           if (tpl) {
             currentCommissionSteps = [...tpl.steps];
             renderCommissionStepList();
+            renderConsumeStepSelect();
           }
         } else {
           currentCommissionSteps = [...defaultSteps];
           renderCommissionStepList();
+          renderConsumeStepSelect();
         }
       };
     }
@@ -2776,6 +3377,7 @@ const page = `<!doctype html>
           currentCommissionSteps.push(val);
           inp.value = "";
           renderCommissionStepList();
+          renderConsumeStepSelect();
         }
       };
     }
@@ -2803,10 +3405,15 @@ const page = `<!doctype html>
       }
     };
 
+    const showAllLedgerBtn = document.getElementById("showAllLedgerBtn");
+    if (showAllLedgerBtn) showAllLedgerBtn.onclick = () => showStockLedger({ title: "全部材料库存流水" });
+
     document.querySelector("#materialForm").onsubmit = async event => {
       event.preventDefault();
       const formData = new FormData(event.target);
       const data = Object.fromEntries(formData.entries());
+      const op = getOperator();
+      Object.assign(data, { operator: op.operator, operatorId: op.operatorId });
       try {
         await api("/api/materials", { method:"POST", body: JSON.stringify(data) });
         event.target.reset();
@@ -2851,6 +3458,8 @@ const page = `<!doctype html>
       const data = Object.fromEntries(formData.entries());
       const id = data.id;
       delete data.id;
+      const op = getOperator();
+      Object.assign(data, { operator: op.operator, operatorId: op.operatorId });
       try {
         await api("/api/materials/"+id, { method: "PUT", body: JSON.stringify(data) });
         closeMaterialEditor();
@@ -4452,7 +5061,28 @@ const page = `<!doctype html>
       if (!el) return;
       const steps = c.steps || defaultSteps;
       const currentIdx = steps.indexOf(c.status);
-      const matChips = (c.materials && c.materials.length) ? c.materials.map(m => '<span class="mat-chip">' + m.name + ' ×' + m.quantity + (m.batch ? ' (' + m.batch + ')' : '') + '</span>').join("") : '<span style="color:var(--muted);">无</span>';
+      const consumeStepName = c.consumeStepName || "补片";
+      const consumeIdx = steps.indexOf(consumeStepName);
+      const isConsumed = consumeIdx !== -1 && currentIdx >= consumeIdx;
+      const matChips = (c.materials && c.materials.length) ? c.materials.map(m => {
+        const reserved = Number(m.reservedQty) || 0;
+        const consumed = Number(m.consumedQty) || 0;
+        let statusText = '';
+        let statusClass = '';
+        if (consumed > 0) {
+          statusText = '已消耗 ' + consumed + (m.unit || '');
+          statusClass = 'mat-chip-consumed';
+        } else if (reserved > 0) {
+          statusText = '已占用 ' + reserved + (m.unit || '');
+          statusClass = 'mat-chip-reserved';
+        } else {
+          statusText = '未占用';
+          statusClass = 'mat-chip-pending';
+        }
+        const extraInfo = consumed ? '（需 ' + m.quantity + (m.unit || '') + '）' : '';
+        return '<span class="mat-chip ' + statusClass + '" title="' + statusText + extraInfo + (m.consumedAt ? '，消耗时间：' + formatDate(m.consumedAt) : '') + (m.consumedBy ? '，操作人：' + m.consumedBy : '') + '">' + m.name + ' ×' + m.quantity + (m.batch ? ' (' + m.batch + ')' : '') + '<span class="mat-chip-status">' + statusText + '</span></span>';
+      }).join("") : '<span style="color:var(--muted);">无</span>';
+      const consumeBadge = '<span class="pill" style="margin-left:6px;background:' + (isConsumed ? 'var(--green)' : 'var(--line)') + ';color:' + (isConsumed ? '#fff' : 'var(--muted)') + ';">消耗点：' + consumeStepName + (isConsumed ? ' ✓' : '') + '</span>';
       const tplBadge = c.templateName ? '<span class="pill" style="margin-left:6px;background:var(--bg);">' + c.templateName + '</span>' : '';
       const statusBadge = '<span class="pill">' + (c.status || '—') + '</span>';
       const completedBadge = c.acceptance ? '<span class="pill confirmed" style="margin-left:6px;">已完成</span>' : '';
@@ -4476,14 +5106,14 @@ const page = `<!doctype html>
         '<div class="detail-info-item"><span class="label">角色名称</span><span class="value">' + (c.roleName || '—') + tplBadge + '</span></div>' +
         '<div class="detail-info-item"><span class="label">年代估计</span><span class="value">' + (c.era || '—') + '</span></div>' +
         '<div class="detail-info-item"><span class="label">客户</span><span class="value">' + (c.client || '—') + '</span></div>' +
-        '<div class="detail-info-item"><span class="label">当前步骤</span><span class="value">' + statusBadge + completedBadge + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">当前步骤</span><span class="value">' + statusBadge + completedBadge + consumeBadge + '</span></div>' +
         '<div class="detail-info-item full"><span class="label">破损部位</span><span class="value">' + (c.damage || '—') + '</span></div>' +
         '<div class="detail-info-item"><span class="label">缺失零件</span><span class="value">' + (c.missingParts || '—') + '</span></div>' +
         '<div class="detail-info-item"><span class="label">补色记录</span><span class="value">' + (c.colorNotes || '—') + '</span></div>' +
         '<div class="detail-info-item"><span class="label">加固材料</span><span class="value">' + (c.reinforcement || '—') + '</span></div>' +
         '<div class="detail-info-item"><span class="label">负责人</span><span class="value">' + (c.owner || '—') + '</span></div>' +
         '<div class="detail-info-item"><span class="label">截止日期</span><span class="value">' + (c.dueDate || '—') + '</span></div>' +
-        '<div class="detail-info-item full"><span class="label">选用材料</span><span class="value"><div class="mat-chips">' + matChips + '</div></span></div>' +
+        '<div class="detail-info-item full"><span class="label">选用材料 <button type="button" class="small secondary" id="showCommissionLedgerBtn" style="margin-left:8px;">查看材料流水</button></span><span class="value"><div class="mat-chips">' + matChips + '</div></span></div>' +
         '</div>' +
         '<div id="detailEditForm" style="display:none;margin-top:16px;padding:16px;background:var(--bg);border-radius:8px;">' +
         '<h4 style="margin:0 0 12px;">编辑基础信息</h4>' +
@@ -4535,6 +5165,8 @@ const page = `<!doctype html>
           alert("保存失败：" + e.message);
         }
       };
+      const ledgerBtn = document.getElementById("showCommissionLedgerBtn");
+      if (ledgerBtn) ledgerBtn.onclick = () => showStockLedger({ commissionId: c.id, title: c.roleName + " - 材料流水" });
     }
 
     function renderDetailTimeline(c) {
@@ -5092,9 +5724,34 @@ const server = http.createServer(async (req, res) => {
       if (input.owner !== undefined && input.owner !== commission.owner) { commission.owner = input.owner; changedFields.push("负责人"); }
       if (input.dueDate !== undefined && input.dueDate !== commission.dueDate) { commission.dueDate = input.dueDate; changedFields.push("截止日期"); }
       if (input.client !== undefined && input.client !== commission.client) { commission.client = input.client; changedFields.push("客户"); }
+      let materialsChanged = false;
       if (Array.isArray(input.materials)) {
-        commission.materials = input.materials;
-        changedFields.push("材料");
+        const normalizedMats = input.materials.map(m => ({
+          materialId: m.materialId || m.id || "",
+          name: m.name || "",
+          batch: m.batch || "",
+          quantity: Number(m.quantity) || 0,
+          reservedQty: Number(m.reservedQty) || 0,
+          consumedQty: Number(m.consumedQty) || 0,
+          consumedAt: m.consumedAt || "",
+          consumedBy: m.consumedBy || "",
+          consumedStep: m.consumedStep || ""
+        }));
+        const oldJson = JSON.stringify(before.materials);
+        const newJson = JSON.stringify(normalizedMats);
+        if (oldJson !== newJson) {
+          commission.materials = normalizedMats;
+          materialsChanged = true;
+          changedFields.push("材料");
+        }
+      }
+
+      if (materialsChanged) {
+        try {
+          adjustCommissionMaterials(db, commission, before.materials, input.operator, input.operatorId);
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
       }
 
       if (changedFields.length > 0) {
@@ -5132,6 +5789,8 @@ const server = http.createServer(async (req, res) => {
 
       const fields = snapshot.fields || {};
       const restoredFields = [];
+      let materialsChanged = false;
+      let restoredMaterials = null;
       for (const field of snapshotTrackedFields) {
         if (fields[field] !== undefined && commission[field] !== fields[field]) {
           commission[field] = fields[field];
@@ -5139,8 +5798,22 @@ const server = http.createServer(async (req, res) => {
         }
       }
       if (Array.isArray(fields.materials)) {
-        commission.materials = JSON.parse(JSON.stringify(fields.materials));
-        restoredFields.push("材料");
+        restoredMaterials = JSON.parse(JSON.stringify(fields.materials));
+        const oldJson = JSON.stringify(before.materials);
+        const newJson = JSON.stringify(restoredMaterials);
+        if (oldJson !== newJson) {
+          materialsChanged = true;
+          restoredFields.push("材料");
+        }
+      }
+
+      if (materialsChanged && restoredMaterials) {
+        commission.materials = restoredMaterials;
+        try {
+          adjustCommissionMaterials(db, commission, before.materials, input.operator, input.operatorId);
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
       }
 
       if (restoredFields.length > 0) {
@@ -5341,18 +6014,25 @@ const server = http.createServer(async (req, res) => {
           let commissionSteps = c.steps && Array.isArray(c.steps) && c.steps.length ? [...c.steps] : [...defaultSteps];
           const firstStep = commissionSteps[0];
           const currentStatus = c.status && commissionSteps.includes(c.status) ? c.status : firstStep;
+          const consumeStepName = c.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
 
           const selectedMaterials = [];
           if (Array.isArray(c.materials)) {
             for (const m of c.materials) {
               const mat = m.materialId ? dbCopy.materials.find(item => item.id === m.materialId) : null;
               if (mat && m.quantity > 0) {
-                if (mat.stock >= m.quantity) {
+                const available = (Number(mat.stock) || 0) - (Number(mat.reserved) || 0);
+                if (available >= m.quantity) {
                   selectedMaterials.push({
                     materialId: mat.id,
                     name: mat.name,
                     batch: mat.batch,
-                    quantity: m.quantity
+                    quantity: m.quantity,
+                    reservedQty: Number(m.reservedQty) || 0,
+                    consumedQty: Number(m.consumedQty) || 0,
+                    consumedAt: m.consumedAt || "",
+                    consumedBy: m.consumedBy || "",
+                    consumedStep: m.consumedStep || ""
                   });
                 }
               } else if (m.name && m.quantity > 0) {
@@ -5360,13 +6040,20 @@ const server = http.createServer(async (req, res) => {
                   materialId: m.materialId || "",
                   name: m.name,
                   batch: m.batch || "",
-                  quantity: m.quantity
+                  quantity: m.quantity,
+                  reservedQty: Number(m.reservedQty) || 0,
+                  consumedQty: Number(m.consumedQty) || 0,
+                  consumedAt: m.consumedAt || "",
+                  consumedBy: m.consumedBy || "",
+                  consumedStep: m.consumedStep || ""
                 });
               }
             }
           }
 
           let newId;
+          const importOp = item.operator || "导入系统";
+          const importOpId = item.operatorId || "";
           if (isDuplicate && item.forceOverwrite) {
             const dupIssue = issues.find(issue => issue.type === "duplicate");
             newId = dupIssue.existingId;
@@ -5374,6 +6061,9 @@ const server = http.createServer(async (req, res) => {
             if (existingIdx !== -1) {
               processedIds.add(newId);
               const existing = dbCopy.commissions[existingIdx];
+              const oldMaterials = Array.isArray(existing.materials) ? JSON.parse(JSON.stringify(existing.materials)) : [];
+              releaseCommissionMaterials(dbCopy, existing, importOp, importOpId, "导入覆盖-释放原占用");
+              const finalMaterials = selectedMaterials.length > 0 ? selectedMaterials : oldMaterials;
               const commission = {
                 ...existing,
                 clientId,
@@ -5384,7 +6074,8 @@ const server = http.createServer(async (req, res) => {
                 missingParts: c.missingParts !== undefined ? c.missingParts : existing.missingParts,
                 colorNotes: c.colorNotes !== undefined ? c.colorNotes : existing.colorNotes,
                 reinforcement: c.reinforcement !== undefined ? c.reinforcement : existing.reinforcement,
-                materials: selectedMaterials.length > 0 ? selectedMaterials : existing.materials,
+                materials: finalMaterials,
+                consumeStepName: consumeStepName || existing.consumeStepName || DEFAULT_CONSUME_STEP_NAME,
                 owner: c.owner || existing.owner,
                 dueDate: c.dueDate || existing.dueDate,
                 status: currentStatus,
@@ -5394,6 +6085,11 @@ const server = http.createServer(async (req, res) => {
                 records: c.records && Array.isArray(c.records) ? c.records : existing.records,
                 images: c.images || existing.images
               };
+              try {
+                reserveCommissionMaterials(dbCopy, commission, importOp, importOpId);
+              } catch (e) {
+                throw new Error(`委托【${commission.roleName}】导入失败：${e.message}`);
+              }
               dbCopy.commissions[existingIdx] = commission;
               newCommissions.push(commission);
               continue;
@@ -5421,6 +6117,7 @@ const server = http.createServer(async (req, res) => {
             colorNotes: c.colorNotes || "",
             reinforcement: c.reinforcement || "",
             materials: selectedMaterials,
+            consumeStepName,
             owner: c.owner,
             dueDate: c.dueDate,
             status: currentStatus,
@@ -5431,11 +6128,10 @@ const server = http.createServer(async (req, res) => {
             images: c.images || { before: [], during: [], after: [] }
           };
 
-          for (const m of selectedMaterials) {
-            if (m.materialId) {
-              const mat = dbCopy.materials.find(item => item.id === m.materialId);
-              if (mat) mat.stock = Math.max(0, mat.stock - m.quantity);
-            }
+          try {
+            reserveCommissionMaterials(dbCopy, commission, importOp, importOpId);
+          } catch (e) {
+            throw new Error(`委托【${commission.roleName}】导入失败：${e.message}`);
           }
 
           dbCopy.commissions.unshift(commission);
@@ -5493,22 +6189,26 @@ const server = http.createServer(async (req, res) => {
         commissionSteps = input.steps;
       }
       const firstStep = commissionSteps[0];
+      const consumeStepName = input.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
       const selectedMaterials = [];
       if (Array.isArray(input.materials)) {
         for (const m of input.materials) {
           const mat = db.materials.find(item => item.id === m.id);
           if (mat && m.quantity > 0) {
-            if (mat.stock < m.quantity) {
-              return sendJson(res, 400, { error: `材料 ${mat.name} 库存不足，当前库存 ${mat.stock}${mat.unit}` });
+            const available = getMaterialAvailable(mat);
+            if (available < m.quantity) {
+              const reserved = Number(mat.reserved) || 0;
+              return sendJson(res, 400, { error: `材料 ${mat.name} 可用量不足，可用 ${available}${mat.unit}（总库存 ${mat.stock}${mat.unit}，已占用 ${reserved}${mat.unit}）` });
             }
-            selectedMaterials.push({ materialId: mat.id, name: mat.name, batch: mat.batch, quantity: m.quantity });
+            selectedMaterials.push({ materialId: mat.id, name: mat.name, batch: mat.batch, quantity: m.quantity, reservedQty: 0, consumedQty: 0, consumedAt: "", consumedBy: "", consumedStep: "" });
           }
         }
       }
-      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] }, quotes: [], currentQuoteId: "", fieldSnapshots: [], operationLogs: [] };
-      for (const m of selectedMaterials) {
-        const mat = db.materials.find(item => item.id === m.materialId);
-        if (mat) mat.stock -= m.quantity;
+      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, consumeStepName, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] }, quotes: [], currentQuoteId: "", fieldSnapshots: [], operationLogs: [] };
+      try {
+        reserveCommissionMaterials(db, commission, input.operator, input.operatorId);
+      } catch (e) {
+        return sendJson(res, 400, { error: e.message });
       }
       commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "创建委托"));
       addOperationLog(commission, "create", input.operator, input.operatorId, "创建委托");
@@ -5525,12 +6225,29 @@ const server = http.createServer(async (req, res) => {
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
       if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
       const oldStatus = commission.status;
-      commission.status = input.step;
-      commission.records.push({ at: new Date().toISOString(), step: input.step, note: input.note || "" });
-      if (oldStatus !== input.step) {
-        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "步骤更新：" + oldStatus + " → " + input.step));
+      const newStatus = input.step;
+      const steps = commission.steps && commission.steps.length ? commission.steps : defaultSteps;
+      const oldIdx = steps.indexOf(oldStatus);
+      const newIdx = steps.indexOf(newStatus);
+      const consumeStepName = commission.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
+      const consumeIdx = steps.indexOf(consumeStepName);
+      try {
+        if (oldStatus !== newStatus && consumeIdx !== -1) {
+          if (oldIdx < consumeIdx && newIdx >= consumeIdx) {
+            consumeCommissionMaterialsAtStep(db, commission, oldStatus, newStatus, input.operator, input.operatorId);
+          } else if (oldIdx >= consumeIdx && newIdx < consumeIdx) {
+            undoCommissionMaterialsConsume(db, commission, input.operator, input.operatorId, `步骤回退：${oldStatus} → ${newStatus}，撤销消耗`);
+          }
+        }
+      } catch (e) {
+        return sendJson(res, 400, { error: e.message });
       }
-      addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + input.step + (input.note ? " - " + input.note : ""));
+      commission.status = newStatus;
+      commission.records.push({ at: new Date().toISOString(), step: newStatus, note: input.note || "" });
+      if (oldStatus !== newStatus) {
+        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "步骤更新：" + oldStatus + " → " + newStatus));
+      }
+      addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + newStatus + (input.note ? " - " + input.note : ""));
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
@@ -5606,32 +6323,87 @@ const server = http.createServer(async (req, res) => {
       await saveDb(db);
       return sendJson(res, 200, { ok: true });
     }
-    if (req.method === "GET" && url.pathname === "/api/materials") return sendJson(res, 200, db.materials);
+    if (req.method === "GET" && url.pathname === "/api/materials") {
+      const result = db.materials.map(m => ({
+        ...m,
+        reserved: Number(m.reserved) || 0,
+        available: getMaterialAvailable(m)
+      }));
+      return sendJson(res, 200, result);
+    }
+    if (req.method === "GET" && url.pathname === "/api/stock-ledger") {
+      ensureStockLedger(db);
+      const params = new URL(req.url, `http://${req.headers.host}`).searchParams;
+      const materialId = params.get("materialId") || "";
+      const commissionId = params.get("commissionId") || "";
+      let list = db.stockLedger;
+      if (materialId) list = list.filter(l => l.materialId === materialId);
+      if (commissionId) list = list.filter(l => l.commissionId === commissionId);
+      const limit = Math.min(Number(params.get("limit")) || 500, 2000);
+      list = list.slice(0, limit);
+      return sendJson(res, 200, { total: db.stockLedger.length, items: list, labels: STOCK_LEDGER_LABELS });
+    }
     if (req.method === "POST" && url.pathname === "/api/materials") {
       const input = await body(req);
-      const material = { id: `MAT-${Date.now()}`, name: input.name, category: input.category || "其他", batch: input.batch || "", stock: Number(input.stock) || 0, unit: input.unit || "个", minStock: Number(input.minStock) || 0, remark: input.remark || "" };
+      const initStock = Number(input.stock) || 0;
+      const material = { id: `MAT-${Date.now()}`, name: input.name, category: input.category || "其他", batch: input.batch || "", stock: initStock, reserved: 0, unit: input.unit || "个", minStock: Number(input.minStock) || 0, remark: input.remark || "" };
       db.materials.unshift(material);
+      const op = input.operator || "系统";
+      const opId = input.operatorId || "";
+      if (initStock > 0) {
+        addStockLedger(db, createStockLedgerEntry({
+          materialId: material.id, materialName: material.name, batch: material.batch,
+          type: STOCK_LEDGER_TYPES.INIT, quantity: initStock,
+          stockBefore: 0, stockAfter: initStock,
+          reservedBefore: 0, reservedAfter: 0,
+          operator: op, operatorId: opId,
+          note: `新增材料，初始库存 ${initStock}${material.unit}`
+        }));
+      }
       await saveDb(db);
-      return sendJson(res, 201, material);
+      return sendJson(res, 201, { ...material, available: getMaterialAvailable(material) });
     }
     const materialMatch = url.pathname.match(/^\/api\/materials\/([^/]+)$/);
     if (materialMatch && req.method === "PUT") {
       const material = db.materials.find(m => m.id === materialMatch[1]);
       if (!material) return sendJson(res, 404, { error: "material_not_found" });
       const input = await body(req);
+      const stockBefore = Number(material.stock) || 0;
       if (input.name !== undefined) material.name = input.name;
       if (input.category !== undefined) material.category = input.category || "其他";
       if (input.batch !== undefined) material.batch = input.batch || "";
-      if (input.stock !== undefined) material.stock = Math.max(0, Number(input.stock) || 0);
+      if (input.stock !== undefined) {
+        const newStock = Math.max(0, Number(input.stock) || 0);
+        const diff = newStock - stockBefore;
+        material.stock = newStock;
+        const op = input.operator || "系统";
+        const opId = input.operatorId || "";
+        if (diff !== 0) {
+          addStockLedger(db, createStockLedgerEntry({
+            materialId: material.id, materialName: material.name, batch: material.batch,
+            type: diff > 0 ? STOCK_LEDGER_TYPES.MANUAL_IN : STOCK_LEDGER_TYPES.MANUAL_OUT,
+            quantity: diff,
+            stockBefore, stockAfter: newStock,
+            reservedBefore: Number(material.reserved) || 0, reservedAfter: Number(material.reserved) || 0,
+            operator: op, operatorId: opId,
+            note: `编辑材料调整库存：${stockBefore} → ${newStock}（${diff > 0 ? "+" : ""}${diff}）`
+          }));
+        }
+      }
       if (input.unit !== undefined) material.unit = input.unit || "个";
       if (input.minStock !== undefined) material.minStock = Math.max(0, Number(input.minStock) || 0);
       if (input.remark !== undefined) material.remark = input.remark || "";
       await saveDb(db);
-      return sendJson(res, 200, material);
+      return sendJson(res, 200, { ...material, available: getMaterialAvailable(material) });
     }
     if (materialMatch && req.method === "DELETE") {
       const idx = db.materials.findIndex(m => m.id === materialMatch[1]);
       if (idx === -1) return sendJson(res, 404, { error: "material_not_found" });
+      const deleted = db.materials[idx];
+      const reserved = Number(deleted.reserved) || 0;
+      if (reserved > 0) {
+        return sendJson(res, 400, { error: `该材料存在 ${reserved}${deleted.unit} 的库存占用，请先取消相关委托的占用后再删除` });
+      }
       db.materials.splice(idx, 1);
       await saveDb(db);
       return sendJson(res, 200, { ok: true });
@@ -5642,9 +6414,28 @@ const server = http.createServer(async (req, res) => {
       if (!material) return sendJson(res, 404, { error: "material_not_found" });
       const input = await body(req);
       const change = Number(input.change) || 0;
-      material.stock = Math.max(0, material.stock + change);
+      const stockBefore = Number(material.stock) || 0;
+      const reservedBefore = Number(material.reserved) || 0;
+      if (change < 0) {
+        const available = stockBefore - reservedBefore;
+        if (available + change < 0) {
+          return sendJson(res, 400, { error: `可用量不足，当前可用 ${available}${material.unit}（总库存 ${stockBefore}${material.unit}，已占用 ${reservedBefore}${material.unit}）` });
+        }
+      }
+      material.stock = Math.max(0, stockBefore + change);
+      const op = input.operator || "系统";
+      const opId = input.operatorId || "";
+      addStockLedger(db, createStockLedgerEntry({
+        materialId: material.id, materialName: material.name, batch: material.batch,
+        type: change > 0 ? STOCK_LEDGER_TYPES.MANUAL_IN : STOCK_LEDGER_TYPES.MANUAL_OUT,
+        quantity: change,
+        stockBefore, stockAfter: material.stock,
+        reservedBefore, reservedAfter: reservedBefore,
+        operator: op, operatorId: opId,
+        note: input.note || (change > 0 ? "手动入库" : "手动出库") + `：${change > 0 ? "+" : ""}${change}${material.unit}`
+      }));
       await saveDb(db);
-      return sendJson(res, 200, material);
+      return sendJson(res, 200, { ...material, available: getMaterialAvailable(material) });
     }
 
     if (req.method === "GET" && url.pathname === "/api/members") return sendJson(res, 200, db.members);
