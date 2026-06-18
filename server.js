@@ -566,7 +566,17 @@ const page = `<!doctype html>
     .schedule-stats .stat.on-track strong { color:var(--green); }
     .schedule-filter { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center; }
     .schedule-filter select { width:auto; min-width:150px; }
+    .schedule-filter input[type="date"] { width:auto; padding:6px 8px; }
     .schedule-filter .filter-label { color:var(--muted); font-size:13px; margin-right:4px; }
+    .commission-filters { display:flex; gap:10px; margin-bottom:14px; padding:12px; background:var(--bg); border-radius:8px; flex-wrap:wrap; align-items:center; }
+    .commission-filters .filter-group { display:flex; align-items:center; gap:6px; }
+    .commission-filters .filter-label { color:var(--muted); font-size:13px; white-space:nowrap; }
+    .commission-filters select { width:auto; min-width:130px; padding:6px 8px; }
+    .commission-filters input[type="date"] { width:auto; padding:6px 8px; }
+    .commission-filters .date-range { display:flex; align-items:center; gap:4px; }
+    .commission-filters button.reset-filter { padding:6px 12px; font-size:12px; background:#fff; border:1px solid var(--line); border-radius:6px; cursor:pointer; }
+    .commission-filters button.reset-filter:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .filter-active-indicator { display:inline-block; margin-left:6px; padding:1px 7px; background:var(--orange); color:#fff; border-radius:999px; font-size:11px; font-weight:700; }
     .kanban { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
     .kanban-column { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px; min-height:200px; }
     .kanban-column-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid var(--line); }
@@ -914,6 +924,35 @@ const page = `<!doctype html>
       </form>
       <section>
         <div class="stats" id="stats"></div>
+        <div class="commission-filters" id="commissionFilters">
+          <div class="filter-group">
+            <span class="filter-label">负责人：</span>
+            <select id="filterOwner">
+              <option value="">全部负责人</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">客户：</span>
+            <select id="filterClient">
+              <option value="">全部客户</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">当前步骤：</span>
+            <select id="filterStatus">
+              <option value="">全部步骤</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label">预计完成：</span>
+            <div class="date-range">
+              <input type="date" id="filterDueFrom" title="开始日期">
+              <span class="filter-label">至</span>
+              <input type="date" id="filterDueTo" title="结束日期">
+            </div>
+          </div>
+          <button type="button" class="reset-filter" id="resetCommissionFilters">重置筛选</button>
+        </div>
         <div class="stage-filter-tabs" id="stageFilterTabs">
           <button type="button" class="stage-filter-tab active" data-stage-filter="active">进行中 <span class="count" id="countActive">0</span></button>
           <button type="button" class="stage-filter-tab" data-stage-filter="delivered">已交付 <span class="count" id="countDelivered">0</span></button>
@@ -956,10 +995,23 @@ const page = `<!doctype html>
         <button type="button" class="active" data-schedule-view="status">按状态</button>
         <button type="button" data-schedule-view="owner">按负责人</button>
       </div>
-      <span class="filter-label" style="margin-left:10px;">负责人筛选：</span>
+      <span class="filter-label" style="margin-left:10px;">负责人：</span>
       <select id="ownerFilter">
         <option value="">全部负责人</option>
       </select>
+      <span class="filter-label">客户：</span>
+      <select id="scheduleClientFilter">
+        <option value="">全部客户</option>
+      </select>
+      <span class="filter-label">当前步骤：</span>
+      <select id="scheduleStatusFilter">
+        <option value="">全部步骤</option>
+      </select>
+      <span class="filter-label">截止日期：</span>
+      <input type="date" id="scheduleDueFrom" title="开始日期">
+      <span class="filter-label">至</span>
+      <input type="date" id="scheduleDueTo" title="结束日期">
+      <button type="button" class="small secondary" id="resetScheduleFilters">重置</button>
       <button type="button" class="small secondary" id="refreshScheduleBtn" style="margin-left:auto;">🔄 刷新</button>
     </div>
     <div id="scheduleView"></div>
@@ -1392,6 +1444,20 @@ const page = `<!doctype html>
     let editingTemplateSteps = [];
     let newTemplateSteps = ["接收", "清洁", "补片", "补色", "交付"];
     let currentStageFilter = "active";
+    let commissionFilter = {
+      owner: "",
+      client: "",
+      status: "",
+      dueFrom: "",
+      dueTo: ""
+    };
+    let scheduleFilter = {
+      owner: "",
+      client: "",
+      status: "",
+      dueFrom: "",
+      dueTo: ""
+    };
 
     function getOperator() {
       const sel = document.getElementById("operatorSelect");
@@ -1442,15 +1508,6 @@ const page = `<!doctype html>
       };
     });
 
-    const ownerFilterSelect = document.getElementById("ownerFilter");
-    if (ownerFilterSelect) {
-      ownerFilterSelect.onchange = () => {
-        scheduleOwnerFilter = ownerFilterSelect.value;
-        localStorage.setItem("scheduleOwnerFilter", scheduleOwnerFilter);
-        renderSchedule();
-      };
-    }
-
     const refreshScheduleBtn = document.getElementById("refreshScheduleBtn");
     if (refreshScheduleBtn) {
       refreshScheduleBtn.onclick = async () => {
@@ -1459,7 +1516,151 @@ const page = `<!doctype html>
       };
     }
 
+    function applyCommissionFilters(list, filter) {
+      return list.filter(c => {
+        if (filter.owner && c.owner !== filter.owner) return false;
+        if (filter.client && c.client !== filter.client) return false;
+        if (filter.status && c.status !== filter.status) return false;
+        if (filter.dueFrom && c.dueDate) {
+          if (c.dueDate < filter.dueFrom) return false;
+        }
+        if (filter.dueTo && c.dueDate) {
+          if (c.dueDate > filter.dueTo) return false;
+        }
+        return true;
+      });
+    }
+
+    function isCommissionFilterActive(filter) {
+      return filter.owner || filter.client || filter.status || filter.dueFrom || filter.dueTo;
+    }
+
+    function saveCommissionFilter() {
+      localStorage.setItem("commissionFilter", JSON.stringify(commissionFilter));
+    }
+
+    function saveScheduleFilter() {
+      localStorage.setItem("scheduleFilter", JSON.stringify(scheduleFilter));
+      localStorage.setItem("scheduleOwnerFilter", scheduleFilter.owner || "");
+    }
+
+    function renderCommissionFilterSelects() {
+      const ownerSel = document.getElementById("filterOwner");
+      const clientSel = document.getElementById("filterClient");
+      const statusSel = document.getElementById("filterStatus");
+      const dueFromInp = document.getElementById("filterDueFrom");
+      const dueToInp = document.getElementById("filterDueTo");
+
+      if (ownerSel) {
+        const owners = [...new Set(commissions.map(c => c.owner).filter(Boolean))].sort();
+        ownerSel.innerHTML = '<option value="">全部负责人</option>' +
+          owners.map(o => '<option value="' + o + '"' + (o === commissionFilter.owner ? ' selected' : '') + '>' + o + '</option>').join("");
+      }
+      if (clientSel) {
+        const clientList = [...new Set(commissions.map(c => c.client).filter(Boolean))].sort();
+        clientSel.innerHTML = '<option value="">全部客户</option>' +
+          clientList.map(cl => '<option value="' + cl + '"' + (cl === commissionFilter.client ? ' selected' : '') + '>' + cl + '</option>').join("");
+      }
+      if (statusSel) {
+        const statuses = [...new Set(commissions.map(c => c.status).filter(Boolean))].sort();
+        statusSel.innerHTML = '<option value="">全部步骤</option>' +
+          statuses.map(s => '<option value="' + s + '"' + (s === commissionFilter.status ? ' selected' : '') + '>' + s + '</option>').join("");
+      }
+      if (dueFromInp) dueFromInp.value = commissionFilter.dueFrom || "";
+      if (dueToInp) dueToInp.value = commissionFilter.dueTo || "";
+
+      const filterContainer = document.getElementById("commissionFilters");
+      if (filterContainer) {
+        const indicator = filterContainer.querySelector(".filter-active-indicator");
+        if (isCommissionFilterActive(commissionFilter)) {
+          if (!indicator) {
+            const btn = document.getElementById("resetCommissionFilters");
+            if (btn) {
+              const span = document.createElement("span");
+              span.className = "filter-active-indicator";
+              span.textContent = "已筛选";
+              btn.parentNode.insertBefore(span, btn.nextSibling);
+            }
+          }
+        } else {
+          if (indicator) indicator.remove();
+        }
+      }
+    }
+
+    function renderScheduleFilterSelects() {
+      const ownerSel = document.getElementById("ownerFilter");
+      const clientSel = document.getElementById("scheduleClientFilter");
+      const statusSel = document.getElementById("scheduleStatusFilter");
+      const dueFromInp = document.getElementById("scheduleDueFrom");
+      const dueToInp = document.getElementById("scheduleDueTo");
+
+      if (ownerSel) {
+        const owners = [...new Set(commissions.filter(c => c.acceptance === null).map(c => c.owner).filter(Boolean))].sort();
+        ownerSel.innerHTML = '<option value="">全部负责人</option>' +
+          owners.map(o => '<option value="' + o + '"' + (o === scheduleFilter.owner ? ' selected' : '') + '>' + o + '</option>').join("");
+      }
+      if (clientSel) {
+        const clientList = [...new Set(commissions.filter(c => c.acceptance === null).map(c => c.client).filter(Boolean))].sort();
+        clientSel.innerHTML = '<option value="">全部客户</option>' +
+          clientList.map(cl => '<option value="' + cl + '"' + (cl === scheduleFilter.client ? ' selected' : '') + '>' + cl + '</option>').join("");
+      }
+      if (statusSel) {
+        const statuses = [...new Set(commissions.filter(c => c.acceptance === null).map(c => c.status).filter(Boolean))].sort();
+        statusSel.innerHTML = '<option value="">全部步骤</option>' +
+          statuses.map(s => '<option value="' + s + '"' + (s === scheduleFilter.status ? ' selected' : '') + '>' + s + '</option>').join("");
+      }
+      if (dueFromInp) dueFromInp.value = scheduleFilter.dueFrom || "";
+      if (dueToInp) dueToInp.value = scheduleFilter.dueTo || "";
+    }
+
+    function bindCommissionFilterEvents() {
+      const ownerSel = document.getElementById("filterOwner");
+      const clientSel = document.getElementById("filterClient");
+      const statusSel = document.getElementById("filterStatus");
+      const dueFromInp = document.getElementById("filterDueFrom");
+      const dueToInp = document.getElementById("filterDueTo");
+      const resetBtn = document.getElementById("resetCommissionFilters");
+
+      if (ownerSel) ownerSel.onchange = () => { commissionFilter.owner = ownerSel.value; saveCommissionFilter(); renderCommissions(); };
+      if (clientSel) clientSel.onchange = () => { commissionFilter.client = clientSel.value; saveCommissionFilter(); renderCommissions(); };
+      if (statusSel) statusSel.onchange = () => { commissionFilter.status = statusSel.value; saveCommissionFilter(); renderCommissions(); };
+      if (dueFromInp) dueFromInp.onchange = () => { commissionFilter.dueFrom = dueFromInp.value; saveCommissionFilter(); renderCommissions(); };
+      if (dueToInp) dueToInp.onchange = () => { commissionFilter.dueTo = dueToInp.value; saveCommissionFilter(); renderCommissions(); };
+      if (resetBtn) resetBtn.onclick = () => {
+        commissionFilter = { owner: "", client: "", status: "", dueFrom: "", dueTo: "" };
+        saveCommissionFilter();
+        renderCommissionFilterSelects();
+        renderCommissions();
+      };
+    }
+    bindCommissionFilterEvents();
+
+    function bindScheduleFilterEvents() {
+      const ownerSel = document.getElementById("ownerFilter");
+      const clientSel = document.getElementById("scheduleClientFilter");
+      const statusSel = document.getElementById("scheduleStatusFilter");
+      const dueFromInp = document.getElementById("scheduleDueFrom");
+      const dueToInp = document.getElementById("scheduleDueTo");
+      const resetBtn = document.getElementById("resetScheduleFilters");
+
+      if (ownerSel) ownerSel.onchange = () => { scheduleFilter.owner = ownerSel.value; scheduleOwnerFilter = ownerSel.value; saveScheduleFilter(); renderSchedule(); };
+      if (clientSel) clientSel.onchange = () => { scheduleFilter.client = clientSel.value; saveScheduleFilter(); renderSchedule(); };
+      if (statusSel) statusSel.onchange = () => { scheduleFilter.status = statusSel.value; saveScheduleFilter(); renderSchedule(); };
+      if (dueFromInp) dueFromInp.onchange = () => { scheduleFilter.dueFrom = dueFromInp.value; saveScheduleFilter(); renderSchedule(); };
+      if (dueToInp) dueToInp.onchange = () => { scheduleFilter.dueTo = dueToInp.value; saveScheduleFilter(); renderSchedule(); };
+      if (resetBtn) resetBtn.onclick = () => {
+        scheduleFilter = { owner: "", client: "", status: "", dueFrom: "", dueTo: "" };
+        scheduleOwnerFilter = "";
+        saveScheduleFilter();
+        renderScheduleFilterSelects();
+        renderSchedule();
+      };
+    }
+    bindScheduleFilterEvents();
+
     function renderCommissions() {
+      renderCommissionFilterSelects();
       const stats = document.querySelector("#stats");
       const list = document.querySelector("#list");
       const stepCounts = {};
@@ -1468,10 +1669,16 @@ const page = `<!doctype html>
       const activeCommissions = commissions.filter(c => c.acceptance === null);
       const countActiveEl = document.getElementById("countActive");
       const countDeliveredEl = document.getElementById("countDelivered");
-      if (countActiveEl) countActiveEl.textContent = activeCommissions.length;
-      if (countDeliveredEl) countDeliveredEl.textContent = deliveredCommissions.length;
 
-      const filteredCommissions = currentStageFilter === "delivered" ? deliveredCommissions : activeCommissions;
+      const stageFilteredCommissions = currentStageFilter === "delivered" ? deliveredCommissions : activeCommissions;
+      const filteredCommissions = applyCommissionFilters(stageFilteredCommissions, commissionFilter);
+
+      const activeFiltered = applyCommissionFilters(activeCommissions, commissionFilter).length;
+      const deliveredFiltered = applyCommissionFilters(deliveredCommissions, commissionFilter).length;
+      const filterActive = isCommissionFilterActive(commissionFilter);
+
+      if (countActiveEl) countActiveEl.textContent = filterActive ? (activeFiltered + "/" + activeCommissions.length) : activeCommissions.length;
+      if (countDeliveredEl) countDeliveredEl.textContent = filterActive ? (deliveredFiltered + "/" + deliveredCommissions.length) : deliveredCommissions.length;
 
       for (const c of filteredCommissions) {
         (c.steps || defaultSteps).forEach(s => { if (!stepCounts[s]) stepCounts[s] = 0; });
@@ -1481,7 +1688,9 @@ const page = `<!doctype html>
       stats.innerHTML = allSteps.map(step => '<div class="stat"><span>'+step+'</span><strong>'+filteredCommissions.filter(c => c.status === step).length+'</strong></div>').join("");
 
       if (filteredCommissions.length === 0) {
-        list.innerHTML = '<div class="empty-state"><div class="icon">' + (currentStageFilter === "delivered" ? "📦" : "📋") + '</div><div>' + (currentStageFilter === "delivered" ? "暂无已交付的委托" : "暂无进行中的委托") + '</div></div>';
+        let emptyMsg = currentStageFilter === "delivered" ? "暂无已交付的委托" : "暂无进行中的委托";
+        if (filterActive) emptyMsg = "没有符合筛选条件的委托";
+        list.innerHTML = '<div class="empty-state"><div class="icon">' + (currentStageFilter === "delivered" ? "📦" : "📋") + '</div><div>' + emptyMsg + '</div></div>';
         return;
       }
 
@@ -2024,16 +2233,61 @@ const page = `<!doctype html>
       '</div>';
     }
 
-    function renderScheduleByStatus(data, ownerFilter) {
-      let overdue = data.overdue;
-      let dueSoon = data.dueSoon;
-      let onTrack = data.onTrack;
-
-      if (ownerFilter) {
-        overdue = overdue.filter(i => i.owner === ownerFilter);
-        dueSoon = dueSoon.filter(i => i.owner === ownerFilter);
-        onTrack = onTrack.filter(i => i.owner === ownerFilter);
+    function applyScheduleFiltersToItem(item, filter) {
+      if (filter.owner && item.owner !== filter.owner) return false;
+      if (filter.client && item.client !== filter.client) return false;
+      if (filter.status && item.status !== filter.status) return false;
+      if (filter.dueFrom && item.dueDate) {
+        if (item.dueDate < filter.dueFrom) return false;
       }
+      if (filter.dueTo && item.dueDate) {
+        if (item.dueDate > filter.dueTo) return false;
+      }
+      return true;
+    }
+
+    function applyScheduleFilters(data, filter) {
+      const filtered = {
+        overdue: data.overdue.filter(i => applyScheduleFiltersToItem(i, filter)),
+        dueSoon: data.dueSoon.filter(i => applyScheduleFiltersToItem(i, filter)),
+        onTrack: data.onTrack.filter(i => applyScheduleFiltersToItem(i, filter)),
+        byOwner: {},
+        stats: { total: 0, overdue: 0, dueSoon: 0, onTrack: 0, byOwner: {} }
+      };
+
+      const allFiltered = [...filtered.overdue, ...filtered.dueSoon, ...filtered.onTrack];
+      for (const item of allFiltered) {
+        if (!filtered.byOwner[item.owner]) {
+          filtered.byOwner[item.owner] = { overdue: [], dueSoon: [], onTrack: [] };
+          filtered.stats.byOwner[item.owner] = { total: 0, overdue: 0, dueSoon: 0, onTrack: 0 };
+        }
+        filtered.byOwner[item.owner][item.statusCategory].push(item);
+        filtered.stats.byOwner[item.owner].total++;
+        filtered.stats.byOwner[item.owner][item.statusCategory]++;
+      }
+
+      filtered.stats.total = filtered.overdue.length + filtered.dueSoon.length + filtered.onTrack.length;
+      filtered.stats.overdue = filtered.overdue.length;
+      filtered.stats.dueSoon = filtered.dueSoon.length;
+      filtered.stats.onTrack = filtered.onTrack.length;
+
+      Object.values(filtered.byOwner).forEach(ownerGroup => {
+        ownerGroup.overdue.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+        ownerGroup.dueSoon.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+        ownerGroup.onTrack.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      });
+
+      filtered.overdue.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      filtered.dueSoon.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+      filtered.onTrack.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+
+      return filtered;
+    }
+
+    function renderScheduleByStatus(data) {
+      const overdue = data.overdue;
+      const dueSoon = data.dueSoon;
+      const onTrack = data.onTrack;
 
       return '<div class="kanban">' +
         '<div class="kanban-column overdue">' +
@@ -2060,11 +2314,8 @@ const page = `<!doctype html>
       '</div>';
     }
 
-    function renderScheduleByOwner(data, ownerFilter) {
+    function renderScheduleByOwner(data) {
       let owners = Object.keys(data.byOwner);
-      if (ownerFilter) {
-        owners = owners.filter(o => o === ownerFilter);
-      }
       owners.sort();
 
       if (!owners.length) {
@@ -2088,25 +2339,24 @@ const page = `<!doctype html>
             overdue: ownerData.overdue,
             dueSoon: ownerData.dueSoon,
             onTrack: ownerData.onTrack
-          }, null) +
+          }) +
         '</div>';
       }).join("");
     }
 
-    function renderScheduleStats(data) {
+    function renderScheduleStats(data, originalData) {
       const stats = data.stats;
-      return '<div class="stat"><span>进行中委托</span><strong>' + stats.total + '</strong></div>' +
-        '<div class="stat overdue"><span>逾期</span><strong>' + stats.overdue + '</strong></div>' +
-        '<div class="stat due-soon"><span>三天内到期</span><strong>' + stats.dueSoon + '</strong></div>' +
-        '<div class="stat on-track"><span>正常推进</span><strong>' + stats.onTrack + '</strong></div>';
-    }
+      const origStats = originalData ? originalData.stats : null;
+      const filterActive = isCommissionFilterActive(scheduleFilter);
 
-    function renderOwnerFilter(data) {
-      const select = document.getElementById("ownerFilter");
-      if (!select) return;
-      const owners = Object.keys(data.byOwner).sort();
-      select.innerHTML = '<option value="">全部负责人</option>' + 
-        owners.map(o => '<option value="' + o + '"' + (o === scheduleOwnerFilter ? ' selected' : '') + '>' + o + '</option>').join("");
+      const formatCount = (filtered, original) => {
+        return filterActive && origStats ? (filtered + "/" + original) : filtered;
+      };
+
+      return '<div class="stat"><span>进行中委托</span><strong>' + formatCount(stats.total, origStats ? origStats.total : 0) + '</strong></div>' +
+        '<div class="stat overdue"><span>逾期</span><strong>' + formatCount(stats.overdue, origStats ? origStats.overdue : 0) + '</strong></div>' +
+        '<div class="stat due-soon"><span>三天内到期</span><strong>' + formatCount(stats.dueSoon, origStats ? origStats.dueSoon : 0) + '</strong></div>' +
+        '<div class="stat on-track"><span>正常推进</span><strong>' + formatCount(stats.onTrack, origStats ? origStats.onTrack : 0) + '</strong></div>';
     }
 
     function renderSchedule() {
@@ -2114,16 +2364,17 @@ const page = `<!doctype html>
 
       const statsEl = document.getElementById("scheduleStats");
       const viewEl = document.getElementById("scheduleView");
+
+      renderScheduleFilterSelects();
+      const filteredData = applyScheduleFilters(scheduleData, scheduleFilter);
       
-      if (statsEl) statsEl.innerHTML = renderScheduleStats(scheduleData);
-      
-      renderOwnerFilter(scheduleData);
+      if (statsEl) statsEl.innerHTML = renderScheduleStats(filteredData, scheduleData);
 
       if (viewEl) {
         if (scheduleView === "status") {
-          viewEl.innerHTML = renderScheduleByStatus(scheduleData, scheduleOwnerFilter);
+          viewEl.innerHTML = renderScheduleByStatus(filteredData);
         } else {
-          viewEl.innerHTML = renderScheduleByOwner(scheduleData, scheduleOwnerFilter);
+          viewEl.innerHTML = renderScheduleByOwner(filteredData);
         }
       }
 
@@ -2479,6 +2730,23 @@ const page = `<!doctype html>
     let scheduleData = null;
     let scheduleView = localStorage.getItem("scheduleView") || "status";
     let scheduleOwnerFilter = localStorage.getItem("scheduleOwnerFilter") || "";
+    try {
+      const savedCommissionFilter = localStorage.getItem("commissionFilter");
+      if (savedCommissionFilter) {
+        const parsed = JSON.parse(savedCommissionFilter);
+        commissionFilter = { ...commissionFilter, ...parsed };
+      }
+      const savedScheduleFilter = localStorage.getItem("scheduleFilter");
+      if (savedScheduleFilter) {
+        const parsed = JSON.parse(savedScheduleFilter);
+        scheduleFilter = { ...scheduleFilter, ...parsed };
+        scheduleOwnerFilter = scheduleFilter.owner || "";
+      } else if (scheduleOwnerFilter) {
+        scheduleFilter.owner = scheduleOwnerFilter;
+      }
+    } catch (e) {
+      console.warn("加载筛选条件失败:", e);
+    }
     let expandedScheduleCards = JSON.parse(localStorage.getItem("expandedScheduleCards") || "[]");
     let currentImageCommissionId = null;
     let currentImageStage = "before";
