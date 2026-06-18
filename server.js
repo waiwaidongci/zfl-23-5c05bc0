@@ -4539,7 +4539,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (changedFields.length > 0) {
-        const snapshot = createFieldSnapshot(before, input.operator, input.operatorId, "编辑：" + changedFields.join("、"));
+        const snapshot = createFieldSnapshot(commission, input.operator, input.operatorId, "编辑：" + changedFields.join("、"));
         commission.fieldSnapshots.push(snapshot);
         addOperationLog(commission, "field_update", input.operator, input.operatorId, "更新字段：" + changedFields.join("、"));
       }
@@ -4585,7 +4585,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (restoredFields.length > 0) {
-        const newSnapshot = createFieldSnapshot(before, input.operator, input.operatorId, "恢复版本：" + (snapshot.reason || "历史快照"));
+        const newSnapshot = createFieldSnapshot(commission, input.operator, input.operatorId, "恢复版本：" + (snapshot.reason || "历史快照"));
         commission.fieldSnapshots.push(newSnapshot);
         addOperationLog(commission, "version_restore", input.operator, input.operatorId, "恢复版本（" + (snapshot.reason || "历史快照") + "），恢复字段：" + restoredFields.join("、"));
       }
@@ -4969,7 +4969,7 @@ const server = http.createServer(async (req, res) => {
       commission.status = input.step;
       commission.records.push({ at: new Date().toISOString(), step: input.step, note: input.note || "" });
       if (oldStatus !== input.step) {
-        commission.fieldSnapshots.push(createFieldSnapshot({ ...commission, status: oldStatus }, input.operator, input.operatorId, "步骤更新：" + oldStatus + " → " + input.step));
+        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "步骤更新：" + oldStatus + " → " + input.step));
       }
       addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + input.step + (input.note ? " - " + input.note : ""));
       await saveDb(db);
@@ -5334,22 +5334,30 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
-      if (input.status !== undefined) {
+      if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
+      const changedFields = [];
+      if (input.status !== undefined && input.status !== commission.status) {
         commission.status = input.status;
+        changedFields.push("步骤");
         commission.records.push({ 
           at: new Date().toISOString(), 
           step: input.status, 
           note: input.note || "步骤更新" 
         });
       }
-      if (input.owner !== undefined) {
+      if (input.owner !== undefined && input.owner !== commission.owner) {
         commission.owner = input.owner;
+        changedFields.push("负责人");
       }
-      if (input.dueDate !== undefined) {
+      if (input.dueDate !== undefined && input.dueDate !== commission.dueDate) {
         commission.dueDate = input.dueDate;
+        changedFields.push("截止日期");
       }
       if (input.remark !== undefined) {
         commission.remark = input.remark;
+      }
+      if (changedFields.length > 0) {
+        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "排期更新：" + changedFields.join("、")));
       }
       const logDetails = [];
       if (input.status !== undefined) logDetails.push("步骤→" + input.status);
