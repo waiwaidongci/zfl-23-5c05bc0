@@ -19,6 +19,68 @@
   ],
   "commissions": [
     {
+      "id": "SP-1781765516998",
+      "clientId": "CL-001",
+      "client": "洛川民俗馆",
+      "roleName": "有操作者测试",
+      "era": "清代",
+      "damage": "测试",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [],
+      "owner": "许岚",
+      "dueDate": "2026-09-01",
+      "status": "清洁",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T06:51:56.998Z",
+          "step": "接收",
+          "note": "登记委托"
+        },
+        {
+          "at": "2026-06-18T06:52:16.083Z",
+          "step": "清洁",
+          "note": "测试有操作者"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "operationLogs": [
+        {
+          "id": "LOG-1781765516998-uq1p",
+          "type": "create",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "detail": "创建委托",
+          "at": "2026-06-18T06:51:56.998Z"
+        },
+        {
+          "id": "LOG-1781765536083-ggcm",
+          "type": "step_update",
+          "operator": "张师傅",
+          "operatorId": "MB-002",
+          "detail": "步骤更新：清洁 - 测试有操作者",
+          "at": "2026-06-18T06:52:16.083Z"
+        }
+      ],
+      "acceptance": null
+    },
+    {
       "id": "SP-1781761321438",
       "clientId": "CL-001",
       "client": "洛川民俗馆",

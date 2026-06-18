@@ -1299,6 +1299,7 @@ const page = `<!doctype html>
       document.querySelectorAll("[data-save]").forEach(btn => btn.onclick = async () => {
         const id = btn.dataset.save;
         const op = getOperator();
+        if (!op.operator) return alert("请先在页面顶部选择当前操作者");
         await api('/api/commissions/'+id+'/records', { method:'POST', body: JSON.stringify({ step: document.querySelector('[data-step="'+id+'"]').value, note: document.querySelector('[data-note="'+id+'"]').value || "步骤完成", operator: op.operator, operatorId: op.operatorId }) });
         await loadAll();
       });
@@ -1946,8 +1947,9 @@ const page = `<!doctype html>
           if (!owner) return alert("负责人不能为空");
           if (!dueDate) return alert("截止日期不能为空");
 
+          const op = getOperator();
+          if (!op.operator) return alert("请先在页面顶部选择当前操作者");
           try {
-            const op = getOperator();
             await api('/api/commissions/' + id + '/schedule', { 
               method:'PUT', 
               body: JSON.stringify({ status: step, note: note || "步骤更新", owner, dueDate, operator: op.operator, operatorId: op.operatorId }) 
@@ -2033,8 +2035,9 @@ const page = `<!doctype html>
       data.materials = selectedMats;
       data.steps = currentCommissionSteps.filter(s => s.trim());
       if (!data.steps.length) return alert("至少需要一个步骤");
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
       try {
-        const op = getOperator();
         Object.assign(data, { operator: op.operator, operatorId: op.operatorId });
         await api("/api/commissions", { method:"POST", body: JSON.stringify(data) });
         event.target.reset();
@@ -3340,8 +3343,9 @@ const page = `<!doctype html>
 
       const quoteData = generateSmartQuote(commission);
 
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
       try {
-        const op = getOperator();
         quoteData.operator = op.operator;
         quoteData.operatorId = op.operatorId;
         const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes", {
@@ -3362,8 +3366,9 @@ const page = `<!doctype html>
 
       const totals = calculateQuoteTotals();
 
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
       try {
-        const op = getOperator();
         const updated = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id, {
           method: "PUT",
           body: JSON.stringify({
@@ -3391,8 +3396,9 @@ const page = `<!doctype html>
       if (!currentQuoteData) return;
       if (!confirm("确认报价后将无法直接编辑，需要重新报价才能修改。确定确认吗？")) return;
 
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
       try {
-        const op = getOperator();
         const confirmed = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id + "/confirm", {
           method: "POST",
           body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
@@ -3410,8 +3416,9 @@ const page = `<!doctype html>
       if (!currentQuoteData) return;
       if (!confirm("将基于当前报价创建新版本，旧版本将保留。确定重新报价吗？")) return;
 
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
       try {
-        const op = getOperator();
         const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id + "/revise", {
           method: "POST",
           body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
@@ -3582,8 +3589,9 @@ const page = `<!doctype html>
       if (!deliveryDate) return alert("请选择交付日期");
       if (!receiver) return alert("请填写领取人");
 
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
       try {
-        const op = getOperator();
         await api("/api/commissions/" + currentAcceptanceCommissionId + "/acceptance", {
           method: "POST",
           body: JSON.stringify({
@@ -3608,8 +3616,9 @@ const page = `<!doctype html>
       if (!currentAcceptanceCommissionId) return;
       if (!confirm("确定要撤销验收记录吗？")) return;
 
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
       try {
-        const op = getOperator();
         await api("/api/commissions/" + currentAcceptanceCommissionId + "/acceptance", {
           method: "DELETE",
           body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
@@ -3658,6 +3667,13 @@ const page = `<!doctype html>
   </script>
 </body>
 </html>`;
+
+function requireOperator(input) {
+  if (!input || !input.operator || !input.operator.trim()) {
+    return { error: true, message: "操作者(operator)不能为空，请先选择当前操作者" };
+  }
+  return { error: false };
+}
 
 function addOperationLog(commission, type, operator, operatorId, detail) {
   if (!commission.operationLogs) commission.operationLogs = [];
@@ -4025,7 +4041,9 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "POST" && url.pathname === "/api/commissions") {
       const input = await body(req);
-      let clientId = input.clientId || "";
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+      let clientId = input.clientId || ""; 
       let clientName = input.client || "";
       if (clientId) {
         const existingClient = db.clients.find(c => c.id === clientId);
@@ -4079,6 +4097,8 @@ const server = http.createServer(async (req, res) => {
       const commission = db.commissions.find(item => item.id === match[1]);
       if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
       const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
       commission.status = input.step;
       commission.records.push({ at: new Date().toISOString(), step: input.step, note: input.note || "" });
       addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + input.step + (input.note ? " - " + input.note : ""));
@@ -4117,6 +4137,8 @@ const server = http.createServer(async (req, res) => {
       }
       commission.acceptance = null;
       const revokeInput = await body(req);
+      const revokeOpCheck = requireOperator(revokeInput);
+      if (revokeOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: revokeOpCheck.message });
       addOperationLog(commission, "acceptance_revoke", revokeInput.operator || "", revokeInput.operatorId || "", "撤销验收");
       await saveDb(db);
       return sendJson(res, 200, { ok: true });
@@ -4438,6 +4460,8 @@ const server = http.createServer(async (req, res) => {
       const commission = db.commissions.find(item => item.id === scheduleUpdateMatch[1]);
       if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
       const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
       if (input.status !== undefined) {
         commission.status = input.status;
         commission.records.push({ 
@@ -4478,6 +4502,8 @@ const server = http.createServer(async (req, res) => {
       const commission = db.commissions.find(c => c.id === quotesListMatch[1]);
       if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
       const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
 
       const items = Array.isArray(input.items) ? input.items.map((item, idx) => ({
         id: `QI-${Date.now()}-${idx}`,
@@ -4535,6 +4561,8 @@ const server = http.createServer(async (req, res) => {
       }
 
       const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
 
       if (Array.isArray(input.items)) {
         quote.items = input.items.map((item, idx) => ({
@@ -4577,6 +4605,8 @@ const server = http.createServer(async (req, res) => {
       commission.currentQuoteId = quote.id;
 
       const confirmInput = await body(req);
+      const confirmOpCheck = requireOperator(confirmInput);
+      if (confirmOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: confirmOpCheck.message });
       addOperationLog(commission, "quote_confirm", confirmInput.operator || "", confirmInput.operatorId || "", "确认报价 V" + quote.version);
       await saveDb(db);
       return sendJson(res, 200, quote);
@@ -4613,6 +4643,8 @@ const server = http.createServer(async (req, res) => {
       commission.currentQuoteId = newQuote.id;
 
       const reviseInput = await body(req);
+      const reviseOpCheck = requireOperator(reviseInput);
+      if (reviseOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: reviseOpCheck.message });
       addOperationLog(commission, "quote_revise", reviseInput.operator || "", reviseInput.operatorId || "", "重新报价 V" + newQuote.version);
       await saveDb(db);
       return sendJson(res, 201, newQuote);
