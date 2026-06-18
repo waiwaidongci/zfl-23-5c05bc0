@@ -4115,6 +4115,8 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { error: "status_not_deliverable", message: "只有进入交付步骤的委托才能填写验收" });
       }
       const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
       const acceptance = {
         result: input.result || "",
         deliveryDate: input.deliveryDate || "",
