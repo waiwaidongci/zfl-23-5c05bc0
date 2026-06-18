@@ -1,6 +1,60 @@
 {
   "clients": [
     {
+      "id": "CL-1781802541243",
+      "name": "验证导入覆盖客户",
+      "contact": "",
+      "phone": "",
+      "address": "",
+      "remark": "",
+      "followUps": []
+    },
+    {
+      "id": "CL-1781802514369",
+      "name": "验证排期修复客户",
+      "contact": "",
+      "phone": "",
+      "address": "",
+      "remark": "",
+      "followUps": []
+    },
+    {
+      "id": "CL-1781802244396",
+      "name": "综合测试-排期",
+      "contact": "",
+      "phone": "",
+      "address": "",
+      "remark": "",
+      "followUps": []
+    },
+    {
+      "id": "CL-1781801813483",
+      "name": "测试客户-导入覆盖",
+      "contact": "",
+      "phone": "",
+      "address": "",
+      "remark": "",
+      "followUps": []
+    },
+    {
+      "id": "CL-1781801441620",
+      "name": "测试客户-导入",
+      "contact": "",
+      "phone": "",
+      "address": "",
+      "remark": "",
+      "followUps": []
+    },
+    {
+      "id": "CL-1781801396989",
+      "name": "测试客户-排期",
+      "contact": "",
+      "phone": "",
+      "address": "",
+      "remark": "",
+      "followUps": []
+    },
+    {
       "id": "CL-1781800666780",
       "name": "排期验证客户",
       "contact": "",
@@ -73,6 +127,1263 @@
     }
   ],
   "commissions": [
+    {
+      "id": "SP-1781802541243",
+      "clientId": "CL-1781802541243",
+      "client": "验证导入覆盖客户",
+      "roleName": "验证导入覆盖",
+      "era": "民国",
+      "damage": "导入覆盖测试",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [
+        {
+          "materialId": "MAT-2",
+          "name": "朱砂矿物颜料",
+          "batch": "ZS-2026-B03",
+          "quantity": 2,
+          "reservedQty": 2,
+          "consumedQty": 0,
+          "consumedAt": "",
+          "consumedBy": "",
+          "consumedStep": ""
+        }
+      ],
+      "consumeStepName": "补片",
+      "owner": "李师傅",
+      "dueDate": "2026-07-02",
+      "status": "接收",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T17:09:01.243Z",
+          "step": "接收",
+          "note": "登记委托"
+        },
+        {
+          "at": "2026-06-18T17:09:01.249Z",
+          "step": "补片",
+          "note": "先消耗"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781802541243-3pxg",
+          "fields": {
+            "roleName": "验证导入覆盖",
+            "era": "民国",
+            "damage": "导入覆盖测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "李师傅",
+            "dueDate": "2026-07-02",
+            "status": "接收",
+            "client": "验证导入覆盖客户",
+            "materials": [
+              {
+                "materialId": "MAT-2",
+                "name": "朱砂矿物颜料",
+                "batch": "ZS-2026-B03",
+                "quantity": 6,
+                "reservedQty": 6,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "验证员A",
+          "operatorId": "verify-a",
+          "reason": "创建委托",
+          "at": "2026-06-18T17:09:01.243Z"
+        },
+        {
+          "id": "SNAP-1781802541249-1brh",
+          "fields": {
+            "roleName": "验证导入覆盖",
+            "era": "民国",
+            "damage": "导入覆盖测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "李师傅",
+            "dueDate": "2026-07-02",
+            "status": "补片",
+            "client": "验证导入覆盖客户",
+            "materials": [
+              {
+                "materialId": "MAT-2",
+                "name": "朱砂矿物颜料",
+                "batch": "ZS-2026-B03",
+                "quantity": 6,
+                "reservedQty": 0,
+                "consumedQty": 6,
+                "consumedAt": "2026-06-18T17:09:01.249Z",
+                "consumedBy": "验证员A",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "验证员A",
+          "operatorId": "verify-a",
+          "reason": "步骤更新：接收 → 补片",
+          "at": "2026-06-18T17:09:01.249Z"
+        }
+      ],
+      "operationLogs": [
+        {
+          "id": "LOG-1781802541243-3owm",
+          "type": "create",
+          "operator": "验证员A",
+          "operatorId": "verify-a",
+          "detail": "创建委托",
+          "at": "2026-06-18T17:09:01.243Z"
+        },
+        {
+          "id": "LOG-1781802541249-7dqi",
+          "type": "step_update",
+          "operator": "验证员A",
+          "operatorId": "verify-a",
+          "detail": "步骤更新：补片 - 先消耗",
+          "at": "2026-06-18T17:09:01.249Z"
+        }
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "SP-1781802514369",
+      "clientId": "CL-1781802514369",
+      "client": "验证排期修复客户",
+      "roleName": "验证排期修复",
+      "era": "民国",
+      "damage": "排期推进测试",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [
+        {
+          "materialId": "MAT-5",
+          "name": "骨胶",
+          "batch": "GJ-2026-C01",
+          "quantity": 3,
+          "reservedQty": 3,
+          "consumedQty": 0,
+          "consumedAt": "",
+          "consumedBy": "",
+          "consumedStep": ""
+        }
+      ],
+      "consumeStepName": "补片",
+      "owner": "许岚",
+      "dueDate": "2026-07-01",
+      "status": "清洁",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T17:08:34.369Z",
+          "step": "接收",
+          "note": "登记委托"
+        },
+        {
+          "at": "2026-06-18T17:08:34.377Z",
+          "step": "补片",
+          "note": "排期到消耗点"
+        },
+        {
+          "at": "2026-06-18T17:08:34.383Z",
+          "step": "清洁",
+          "note": "排期回退"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781802514369-ovdw",
+          "fields": {
+            "roleName": "验证排期修复",
+            "era": "民国",
+            "damage": "排期推进测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-07-01",
+            "status": "接收",
+            "client": "验证排期修复客户",
+            "materials": [
+              {
+                "materialId": "MAT-5",
+                "name": "骨胶",
+                "batch": "GJ-2026-C01",
+                "quantity": 3,
+                "reservedQty": 3,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "验证员",
+          "operatorId": "verify",
+          "reason": "创建委托",
+          "at": "2026-06-18T17:08:34.369Z"
+        },
+        {
+          "id": "SNAP-1781802514377-lu9t",
+          "fields": {
+            "roleName": "验证排期修复",
+            "era": "民国",
+            "damage": "排期推进测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-07-01",
+            "status": "补片",
+            "client": "验证排期修复客户",
+            "materials": [
+              {
+                "materialId": "MAT-5",
+                "name": "骨胶",
+                "batch": "GJ-2026-C01",
+                "quantity": 3,
+                "reservedQty": 0,
+                "consumedQty": 3,
+                "consumedAt": "2026-06-18T17:08:34.376Z",
+                "consumedBy": "验证员",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "验证员",
+          "operatorId": "verify",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T17:08:34.377Z"
+        },
+        {
+          "id": "SNAP-1781802514383-r586",
+          "fields": {
+            "roleName": "验证排期修复",
+            "era": "民国",
+            "damage": "排期推进测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-07-01",
+            "status": "清洁",
+            "client": "验证排期修复客户",
+            "materials": [
+              {
+                "materialId": "MAT-5",
+                "name": "骨胶",
+                "batch": "GJ-2026-C01",
+                "quantity": 3,
+                "reservedQty": 3,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "验证员",
+          "operatorId": "verify",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T17:08:34.383Z"
+        }
+      ],
+      "operationLogs": [
+        {
+          "id": "LOG-1781802514369-qjrw",
+          "type": "create",
+          "operator": "验证员",
+          "operatorId": "verify",
+          "detail": "创建委托",
+          "at": "2026-06-18T17:08:34.369Z"
+        },
+        {
+          "id": "LOG-1781802514377-hm5q",
+          "type": "schedule_update",
+          "operator": "验证员",
+          "operatorId": "verify",
+          "detail": "步骤→补片，负责人→许岚，截止日期→2026-07-01",
+          "at": "2026-06-18T17:08:34.377Z"
+        },
+        {
+          "id": "LOG-1781802514384-fiqi",
+          "type": "schedule_update",
+          "operator": "验证员",
+          "operatorId": "verify",
+          "detail": "步骤→清洁，负责人→许岚，截止日期→2026-07-01",
+          "at": "2026-06-18T17:08:34.384Z"
+        }
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "SP-1781802244396",
+      "clientId": "CL-1781802244396",
+      "client": "综合测试-排期",
+      "roleName": "排期综合测试",
+      "era": "清末",
+      "damage": "测试",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [
+        {
+          "materialId": "MAT-4",
+          "name": "鱼鳔胶",
+          "batch": "YJ-2026-C02",
+          "quantity": 5,
+          "reservedQty": 0,
+          "consumedQty": 5,
+          "consumedAt": "2026-06-18T17:04:04.851Z",
+          "consumedBy": "导入系统",
+          "consumedStep": "补片"
+        }
+      ],
+      "consumeStepName": "补片",
+      "owner": "许岚",
+      "dueDate": "2026-06-30",
+      "status": "补片",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T17:04:04.396Z",
+          "step": "接收",
+          "note": "登记委托"
+        },
+        {
+          "at": "2026-06-18T17:04:04.532Z",
+          "step": "补片",
+          "note": "排期直达补片"
+        },
+        {
+          "at": "2026-06-18T17:04:04.638Z",
+          "step": "清洁",
+          "note": "排期回退"
+        },
+        {
+          "at": "2026-06-18T17:04:04.717Z",
+          "step": "补片",
+          "note": "步骤更新"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781802244396-nwp3",
+          "fields": {
+            "roleName": "排期综合测试",
+            "era": "清末",
+            "damage": "测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-06-30",
+            "status": "接收",
+            "client": "综合测试-排期",
+            "materials": [
+              {
+                "materialId": "MAT-4",
+                "name": "鱼鳔胶",
+                "batch": "YJ-2026-C02",
+                "quantity": 2,
+                "reservedQty": 2,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "reason": "创建委托",
+          "at": "2026-06-18T17:04:04.396Z"
+        },
+        {
+          "id": "SNAP-1781802244532-acdq",
+          "fields": {
+            "roleName": "排期综合测试",
+            "era": "清末",
+            "damage": "测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-06-30",
+            "status": "补片",
+            "client": "综合测试-排期",
+            "materials": [
+              {
+                "materialId": "MAT-4",
+                "name": "鱼鳔胶",
+                "batch": "YJ-2026-C02",
+                "quantity": 2,
+                "reservedQty": 0,
+                "consumedQty": 2,
+                "consumedAt": "2026-06-18T17:04:04.532Z",
+                "consumedBy": "验证员",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T17:04:04.532Z"
+        },
+        {
+          "id": "SNAP-1781802244638-bsza",
+          "fields": {
+            "roleName": "排期综合测试",
+            "era": "清末",
+            "damage": "测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-06-30",
+            "status": "清洁",
+            "client": "综合测试-排期",
+            "materials": [
+              {
+                "materialId": "MAT-4",
+                "name": "鱼鳔胶",
+                "batch": "YJ-2026-C02",
+                "quantity": 2,
+                "reservedQty": 2,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T17:04:04.638Z"
+        },
+        {
+          "id": "SNAP-1781802244717-3bwi",
+          "fields": {
+            "roleName": "排期综合测试",
+            "era": "清末",
+            "damage": "测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-06-30",
+            "status": "补片",
+            "client": "综合测试-排期",
+            "materials": [
+              {
+                "materialId": "MAT-4",
+                "name": "鱼鳔胶",
+                "batch": "YJ-2026-C02",
+                "quantity": 2,
+                "reservedQty": 0,
+                "consumedQty": 2,
+                "consumedAt": "2026-06-18T17:04:04.717Z",
+                "consumedBy": "验证员",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T17:04:04.717Z"
+        }
+      ],
+      "operationLogs": [
+        {
+          "id": "LOG-1781802244396-nqce",
+          "type": "create",
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "detail": "创建委托",
+          "at": "2026-06-18T17:04:04.396Z"
+        },
+        {
+          "id": "LOG-1781802244532-fjp9",
+          "type": "schedule_update",
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "detail": "步骤→补片",
+          "at": "2026-06-18T17:04:04.532Z"
+        },
+        {
+          "id": "LOG-1781802244638-kaag",
+          "type": "schedule_update",
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "detail": "步骤→清洁",
+          "at": "2026-06-18T17:04:04.638Z"
+        },
+        {
+          "id": "LOG-1781802244717-93oz",
+          "type": "schedule_update",
+          "operator": "验证员",
+          "operatorId": "verify-001",
+          "detail": "步骤→补片",
+          "at": "2026-06-18T17:04:04.717Z"
+        }
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "SP-1781802193058",
+      "clientId": "CL-1781801813483",
+      "client": "测试客户-导入覆盖",
+      "roleName": "导入覆盖测试-皮影",
+      "era": "民国",
+      "damage": "测试破损",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [
+        {
+          "materialId": "MAT-3",
+          "name": "石黄矿物颜料",
+          "batch": "SH-2026-B01",
+          "quantity": 8,
+          "reservedQty": 0,
+          "consumedQty": 8,
+          "consumedAt": "2026-06-18T17:03:13.283Z",
+          "consumedBy": "导入系统",
+          "consumedStep": "补片"
+        }
+      ],
+      "consumeStepName": "补片",
+      "owner": "张师傅",
+      "dueDate": "2026-05-01",
+      "status": "补片",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T17:03:13.058Z",
+          "step": "接收",
+          "note": "登记委托"
+        },
+        {
+          "at": "2026-06-18T17:03:13.081Z",
+          "step": "清洁",
+          "note": "清洁完成"
+        },
+        {
+          "at": "2026-06-18T17:03:13.225Z",
+          "step": "补片",
+          "note": "补片完成"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781802193058-0v5w",
+          "fields": {
+            "roleName": "导入覆盖测试-皮影",
+            "era": "民国",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-05-01",
+            "status": "接收",
+            "client": "测试客户-导入覆盖",
+            "materials": [
+              {
+                "materialId": "MAT-3",
+                "name": "石黄矿物颜料",
+                "batch": "SH-2026-B01",
+                "quantity": 5,
+                "reservedQty": 5,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "reason": "创建委托",
+          "at": "2026-06-18T17:03:13.058Z"
+        },
+        {
+          "id": "SNAP-1781802193081-dxl3",
+          "fields": {
+            "roleName": "导入覆盖测试-皮影",
+            "era": "民国",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-05-01",
+            "status": "清洁",
+            "client": "测试客户-导入覆盖",
+            "materials": [
+              {
+                "materialId": "MAT-3",
+                "name": "石黄矿物颜料",
+                "batch": "SH-2026-B01",
+                "quantity": 5,
+                "reservedQty": 5,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "reason": "步骤更新：接收 → 清洁",
+          "at": "2026-06-18T17:03:13.083Z"
+        },
+        {
+          "id": "SNAP-1781802193225-phfr",
+          "fields": {
+            "roleName": "导入覆盖测试-皮影",
+            "era": "民国",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-05-01",
+            "status": "补片",
+            "client": "测试客户-导入覆盖",
+            "materials": [
+              {
+                "materialId": "MAT-3",
+                "name": "石黄矿物颜料",
+                "batch": "SH-2026-B01",
+                "quantity": 5,
+                "reservedQty": 0,
+                "consumedQty": 5,
+                "consumedAt": "2026-06-18T17:03:13.225Z",
+                "consumedBy": "测试员A",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "reason": "步骤更新：清洁 → 补片",
+          "at": "2026-06-18T17:03:13.225Z"
+        }
+      ],
+      "operationLogs": [
+        {
+          "id": "LOG-1781802193058-qzgn",
+          "type": "create",
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "detail": "创建委托",
+          "at": "2026-06-18T17:03:13.058Z"
+        },
+        {
+          "id": "LOG-1781802193083-eqk8",
+          "type": "step_update",
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "detail": "步骤更新：清洁 - 清洁完成",
+          "at": "2026-06-18T17:03:13.083Z"
+        },
+        {
+          "id": "LOG-1781802193225-6qfr",
+          "type": "step_update",
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "detail": "步骤更新：补片 - 补片完成",
+          "at": "2026-06-18T17:03:13.225Z"
+        }
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "SP-1781801813483",
+      "clientId": "CL-1781801813483",
+      "client": "测试客户-导入覆盖",
+      "roleName": "导入覆盖测试-皮影",
+      "era": "民国",
+      "damage": "测试破损",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [
+        {
+          "materialId": "MAT-3",
+          "name": "石黄矿物颜料",
+          "batch": "SH-2026-B01",
+          "quantity": 5,
+          "reservedQty": 0,
+          "consumedQty": 5,
+          "consumedAt": "2026-06-18T16:56:53.499Z",
+          "consumedBy": "测试员A",
+          "consumedStep": "补片"
+        }
+      ],
+      "consumeStepName": "补片",
+      "owner": "张师傅",
+      "dueDate": "2026-05-01",
+      "status": "补片",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T16:56:53.483Z",
+          "step": "接收",
+          "note": "登记委托"
+        },
+        {
+          "at": "2026-06-18T16:56:53.496Z",
+          "step": "清洁",
+          "note": "清洁完成"
+        },
+        {
+          "at": "2026-06-18T16:56:53.499Z",
+          "step": "补片",
+          "note": "补片完成"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781801813483-q2us",
+          "fields": {
+            "roleName": "导入覆盖测试-皮影",
+            "era": "民国",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-05-01",
+            "status": "接收",
+            "client": "测试客户-导入覆盖",
+            "materials": [
+              {
+                "materialId": "MAT-3",
+                "name": "石黄矿物颜料",
+                "batch": "SH-2026-B01",
+                "quantity": 5,
+                "reservedQty": 5,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "reason": "创建委托",
+          "at": "2026-06-18T16:56:53.483Z"
+        },
+        {
+          "id": "SNAP-1781801813496-vv8w",
+          "fields": {
+            "roleName": "导入覆盖测试-皮影",
+            "era": "民国",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-05-01",
+            "status": "清洁",
+            "client": "测试客户-导入覆盖",
+            "materials": [
+              {
+                "materialId": "MAT-3",
+                "name": "石黄矿物颜料",
+                "batch": "SH-2026-B01",
+                "quantity": 5,
+                "reservedQty": 5,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "reason": "步骤更新：接收 → 清洁",
+          "at": "2026-06-18T16:56:53.496Z"
+        },
+        {
+          "id": "SNAP-1781801813499-6wst",
+          "fields": {
+            "roleName": "导入覆盖测试-皮影",
+            "era": "民国",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-05-01",
+            "status": "补片",
+            "client": "测试客户-导入覆盖",
+            "materials": [
+              {
+                "materialId": "MAT-3",
+                "name": "石黄矿物颜料",
+                "batch": "SH-2026-B01",
+                "quantity": 5,
+                "reservedQty": 0,
+                "consumedQty": 5,
+                "consumedAt": "2026-06-18T16:56:53.499Z",
+                "consumedBy": "测试员A",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "reason": "步骤更新：清洁 → 补片",
+          "at": "2026-06-18T16:56:53.499Z"
+        }
+      ],
+      "operationLogs": [
+        {
+          "id": "LOG-1781801813483-utpu",
+          "type": "create",
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "detail": "创建委托",
+          "at": "2026-06-18T16:56:53.483Z"
+        },
+        {
+          "id": "LOG-1781801813496-tc8r",
+          "type": "step_update",
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "detail": "步骤更新：清洁 - 清洁完成",
+          "at": "2026-06-18T16:56:53.496Z"
+        },
+        {
+          "id": "LOG-1781801813499-ltjh",
+          "type": "step_update",
+          "operator": "测试员A",
+          "operatorId": "tester-a",
+          "detail": "步骤更新：补片 - 补片完成",
+          "at": "2026-06-18T16:56:53.499Z"
+        }
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "SP-1781801441620",
+      "clientId": "CL-1781801441620",
+      "client": "测试客户-导入",
+      "roleName": "导入测试角色",
+      "era": "民国",
+      "damage": "导入测试破损",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [
+        {
+          "materialId": "MAT-2",
+          "name": "朱砂矿物颜料",
+          "batch": "ZS-2026-B03",
+          "quantity": 4,
+          "reservedQty": 4,
+          "consumedQty": 0,
+          "consumedAt": "",
+          "consumedBy": "",
+          "consumedStep": ""
+        }
+      ],
+      "consumeStepName": "补片",
+      "owner": "李师傅",
+      "dueDate": "2026-04-15",
+      "status": "接收",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T16:50:41.620Z",
+          "step": "接收",
+          "note": "登记委托"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781801441620-5ibd",
+          "fields": {
+            "roleName": "导入测试角色",
+            "era": "民国",
+            "damage": "导入测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "李师傅",
+            "dueDate": "2026-04-15",
+            "status": "接收",
+            "client": "测试客户-导入",
+            "materials": [
+              {
+                "materialId": "MAT-2",
+                "name": "朱砂矿物颜料",
+                "batch": "ZS-2026-B03",
+                "quantity": 4,
+                "reservedQty": 4,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员",
+          "operatorId": "test-003",
+          "reason": "创建委托",
+          "at": "2026-06-18T16:50:41.620Z"
+        }
+      ],
+      "operationLogs": [
+        {
+          "id": "LOG-1781801441620-jt0a",
+          "type": "create",
+          "operator": "测试员",
+          "operatorId": "test-003",
+          "detail": "创建委托",
+          "at": "2026-06-18T16:50:41.620Z"
+        }
+      ],
+      "acceptance": null
+    },
+    {
+      "id": "SP-1781801396989",
+      "clientId": "CL-1781801396989",
+      "client": "测试客户-排期",
+      "roleName": "排期测试角色",
+      "era": "清末",
+      "damage": "测试破损",
+      "missingParts": "",
+      "colorNotes": "",
+      "reinforcement": "",
+      "materials": [
+        {
+          "materialId": "MAT-1",
+          "name": "薄驴皮补片",
+          "batch": "LP-2026-A01",
+          "quantity": 3,
+          "reservedQty": 3,
+          "consumedQty": 0,
+          "consumedAt": "",
+          "consumedBy": "",
+          "consumedStep": ""
+        }
+      ],
+      "consumeStepName": "补片",
+      "owner": "张师傅",
+      "dueDate": "2026-03-31",
+      "status": "清洁",
+      "steps": [
+        "接收",
+        "清洁",
+        "补片",
+        "补色",
+        "交付"
+      ],
+      "templateId": "",
+      "templateName": "",
+      "records": [
+        {
+          "at": "2026-06-18T16:49:56.989Z",
+          "step": "接收",
+          "note": "登记委托"
+        },
+        {
+          "at": "2026-06-18T16:49:57.180Z",
+          "step": "清洁",
+          "note": "排期推进测试"
+        },
+        {
+          "at": "2026-06-18T16:49:57.305Z",
+          "step": "补片",
+          "note": "到达消耗节点"
+        },
+        {
+          "at": "2026-06-18T16:49:57.357Z",
+          "step": "清洁",
+          "note": "回退步骤"
+        }
+      ],
+      "images": {
+        "before": [],
+        "during": [],
+        "after": []
+      },
+      "quotes": [],
+      "currentQuoteId": "",
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781801396992-de4o",
+          "fields": {
+            "roleName": "排期测试角色",
+            "era": "清末",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-03-31",
+            "status": "接收",
+            "client": "测试客户-排期",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 3,
+                "reservedQty": 3,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "reason": "创建委托",
+          "at": "2026-06-18T16:49:56.992Z"
+        },
+        {
+          "id": "SNAP-1781801397180-ybgn",
+          "fields": {
+            "roleName": "排期测试角色",
+            "era": "清末",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-03-31",
+            "status": "清洁",
+            "client": "测试客户-排期",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 3,
+                "reservedQty": 3,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T16:49:57.180Z"
+        },
+        {
+          "id": "SNAP-1781801397305-1jjw",
+          "fields": {
+            "roleName": "排期测试角色",
+            "era": "清末",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-03-31",
+            "status": "补片",
+            "client": "测试客户-排期",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 3,
+                "reservedQty": 0,
+                "consumedQty": 3,
+                "consumedAt": "2026-06-18T16:49:57.305Z",
+                "consumedBy": "测试员",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T16:49:57.305Z"
+        },
+        {
+          "id": "SNAP-1781801397357-vodg",
+          "fields": {
+            "roleName": "排期测试角色",
+            "era": "清末",
+            "damage": "测试破损",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "张师傅",
+            "dueDate": "2026-03-31",
+            "status": "清洁",
+            "client": "测试客户-排期",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 3,
+                "reservedQty": 3,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
+              }
+            ]
+          },
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "reason": "排期更新：步骤",
+          "at": "2026-06-18T16:49:57.357Z"
+        }
+      ],
+      "operationLogs": [
+        {
+          "id": "LOG-1781801396992-50j0",
+          "type": "create",
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "detail": "创建委托",
+          "at": "2026-06-18T16:49:56.992Z"
+        },
+        {
+          "id": "LOG-1781801397180-6q8h",
+          "type": "schedule_update",
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "detail": "步骤→清洁",
+          "at": "2026-06-18T16:49:57.180Z"
+        },
+        {
+          "id": "LOG-1781801397305-f6lt",
+          "type": "schedule_update",
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "detail": "步骤→补片",
+          "at": "2026-06-18T16:49:57.305Z"
+        },
+        {
+          "id": "LOG-1781801397357-w2yx",
+          "type": "schedule_update",
+          "operator": "测试员",
+          "operatorId": "test-002",
+          "detail": "步骤→清洁",
+          "at": "2026-06-18T16:49:57.357Z"
+        }
+      ],
+      "acceptance": null
+    },
     {
       "id": "SP-1781800666780",
       "clientId": "CL-1781800666780",
@@ -2228,7 +3539,7 @@
       "unit": "张",
       "remark": "陕西洛川产，厚度0.8mm",
       "minStock": 30,
-      "reserved": 13
+      "reserved": 16
     },
     {
       "id": "MAT-2",
@@ -2239,14 +3550,14 @@
       "unit": "克",
       "remark": "特级纯天然朱砂粉",
       "minStock": 0,
-      "reserved": 30
+      "reserved": 36
     },
     {
       "id": "MAT-3",
       "name": "石黄矿物颜料",
       "category": "颜料",
       "batch": "SH-2026-B01",
-      "stock": 150,
+      "stock": 137,
       "unit": "克",
       "remark": "老矿坑料，色泽沉稳",
       "minStock": 0,
@@ -2257,7 +3568,7 @@
       "name": "鱼鳔胶",
       "category": "胶料",
       "batch": "YJ-2026-C02",
-      "stock": 76,
+      "stock": 71,
       "unit": "克",
       "remark": "传统手工熬制",
       "minStock": 0,
@@ -2272,7 +3583,7 @@
       "unit": "克",
       "remark": "高纯度牛骨胶粒",
       "minStock": 0,
-      "reserved": 14
+      "reserved": 17
     }
   ],
   "stepTemplates": [
@@ -2357,6 +3668,443 @@
     }
   ],
   "stockLedger": [
+    {
+      "id": "LEDGER-1781802541259-wqog1v",
+      "materialId": "MAT-2",
+      "materialName": "朱砂矿物颜料",
+      "batch": "ZS-2026-B03",
+      "type": "reserve",
+      "quantity": 2,
+      "stockBefore": 230,
+      "stockAfter": 230,
+      "reservedBefore": 34,
+      "reservedAfter": 36,
+      "commissionId": "SP-1781802541243",
+      "commissionName": "验证导入覆盖",
+      "step": "接收",
+      "operator": "导入验证员",
+      "operatorId": "import-verify",
+      "note": "委托创建占用",
+      "at": "2026-06-18T17:09:01.259Z"
+    },
+    {
+      "id": "LEDGER-1781802541259-f60jzs",
+      "materialId": "MAT-2",
+      "materialName": "朱砂矿物颜料",
+      "batch": "ZS-2026-B03",
+      "type": "restore",
+      "quantity": 6,
+      "stockBefore": 224,
+      "stockAfter": 230,
+      "reservedBefore": 34,
+      "reservedAfter": 34,
+      "commissionId": "SP-1781802541243",
+      "commissionName": "验证导入覆盖",
+      "step": "补片",
+      "operator": "导入验证员",
+      "operatorId": "import-verify",
+      "note": "导入覆盖-释放原占用，退回已消耗库存",
+      "at": "2026-06-18T17:09:01.259Z"
+    },
+    {
+      "id": "LEDGER-1781802541249-y0dtpe",
+      "materialId": "MAT-2",
+      "materialName": "朱砂矿物颜料",
+      "batch": "ZS-2026-B03",
+      "type": "consume",
+      "quantity": 6,
+      "stockBefore": 230,
+      "stockAfter": 224,
+      "reservedBefore": 40,
+      "reservedAfter": 34,
+      "commissionId": "SP-1781802541243",
+      "commissionName": "验证导入覆盖",
+      "step": "补片",
+      "operator": "验证员A",
+      "operatorId": "verify-a",
+      "note": "步骤推进至【补片】，实际出库消耗",
+      "at": "2026-06-18T17:09:01.249Z"
+    },
+    {
+      "id": "LEDGER-1781802541243-z2r09j",
+      "materialId": "MAT-2",
+      "materialName": "朱砂矿物颜料",
+      "batch": "ZS-2026-B03",
+      "type": "reserve",
+      "quantity": 6,
+      "stockBefore": 230,
+      "stockAfter": 230,
+      "reservedBefore": 34,
+      "reservedAfter": 40,
+      "commissionId": "SP-1781802541243",
+      "commissionName": "验证导入覆盖",
+      "step": "接收",
+      "operator": "验证员A",
+      "operatorId": "verify-a",
+      "note": "委托创建占用",
+      "at": "2026-06-18T17:09:01.243Z"
+    },
+    {
+      "id": "LEDGER-1781802514383-5bjixo",
+      "materialId": "MAT-5",
+      "materialName": "骨胶",
+      "batch": "GJ-2026-C01",
+      "type": "undo_consume",
+      "quantity": 3,
+      "stockBefore": 125,
+      "stockAfter": 128,
+      "reservedBefore": 14,
+      "reservedAfter": 17,
+      "commissionId": "SP-1781802514369",
+      "commissionName": "验证排期修复",
+      "step": "补片",
+      "operator": "验证员",
+      "operatorId": "verify",
+      "note": "排期步骤回退：补片 → 清洁，撤销消耗",
+      "at": "2026-06-18T17:08:34.383Z"
+    },
+    {
+      "id": "LEDGER-1781802514376-z8z3ae",
+      "materialId": "MAT-5",
+      "materialName": "骨胶",
+      "batch": "GJ-2026-C01",
+      "type": "consume",
+      "quantity": 3,
+      "stockBefore": 128,
+      "stockAfter": 125,
+      "reservedBefore": 17,
+      "reservedAfter": 14,
+      "commissionId": "SP-1781802514369",
+      "commissionName": "验证排期修复",
+      "step": "补片",
+      "operator": "验证员",
+      "operatorId": "verify",
+      "note": "步骤推进至【补片】，实际出库消耗",
+      "at": "2026-06-18T17:08:34.376Z"
+    },
+    {
+      "id": "LEDGER-1781802514369-3y2fa2",
+      "materialId": "MAT-5",
+      "materialName": "骨胶",
+      "batch": "GJ-2026-C01",
+      "type": "reserve",
+      "quantity": 3,
+      "stockBefore": 128,
+      "stockAfter": 128,
+      "reservedBefore": 14,
+      "reservedAfter": 17,
+      "commissionId": "SP-1781802514369",
+      "commissionName": "验证排期修复",
+      "step": "接收",
+      "operator": "验证员",
+      "operatorId": "verify",
+      "note": "委托创建占用",
+      "at": "2026-06-18T17:08:34.369Z"
+    },
+    {
+      "id": "LEDGER-1781802244851-6wy0i3",
+      "materialId": "MAT-4",
+      "materialName": "鱼鳔胶",
+      "batch": "YJ-2026-C02",
+      "type": "consume",
+      "quantity": 5,
+      "stockBefore": 76,
+      "stockAfter": 71,
+      "reservedBefore": 2,
+      "reservedAfter": 2,
+      "commissionId": "SP-1781802244396",
+      "commissionName": "排期综合测试",
+      "step": "补片",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "委托创建时已超过消耗节点，直接出库消耗",
+      "at": "2026-06-18T17:04:04.851Z"
+    },
+    {
+      "id": "LEDGER-1781802244851-dqcm8y",
+      "materialId": "MAT-4",
+      "materialName": "鱼鳔胶",
+      "batch": "YJ-2026-C02",
+      "type": "restore",
+      "quantity": 2,
+      "stockBefore": 74,
+      "stockAfter": 76,
+      "reservedBefore": 2,
+      "reservedAfter": 2,
+      "commissionId": "SP-1781802244396",
+      "commissionName": "排期综合测试",
+      "step": "补片",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "导入覆盖-释放原占用，退回已消耗库存",
+      "at": "2026-06-18T17:04:04.851Z"
+    },
+    {
+      "id": "LEDGER-1781802244717-6qbyt4",
+      "materialId": "MAT-4",
+      "materialName": "鱼鳔胶",
+      "batch": "YJ-2026-C02",
+      "type": "consume",
+      "quantity": 2,
+      "stockBefore": 76,
+      "stockAfter": 74,
+      "reservedBefore": 4,
+      "reservedAfter": 2,
+      "commissionId": "SP-1781802244396",
+      "commissionName": "排期综合测试",
+      "step": "补片",
+      "operator": "验证员",
+      "operatorId": "verify-001",
+      "note": "步骤推进至【补片】，实际出库消耗",
+      "at": "2026-06-18T17:04:04.717Z"
+    },
+    {
+      "id": "LEDGER-1781802244638-w8w29b",
+      "materialId": "MAT-4",
+      "materialName": "鱼鳔胶",
+      "batch": "YJ-2026-C02",
+      "type": "undo_consume",
+      "quantity": 2,
+      "stockBefore": 74,
+      "stockAfter": 76,
+      "reservedBefore": 2,
+      "reservedAfter": 4,
+      "commissionId": "SP-1781802244396",
+      "commissionName": "排期综合测试",
+      "step": "补片",
+      "operator": "验证员",
+      "operatorId": "verify-001",
+      "note": "排期步骤回退：补片 → 清洁，撤销消耗",
+      "at": "2026-06-18T17:04:04.638Z"
+    },
+    {
+      "id": "LEDGER-1781802244532-wfs1yd",
+      "materialId": "MAT-4",
+      "materialName": "鱼鳔胶",
+      "batch": "YJ-2026-C02",
+      "type": "consume",
+      "quantity": 2,
+      "stockBefore": 76,
+      "stockAfter": 74,
+      "reservedBefore": 4,
+      "reservedAfter": 2,
+      "commissionId": "SP-1781802244396",
+      "commissionName": "排期综合测试",
+      "step": "补片",
+      "operator": "验证员",
+      "operatorId": "verify-001",
+      "note": "步骤推进至【补片】，实际出库消耗",
+      "at": "2026-06-18T17:04:04.532Z"
+    },
+    {
+      "id": "LEDGER-1781802244396-pcg7kx",
+      "materialId": "MAT-4",
+      "materialName": "鱼鳔胶",
+      "batch": "YJ-2026-C02",
+      "type": "reserve",
+      "quantity": 2,
+      "stockBefore": 76,
+      "stockAfter": 76,
+      "reservedBefore": 2,
+      "reservedAfter": 4,
+      "commissionId": "SP-1781802244396",
+      "commissionName": "排期综合测试",
+      "step": "接收",
+      "operator": "验证员",
+      "operatorId": "verify-001",
+      "note": "委托创建占用",
+      "at": "2026-06-18T17:04:04.396Z"
+    },
+    {
+      "id": "LEDGER-1781802193283-cm9td9",
+      "materialId": "MAT-3",
+      "materialName": "石黄矿物颜料",
+      "batch": "SH-2026-B01",
+      "type": "consume",
+      "quantity": 8,
+      "stockBefore": 145,
+      "stockAfter": 137,
+      "reservedBefore": 7,
+      "reservedAfter": 7,
+      "commissionId": "SP-1781802193058",
+      "commissionName": "导入覆盖测试-皮影",
+      "step": "补片",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "委托创建时已超过消耗节点，直接出库消耗",
+      "at": "2026-06-18T17:03:13.283Z"
+    },
+    {
+      "id": "LEDGER-1781802193283-t6n20m",
+      "materialId": "MAT-3",
+      "materialName": "石黄矿物颜料",
+      "batch": "SH-2026-B01",
+      "type": "restore",
+      "quantity": 5,
+      "stockBefore": 140,
+      "stockAfter": 145,
+      "reservedBefore": 7,
+      "reservedAfter": 7,
+      "commissionId": "SP-1781802193058",
+      "commissionName": "导入覆盖测试-皮影",
+      "step": "补片",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "导入覆盖-释放原占用，退回已消耗库存",
+      "at": "2026-06-18T17:03:13.283Z"
+    },
+    {
+      "id": "LEDGER-1781802193225-kdn7id",
+      "materialId": "MAT-3",
+      "materialName": "石黄矿物颜料",
+      "batch": "SH-2026-B01",
+      "type": "consume",
+      "quantity": 5,
+      "stockBefore": 145,
+      "stockAfter": 140,
+      "reservedBefore": 12,
+      "reservedAfter": 7,
+      "commissionId": "SP-1781802193058",
+      "commissionName": "导入覆盖测试-皮影",
+      "step": "补片",
+      "operator": "测试员A",
+      "operatorId": "tester-a",
+      "note": "步骤推进至【补片】，实际出库消耗",
+      "at": "2026-06-18T17:03:13.225Z"
+    },
+    {
+      "id": "LEDGER-1781802193058-csz6fg",
+      "materialId": "MAT-3",
+      "materialName": "石黄矿物颜料",
+      "batch": "SH-2026-B01",
+      "type": "reserve",
+      "quantity": 5,
+      "stockBefore": 145,
+      "stockAfter": 145,
+      "reservedBefore": 7,
+      "reservedAfter": 12,
+      "commissionId": "SP-1781802193058",
+      "commissionName": "导入覆盖测试-皮影",
+      "step": "接收",
+      "operator": "测试员A",
+      "operatorId": "tester-a",
+      "note": "委托创建占用",
+      "at": "2026-06-18T17:03:13.058Z"
+    },
+    {
+      "id": "LEDGER-1781801813499-33p2p4",
+      "materialId": "MAT-3",
+      "materialName": "石黄矿物颜料",
+      "batch": "SH-2026-B01",
+      "type": "consume",
+      "quantity": 5,
+      "stockBefore": 150,
+      "stockAfter": 145,
+      "reservedBefore": 12,
+      "reservedAfter": 7,
+      "commissionId": "SP-1781801813483",
+      "commissionName": "导入覆盖测试-皮影",
+      "step": "补片",
+      "operator": "测试员A",
+      "operatorId": "tester-a",
+      "note": "步骤推进至【补片】，实际出库消耗",
+      "at": "2026-06-18T16:56:53.499Z"
+    },
+    {
+      "id": "LEDGER-1781801813483-oh5ck8",
+      "materialId": "MAT-3",
+      "materialName": "石黄矿物颜料",
+      "batch": "SH-2026-B01",
+      "type": "reserve",
+      "quantity": 5,
+      "stockBefore": 150,
+      "stockAfter": 150,
+      "reservedBefore": 7,
+      "reservedAfter": 12,
+      "commissionId": "SP-1781801813483",
+      "commissionName": "导入覆盖测试-皮影",
+      "step": "接收",
+      "operator": "测试员A",
+      "operatorId": "tester-a",
+      "note": "委托创建占用",
+      "at": "2026-06-18T16:56:53.483Z"
+    },
+    {
+      "id": "LEDGER-1781801441620-gj9vm8",
+      "materialId": "MAT-2",
+      "materialName": "朱砂矿物颜料",
+      "batch": "ZS-2026-B03",
+      "type": "reserve",
+      "quantity": 4,
+      "stockBefore": 230,
+      "stockAfter": 230,
+      "reservedBefore": 30,
+      "reservedAfter": 34,
+      "commissionId": "SP-1781801441620",
+      "commissionName": "导入测试角色",
+      "step": "接收",
+      "operator": "测试员",
+      "operatorId": "test-003",
+      "note": "委托创建占用",
+      "at": "2026-06-18T16:50:41.620Z"
+    },
+    {
+      "id": "LEDGER-1781801397357-57dl5b",
+      "materialId": "MAT-1",
+      "materialName": "薄驴皮补片",
+      "batch": "LP-2026-A01",
+      "type": "undo_consume",
+      "quantity": 3,
+      "stockBefore": 55,
+      "stockAfter": 58,
+      "reservedBefore": 13,
+      "reservedAfter": 16,
+      "commissionId": "SP-1781801396989",
+      "commissionName": "排期测试角色",
+      "step": "补片",
+      "operator": "测试员",
+      "operatorId": "test-002",
+      "note": "排期步骤回退：补片 → 清洁，撤销消耗",
+      "at": "2026-06-18T16:49:57.357Z"
+    },
+    {
+      "id": "LEDGER-1781801397305-d2itvr",
+      "materialId": "MAT-1",
+      "materialName": "薄驴皮补片",
+      "batch": "LP-2026-A01",
+      "type": "consume",
+      "quantity": 3,
+      "stockBefore": 58,
+      "stockAfter": 55,
+      "reservedBefore": 16,
+      "reservedAfter": 13,
+      "commissionId": "SP-1781801396989",
+      "commissionName": "排期测试角色",
+      "step": "补片",
+      "operator": "测试员",
+      "operatorId": "test-002",
+      "note": "步骤推进至【补片】，实际出库消耗",
+      "at": "2026-06-18T16:49:57.305Z"
+    },
+    {
+      "id": "LEDGER-1781801396992-cld6kf",
+      "materialId": "MAT-1",
+      "materialName": "薄驴皮补片",
+      "batch": "LP-2026-A01",
+      "type": "reserve",
+      "quantity": 3,
+      "stockBefore": 58,
+      "stockAfter": 58,
+      "reservedBefore": 13,
+      "reservedAfter": 16,
+      "commissionId": "SP-1781801396989",
+      "commissionName": "排期测试角色",
+      "step": "接收",
+      "operator": "测试员",
+      "operatorId": "test-002",
+      "note": "委托创建占用",
+      "at": "2026-06-18T16:49:56.992Z"
+    },
     {
       "id": "LEDGER-1781800666780-gswmc8",
       "materialId": "MAT-5",

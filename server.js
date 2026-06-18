@@ -166,6 +166,24 @@ function releaseCommissionMaterials(db, commission, operator, operatorId, reason
     const stockBefore = Number(mat.stock) || 0;
     const reservedBefore = Number(mat.reserved) || 0;
 
+    if (consumedQty > 0) {
+      mat.stock = stockBefore + consumedQty;
+      m.consumedQty = 0;
+      m.consumedAt = "";
+      m.consumedBy = "";
+      m.consumedStep = "";
+      addStockLedger(db, createStockLedgerEntry({
+        materialId: mat.id, materialName: mat.name, batch: mat.batch,
+        type: STOCK_LEDGER_TYPES.RESTORE, quantity: consumedQty,
+        stockBefore, stockAfter: mat.stock,
+        reservedBefore, reservedAfter: reservedBefore,
+        commissionId: commission.id, commissionName: commission.roleName,
+        step: commission.status, operator, operatorId,
+        note: (reason || "释放委托") + "，退回已消耗库存"
+      }));
+    }
+
+    const currentStock = Number(mat.stock) || 0;
     if (reservedQty > 0) {
       const releaseQty = Math.min(reservedQty, reservedBefore);
       mat.reserved = Math.max(0, reservedBefore - releaseQty);
@@ -173,7 +191,7 @@ function releaseCommissionMaterials(db, commission, operator, operatorId, reason
       addStockLedger(db, createStockLedgerEntry({
         materialId: mat.id, materialName: mat.name, batch: mat.batch,
         type: STOCK_LEDGER_TYPES.RELEASE_RESERVE, quantity: releaseQty,
-        stockBefore, stockAfter: stockBefore,
+        stockBefore: currentStock, stockAfter: currentStock,
         reservedBefore, reservedAfter: mat.reserved,
         commissionId: commission.id, commissionName: commission.roleName,
         step: commission.status, operator, operatorId,
@@ -5692,6 +5710,21 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "GET" && url.pathname === "/api/commissions") return sendJson(res, 200, db.commissions);
 
+    if (req.method === "GET" && url.pathname === "/api/commissions/export") {
+      const exportData = {
+        version: EXPORT_VERSION,
+        exportedAt: new Date().toISOString(),
+        count: db.commissions.length,
+        commissions: db.commissions
+      };
+      const filename = `shadow-puppet-commissions-${new Date().toISOString().slice(0, 10)}.json`;
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${filename}"`
+      });
+      return res.end(JSON.stringify(exportData, null, 2));
+    }
+
     const commissionDetailMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)$/);
     if (commissionDetailMatch && req.method === "GET") {
       const commission = db.commissions.find(c => c.id === commissionDetailMatch[1]);
@@ -5824,21 +5857,6 @@ const server = http.createServer(async (req, res) => {
 
       await saveDb(db);
       return sendJson(res, 200, commission);
-    }
-
-    if (req.method === "GET" && url.pathname === "/api/commissions/export") {
-      const exportData = {
-        version: EXPORT_VERSION,
-        exportedAt: new Date().toISOString(),
-        count: db.commissions.length,
-        commissions: db.commissions
-      };
-      const filename = `shadow-puppet-commissions-${new Date().toISOString().slice(0, 10)}.json`;
-      res.writeHead(200, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Content-Disposition": `attachment; filename="${filename}"`
-      });
-      return res.end(JSON.stringify(exportData, null, 2));
     }
 
     if (req.method === "POST" && url.pathname === "/api/commissions/import/preview") {
@@ -6709,11 +6727,29 @@ const server = http.createServer(async (req, res) => {
       if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
       const changedFields = [];
       if (input.status !== undefined && input.status !== commission.status) {
-        commission.status = input.status;
+        const oldStatus = commission.status;
+        const newStatus = input.status;
+        const steps = commission.steps && commission.steps.length ? commission.steps : defaultSteps;
+        const oldIdx = steps.indexOf(oldStatus);
+        const newIdx = steps.indexOf(newStatus);
+        const consumeStepName = commission.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
+        const consumeIdx = steps.indexOf(consumeStepName);
+        try {
+          if (consumeIdx !== -1) {
+            if (oldIdx < consumeIdx && newIdx >= consumeIdx) {
+              consumeCommissionMaterialsAtStep(db, commission, oldStatus, newStatus, input.operator, input.operatorId);
+            } else if (oldIdx >= consumeIdx && newIdx < consumeIdx) {
+              undoCommissionMaterialsConsume(db, commission, input.operator, input.operatorId, `排期步骤回退：${oldStatus} → ${newStatus}，撤销消耗`);
+            }
+          }
+        } catch (e) {
+          return sendJson(res, 400, { error: e.message });
+        }
+        commission.status = newStatus;
         changedFields.push("步骤");
         commission.records.push({ 
           at: new Date().toISOString(), 
-          step: input.status, 
+          step: newStatus, 
           note: input.note || "步骤更新" 
         });
       }
