@@ -254,6 +254,11 @@ const seed = {
       unit: "克",
       remark: "高纯度牛骨胶粒"
     }
+  ],
+  members: [
+    { id: "MB-001", name: "许岚", role: "修复师", phone: "", remark: "主修复师" },
+    { id: "MB-002", name: "张师傅", role: "补色师", phone: "", remark: "" },
+    { id: "MB-003", name: "李学徒", role: "学徒", phone: "", remark: "" }
   ]
 };
 
@@ -267,6 +272,10 @@ async function loadDb() {
   let migrated = false;
   if (!db.stepTemplates || !db.stepTemplates.length) {
     db.stepTemplates = JSON.parse(JSON.stringify(seedTemplates));
+    migrated = true;
+  }
+  if (!db.members || !Array.isArray(db.members)) {
+    db.members = JSON.parse(JSON.stringify(seed.members));
     migrated = true;
   }
   if (db.commissions) {
@@ -293,6 +302,10 @@ async function loadDb() {
       }
       if (!c.acceptance || typeof c.acceptance !== "object") {
         c.acceptance = null;
+        migrated = true;
+      }
+      if (!Array.isArray(c.operationLogs)) {
+        c.operationLogs = [];
         migrated = true;
       }
     }
@@ -593,18 +606,44 @@ const page = `<!doctype html>
     .acceptance-detail { background: var(--bg); border-radius: 6px; padding: 10px; margin-top: 8px; font-size: 12px; }
     .acceptance-detail .row { display: flex; gap: 4px; margin: 3px 0; }
     .acceptance-detail .row .label { color: var(--muted); min-width: 60px; }
+    .header-bar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+    .operator-area { display:flex; align-items:center; gap:8px; }
+    .operator-area label { color:var(--muted); font-size:13px; margin:0; white-space:nowrap; }
+    .operator-area select { width:auto; min-width:120px; padding:6px 10px; font-size:13px; }
+    .member-list { display:grid; gap:10px; }
+    .member-card { display:grid; gap:6px; }
+    .member-card .pill { justify-self:start; }
+    .oplog-section { margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+    .oplog-title { font-size:13px; color:var(--muted); margin:0 0 6px; cursor:pointer; display:flex; align-items:center; gap:4px; }
+    .oplog-title:hover { color:var(--accent); }
+    .oplog-list { display:none; }
+    .oplog-list.visible { display:block; }
+    .oplog-item { display:grid; grid-template-columns:110px 70px 1fr; gap:4px 8px; padding:4px 0; font-size:12px; border-bottom:1px solid var(--line); }
+    .oplog-item:last-child { border-bottom:none; }
+    .oplog-time { color:var(--muted); }
+    .oplog-operator { color:var(--accent); font-weight:600; }
+    .oplog-detail { color:var(--ink); }
 
     @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} }
   </style>
 </head>
 <body>
   <header>
-    <h1>皮影修复小作坊</h1>
-    <div class="meta">委托、修复步骤、材料台账</div>
+    <div class="header-bar">
+      <div>
+        <h1>皮影修复小作坊</h1>
+        <div class="meta">委托、修复步骤、材料台账</div>
+      </div>
+      <div class="operator-area">
+        <label>👤 当前操作者：</label>
+        <select id="operatorSelect"><option value="">— 请选择 —</option></select>
+      </div>
+    </div>
   </header>
   <div class="tabs">
     <div class="tab active" data-tab="commissions">修复委托</div>
     <div class="tab" data-tab="schedule">修复排期</div>
+    <div class="tab" data-tab="members">作坊成员</div>
     <div class="tab" data-tab="clients">客户档案</div>
     <div class="tab" data-tab="materials">材料台账</div>
     <div class="tab" data-tab="templates">步骤模板</div>
@@ -657,7 +696,10 @@ const page = `<!doctype html>
             <button type="button" id="commissionAddStepBtn" class="small secondary">添加</button>
           </div>
         </div>
-        <label>负责人</label><input name="owner" required>
+        <label>负责人</label>
+        <select id="ownerSelect" name="owner" required>
+          <option value="">— 选择负责人 —</option>
+        </select>
         <label>预计完成日期</label><input name="dueDate" type="date" required>
         <button type="submit">保存委托</button>
       </form>
@@ -668,6 +710,31 @@ const page = `<!doctype html>
           <button type="button" class="stage-filter-tab" data-stage-filter="delivered">已交付 <span class="count" id="countDelivered">0</span></button>
         </div>
         <div class="grid" id="list"></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-members">
+    <div class="two-col">
+      <form id="memberForm">
+        <h2>新增作坊成员</h2>
+        <label>姓名</label><input name="name" required>
+        <label>角色</label>
+        <select name="role">
+          <option value="修复师">修复师</option>
+          <option value="补色师">补色师</option>
+          <option value="装裱师">装裱师</option>
+          <option value="学徒">学徒</option>
+          <option value="管理员">管理员</option>
+          <option value="其他">其他</option>
+        </select>
+        <label>电话</label><input name="phone" placeholder="联系电话">
+        <label>备注</label><textarea name="remark"></textarea>
+        <button type="submit">添加成员</button>
+      </form>
+      <section>
+        <h2 style="margin-bottom:12px;">成员列表</h2>
+        <div class="grid" id="memberList"></div>
       </section>
     </div>
   </div>
@@ -1080,6 +1147,7 @@ const page = `<!doctype html>
     let materials = [];
     let clients = [];
     let stepTemplates = [];
+    let members = [];
     let currentTab = "commissions";
     let selectedClientId = null;
     let currentCommissionSteps = [...defaultSteps];
@@ -1087,6 +1155,27 @@ const page = `<!doctype html>
     let editingTemplateSteps = [];
     let newTemplateSteps = ["接收", "清洁", "补片", "补色", "交付"];
     let currentStageFilter = "active";
+
+    function getOperator() {
+      const sel = document.getElementById("operatorSelect");
+      if (!sel) return { operator: "", operatorId: "" };
+      const opt = sel.options[sel.selectedIndex];
+      return { operator: opt?.text || "", operatorId: sel.value || "" };
+    }
+
+    function renderOperatorSelect() {
+      const sel = document.getElementById("operatorSelect");
+      if (!sel) return;
+      const curVal = sel.value;
+      sel.innerHTML = '<option value="">— 请选择 —</option>' + members.map(m => '<option value="'+m.id+'">'+m.name+'</option>').join("");
+      if (curVal) sel.value = curVal;
+      const savedOp = localStorage.getItem("currentOperatorId");
+      if (savedOp && !sel.value && members.some(m => m.id === savedOp)) sel.value = savedOp;
+    }
+
+    document.getElementById("operatorSelect").onchange = function() {
+      localStorage.setItem("currentOperatorId", this.value);
+    };
 
     async function api(path, options) {
       const res = await fetch(path, options && options.body ? { ...options, headers:{ "Content-Type":"application/json" } } : options);
@@ -1201,12 +1290,16 @@ const page = `<!doctype html>
           acceptanceDetail = '<div class="acceptance-detail"><div class="row"><span class="label">验收：</span><span>'+acc.result+'</span></div><div class="row"><span class="label">交付：</span><span>'+acc.deliveryDate+' · 领取人：'+acc.receiver+'</span></div></div>';
         }
 
-        return '<article class="'+cardClass+'"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+quoteBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+acceptanceDetail+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><button class="quote-btn" data-quote="'+c.id+'">💰 报价管理' + (quoteCount > 0 ? ' (' + quoteCount + '版)' : '') + '</button>'+acceptanceBtn+'<div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div></article>';
+        const opLogs = (c.operationLogs || []);
+        const opLogHtml = opLogs.length ? '<div class="oplog-section"><div class="oplog-title" data-oplog-toggle="'+c.id+'">📜 操作日志 ('+opLogs.length+')</div><div class="oplog-list" id="oplog-'+c.id+'">'+opLogs.map(l => '<div class="oplog-item"><span class="oplog-time">'+formatDate(l.at)+'</span><span class="oplog-operator">'+(l.operator||'系统')+'</span><span class="oplog-detail">'+l.detail+'</span></div>').join("")+'</div></div>' : '';
+
+        return '<article class="'+cardClass+'"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+quoteBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+acceptanceDetail+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><button class="quote-btn" data-quote="'+c.id+'">💰 报价管理' + (quoteCount > 0 ? ' (' + quoteCount + '版)' : '') + '</button>'+acceptanceBtn+'<div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div>'+opLogHtml+'</article>';
       }).join("");
       document.querySelectorAll("[data-step]").forEach(sel => sel.value = filteredCommissions.find(c => c.id === sel.dataset.step).status);
       document.querySelectorAll("[data-save]").forEach(btn => btn.onclick = async () => {
         const id = btn.dataset.save;
-        await api('/api/commissions/'+id+'/records', { method:'POST', body: JSON.stringify({ step: document.querySelector('[data-step="'+id+'"]').value, note: document.querySelector('[data-note="'+id+'"]').value || "步骤完成" }) });
+        const op = getOperator();
+        await api('/api/commissions/'+id+'/records', { method:'POST', body: JSON.stringify({ step: document.querySelector('[data-step="'+id+'"]').value, note: document.querySelector('[data-note="'+id+'"]').value || "步骤完成", operator: op.operator, operatorId: op.operatorId }) });
         await loadAll();
       });
       document.querySelectorAll("[data-images]").forEach(btn => btn.onclick = () => {
@@ -1220,6 +1313,11 @@ const page = `<!doctype html>
       document.querySelectorAll("[data-acceptance]").forEach(btn => btn.onclick = () => {
         const id = btn.dataset.acceptance;
         openAcceptanceModal(id);
+      });
+      document.querySelectorAll("[data-oplog-toggle]").forEach(el => el.onclick = () => {
+        const id = el.dataset.oplogToggle;
+        const logList = document.getElementById("oplog-" + id);
+        if (logList) logList.classList.toggle("visible");
       });
     }
 
@@ -1334,6 +1432,83 @@ const page = `<!doctype html>
         alert(e.message);
       }
     }
+
+    function renderOwnerSelect() {
+      const sel = document.getElementById("ownerSelect");
+      if (!sel) return;
+      const curVal = sel.value;
+      sel.innerHTML = '<option value="">— 选择负责人 —</option>' + members.map(m => '<option value="'+m.name+'">'+m.name+' ('+m.role+')'+'</option>').join("");
+      if (curVal) sel.value = curVal;
+    }
+
+    function renderMembers() {
+      const list = document.getElementById("memberList");
+      if (!list) return;
+      if (!members.length) {
+        list.innerHTML = '<div class="card meta">暂无成员</div>';
+        return;
+      }
+      list.innerHTML = members.map(m => {
+        return '<div class="card member-card">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<h3 style="margin:0;font-size:16px;">'+m.name+'</h3>' +
+          '<span class="pill">'+m.role+'</span>' +
+          '</div>' +
+          (m.phone ? '<div class="meta">电话：'+m.phone+'</div>' : '') +
+          (m.remark ? '<div class="meta">备注：'+m.remark+'</div>' : '') +
+          '<div class="meta">负责委托：<strong>'+commissions.filter(c => c.owner === m.name).length+'</strong> 条</div>' +
+          '<div style="display:flex;gap:6px;margin-top:4px;">' +
+          '<button class="small" data-edit-member="'+m.id+'">编辑</button>' +
+          '<button class="small secondary" data-delete-member="'+m.id+'">删除</button>' +
+          '</div>' +
+          '</div>';
+      }).join("");
+      document.querySelectorAll("[data-edit-member]").forEach(btn => {
+        btn.onclick = () => {
+          const m = members.find(x => x.id === btn.dataset.editMember);
+          if (!m) return;
+          const newName = prompt("姓名：", m.name);
+          if (newName === null) return;
+          const newRole = prompt("角色：", m.role);
+          const newPhone = prompt("电话：", m.phone);
+          const newRemark = prompt("备注：", m.remark);
+          if (newName && newName.trim()) {
+            api("/api/members/" + m.id, {
+              method: "PUT",
+              body: JSON.stringify({ name: newName.trim(), role: newRole || "", phone: newPhone || "", remark: newRemark || "" })
+            }).then(() => loadAll()).catch(e => alert(e.message));
+          }
+        };
+      });
+      document.querySelectorAll("[data-delete-member]").forEach(btn => {
+        btn.onclick = async () => {
+          const m = members.find(x => x.id === btn.dataset.deleteMember);
+          if (!m) return;
+          const assignedCount = commissions.filter(c => c.owner === m.name).length;
+          if (assignedCount > 0 && !confirm(m.name + " 还有 " + assignedCount + " 条负责委托，确定删除吗？")) return;
+          if (assignedCount === 0 && !confirm("确定删除 " + m.name + " 吗？")) return;
+          try {
+            await api("/api/members/" + m.id, { method: "DELETE" });
+            await loadAll();
+          } catch (e) {
+            alert(e.message);
+          }
+        };
+      });
+    }
+
+    document.querySelector("#memberForm").onsubmit = async event => {
+      event.preventDefault();
+      const formData = new FormData(event.target);
+      const data = Object.fromEntries(formData.entries());
+      try {
+        await api("/api/members", { method:"POST", body: JSON.stringify(data) });
+        event.target.reset();
+        await loadAll();
+      } catch (e) {
+        alert(e.message);
+      }
+    };
 
     function renderMaterialSelect() {
       const container = document.getElementById("materialSelect");
@@ -1772,9 +1947,10 @@ const page = `<!doctype html>
           if (!dueDate) return alert("截止日期不能为空");
 
           try {
+            const op = getOperator();
             await api('/api/commissions/' + id + '/schedule', { 
               method:'PUT', 
-              body: JSON.stringify({ status: step, note: note || "步骤更新", owner, dueDate }) 
+              body: JSON.stringify({ status: step, note: note || "步骤更新", owner, dueDate, operator: op.operator, operatorId: op.operatorId }) 
             });
             await Promise.all([loadSchedule(), loadAll()]);
           } catch (e) {
@@ -1799,6 +1975,9 @@ const page = `<!doctype html>
       renderCommissions();
       renderClientSelect();
       renderClients();
+      renderMembers();
+      renderOwnerSelect();
+      renderOperatorSelect();
       renderMaterialSelect();
       renderMaterials();
       renderTemplateSelect();
@@ -1814,12 +1993,14 @@ const page = `<!doctype html>
         clients = await api("/api/clients");
         materials = await api("/api/materials");
         stepTemplates = await api("/api/step-templates");
+        members = await api("/api/members");
       } catch (e) {
         console.error("loadAll failed, retrying sequentially:", e.message);
         commissions = commissions || [];
         clients = clients || [];
         materials = materials || [];
         stepTemplates = stepTemplates || [];
+        members = members || [];
       }
       if (currentTab === "schedule") {
         await loadSchedule();
@@ -1853,6 +2034,8 @@ const page = `<!doctype html>
       data.steps = currentCommissionSteps.filter(s => s.trim());
       if (!data.steps.length) return alert("至少需要一个步骤");
       try {
+        const op = getOperator();
+        Object.assign(data, { operator: op.operator, operatorId: op.operatorId });
         await api("/api/commissions", { method:"POST", body: JSON.stringify(data) });
         event.target.reset();
         document.getElementById("clientNewFields").classList.remove("visible");
@@ -3158,6 +3341,9 @@ const page = `<!doctype html>
       const quoteData = generateSmartQuote(commission);
 
       try {
+        const op = getOperator();
+        quoteData.operator = op.operator;
+        quoteData.operatorId = op.operatorId;
         const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes", {
           method: "POST",
           body: JSON.stringify(quoteData)
@@ -3177,6 +3363,7 @@ const page = `<!doctype html>
       const totals = calculateQuoteTotals();
 
       try {
+        const op = getOperator();
         const updated = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id, {
           method: "PUT",
           body: JSON.stringify({
@@ -3185,7 +3372,9 @@ const page = `<!doctype html>
             materialCost: totals.materialCost,
             totalAmount: totals.total,
             estimatedDays: Number(document.getElementById("quoteEstimatedDays").value) || 0,
-            remark: document.getElementById("quoteRemark").value || ""
+            remark: document.getElementById("quoteRemark").value || "",
+            operator: op.operator,
+            operatorId: op.operatorId
           })
         });
         currentQuoteData = updated;
@@ -3203,8 +3392,10 @@ const page = `<!doctype html>
       if (!confirm("确认报价后将无法直接编辑，需要重新报价才能修改。确定确认吗？")) return;
 
       try {
+        const op = getOperator();
         const confirmed = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id + "/confirm", {
-          method: "POST"
+          method: "POST",
+          body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
         });
         currentQuoteData = confirmed;
         await loadQuoteData();
@@ -3220,8 +3411,10 @@ const page = `<!doctype html>
       if (!confirm("将基于当前报价创建新版本，旧版本将保留。确定重新报价吗？")) return;
 
       try {
+        const op = getOperator();
         const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id + "/revise", {
-          method: "POST"
+          method: "POST",
+          body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
         });
         currentQuoteData = newQuote;
         currentQuoteItems = JSON.parse(JSON.stringify(newQuote.items || []));
@@ -3390,6 +3583,7 @@ const page = `<!doctype html>
       if (!receiver) return alert("请填写领取人");
 
       try {
+        const op = getOperator();
         await api("/api/commissions/" + currentAcceptanceCommissionId + "/acceptance", {
           method: "POST",
           body: JSON.stringify({
@@ -3397,7 +3591,9 @@ const page = `<!doctype html>
             deliveryDate,
             receiver,
             remainingIssues,
-            maintenanceAdvice
+            maintenanceAdvice,
+            operator: op.operator,
+            operatorId: op.operatorId
           })
         });
         await loadAll();
@@ -3413,8 +3609,10 @@ const page = `<!doctype html>
       if (!confirm("确定要撤销验收记录吗？")) return;
 
       try {
+        const op = getOperator();
         await api("/api/commissions/" + currentAcceptanceCommissionId + "/acceptance", {
-          method: "DELETE"
+          method: "DELETE",
+          body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
         });
         await loadAll();
         closeAcceptanceModal();
@@ -3460,6 +3658,18 @@ const page = `<!doctype html>
   </script>
 </body>
 </html>`;
+
+function addOperationLog(commission, type, operator, operatorId, detail) {
+  if (!commission.operationLogs) commission.operationLogs = [];
+  commission.operationLogs.push({
+    id: `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    type,
+    operator: operator || "未知",
+    operatorId: operatorId || "",
+    detail: detail || "",
+    at: new Date().toISOString()
+  });
+}
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -3859,6 +4069,7 @@ const server = http.createServer(async (req, res) => {
         const mat = db.materials.find(item => item.id === m.materialId);
         if (mat) mat.stock -= m.quantity;
       }
+      addOperationLog(commission, "create", input.operator, input.operatorId, "创建委托");
       db.commissions.unshift(commission);
       await saveDb(db);
       return sendJson(res, 201, commission);
@@ -3870,6 +4081,7 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       commission.status = input.step;
       commission.records.push({ at: new Date().toISOString(), step: input.step, note: input.note || "" });
+      addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + input.step + (input.note ? " - " + input.note : ""));
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
@@ -3893,6 +4105,7 @@ const server = http.createServer(async (req, res) => {
       };
       commission.acceptance = acceptance;
       commission.records.push({ at: new Date().toISOString(), step: lastStep, note: "交付验收完成" });
+      addOperationLog(commission, "acceptance", input.operator, input.operatorId, "交付验收：" + input.result);
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
@@ -3903,6 +4116,8 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { error: "no_acceptance", message: "该委托暂无验收记录" });
       }
       commission.acceptance = null;
+      const revokeInput = await body(req);
+      addOperationLog(commission, "acceptance_revoke", revokeInput.operator || "", revokeInput.operatorId || "", "撤销验收");
       await saveDb(db);
       return sendJson(res, 200, { ok: true });
     }
@@ -3956,7 +4171,46 @@ const server = http.createServer(async (req, res) => {
       await saveDb(db);
       return sendJson(res, 200, material);
     }
-    
+
+    if (req.method === "GET" && url.pathname === "/api/members") return sendJson(res, 200, db.members);
+
+    if (req.method === "POST" && url.pathname === "/api/members") {
+      const input = await body(req);
+      if (!input.name || !input.name.trim()) return sendJson(res, 400, { error: "成员名称不能为空" });
+      const member = { id: `MB-${Date.now()}`, name: input.name.trim(), role: input.role || "", phone: input.phone || "", remark: input.remark || "" };
+      db.members.unshift(member);
+      await saveDb(db);
+      return sendJson(res, 201, member);
+    }
+
+    const memberMatch = url.pathname.match(/^\/api\/members\/([^/]+)$/);
+    if (memberMatch && req.method === "PUT") {
+      const member = db.members.find(m => m.id === memberMatch[1]);
+      if (!member) return sendJson(res, 404, { error: "member_not_found" });
+      const input = await body(req);
+      if (input.name !== undefined) member.name = input.name;
+      if (input.role !== undefined) member.role = input.role;
+      if (input.phone !== undefined) member.phone = input.phone;
+      if (input.remark !== undefined) member.remark = input.remark;
+      await saveDb(db);
+      return sendJson(res, 200, member);
+    }
+
+    if (memberMatch && req.method === "DELETE") {
+      const idx = db.members.findIndex(m => m.id === memberMatch[1]);
+      if (idx === -1) return sendJson(res, 404, { error: "member_not_found" });
+      db.members.splice(idx, 1);
+      await saveDb(db);
+      return sendJson(res, 200, { ok: true });
+    }
+
+    const logsMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/logs$/);
+    if (logsMatch && req.method === "GET") {
+      const commission = db.commissions.find(c => c.id === logsMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      return sendJson(res, 200, commission.operationLogs || []);
+    }
+
     if (req.method === "GET" && url.pathname.startsWith("/uploads/")) {
       const filePath = join(__dirname, url.pathname);
       if (!filePath.startsWith(uploadsDir)) return sendJson(res, 403, { error: "forbidden" });
@@ -4201,6 +4455,11 @@ const server = http.createServer(async (req, res) => {
       if (input.remark !== undefined) {
         commission.remark = input.remark;
       }
+      const logDetails = [];
+      if (input.status !== undefined) logDetails.push("步骤→" + input.status);
+      if (input.owner !== undefined) logDetails.push("负责人→" + input.owner);
+      if (input.dueDate !== undefined) logDetails.push("截止日期→" + input.dueDate);
+      if (logDetails.length) addOperationLog(commission, "schedule_update", input.operator, input.operatorId, logDetails.join("，"));
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
@@ -4252,6 +4511,7 @@ const server = http.createServer(async (req, res) => {
       commission.quotes.push(quote);
       commission.currentQuoteId = quote.id;
 
+      addOperationLog(commission, "quote_create", input.operator, input.operatorId, "创建报价 V" + quote.version);
       await saveDb(db);
       return sendJson(res, 201, quote);
     }
@@ -4296,6 +4556,7 @@ const server = http.createServer(async (req, res) => {
         quote.totalAmount = quote.items.reduce((sum, item) => sum + item.amount, 0) + quote.laborCost + quote.materialCost;
       }
 
+      addOperationLog(commission, "quote_edit", input.operator, input.operatorId, "修改报价 V" + quote.version);
       await saveDb(db);
       return sendJson(res, 200, quote);
     }
@@ -4315,6 +4576,8 @@ const server = http.createServer(async (req, res) => {
 
       commission.currentQuoteId = quote.id;
 
+      const confirmInput = await body(req);
+      addOperationLog(commission, "quote_confirm", confirmInput.operator || "", confirmInput.operatorId || "", "确认报价 V" + quote.version);
       await saveDb(db);
       return sendJson(res, 200, quote);
     }
@@ -4349,6 +4612,8 @@ const server = http.createServer(async (req, res) => {
       commission.quotes.push(newQuote);
       commission.currentQuoteId = newQuote.id;
 
+      const reviseInput = await body(req);
+      addOperationLog(commission, "quote_revise", reviseInput.operator || "", reviseInput.operatorId || "", "重新报价 V" + newQuote.version);
       await saveDb(db);
       return sendJson(res, 201, newQuote);
     }
