@@ -15,6 +15,23 @@ const maxFileSize = 10 * 1024 * 1024;
 const EXPORT_VERSION = "1.0";
 
 const requiredCommissionFields = ["roleName", "era", "damage", "owner", "dueDate"];
+const snapshotTrackedFields = ["roleName", "era", "damage", "missingParts", "colorNotes", "reinforcement", "owner", "dueDate", "status", "client"];
+
+function createFieldSnapshot(commission, operator, operatorId, reason) {
+  const snapshot = {};
+  for (const field of snapshotTrackedFields) {
+    snapshot[field] = commission[field] !== undefined ? commission[field] : "";
+  }
+  snapshot.materials = Array.isArray(commission.materials) ? JSON.parse(JSON.stringify(commission.materials)) : [];
+  return {
+    id: `SNAP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    fields: snapshot,
+    operator: operator || "未知",
+    operatorId: operatorId || "",
+    reason: reason || "",
+    at: new Date().toISOString()
+  };
+}
 
 function validateCommission(commission, existingCommissions, allSteps) {
   const issues = [];
@@ -268,9 +285,26 @@ async function loadDb() {
     await writeFile(dbPath, JSON.stringify(seed, null, 2));
     return JSON.parse(JSON.stringify(seed));
   }
-  const db = JSON.parse(await readFile(dbPath, "utf8"));
+  let raw;
+  try {
+    raw = await readFile(dbPath, "utf8");
+  } catch (e) {
+    await mkdir(dirname(dbPath), { recursive: true });
+    await writeFile(dbPath, JSON.stringify(seed, null, 2));
+    return JSON.parse(JSON.stringify(seed));
+  }
+  let db;
+  try {
+    db = JSON.parse(raw);
+  } catch (e) {
+    await writeFile(dbPath, JSON.stringify(seed, null, 2));
+    return JSON.parse(JSON.stringify(seed));
+  }
+  if (!db || typeof db !== "object" || Array.isArray(db)) {
+    db = {};
+  }
   let migrated = false;
-  if (!db.stepTemplates || !db.stepTemplates.length) {
+  if (!db.stepTemplates || !Array.isArray(db.stepTemplates) || !db.stepTemplates.length) {
     db.stepTemplates = JSON.parse(JSON.stringify(seedTemplates));
     migrated = true;
   }
@@ -278,36 +312,144 @@ async function loadDb() {
     db.members = JSON.parse(JSON.stringify(seed.members));
     migrated = true;
   }
-  if (db.commissions) {
-    for (const c of db.commissions) {
-      if (!c.steps || !Array.isArray(c.steps) || !c.steps.length) {
-        c.steps = [...defaultSteps];
-        migrated = true;
-      }
-      if (!c.images || typeof c.images !== "object") {
-        c.images = { before: [], during: [], after: [] };
-        migrated = true;
-      } else {
-        if (!Array.isArray(c.images.before)) { c.images.before = []; migrated = true; }
-        if (!Array.isArray(c.images.during)) { c.images.during = []; migrated = true; }
-        if (!Array.isArray(c.images.after)) { c.images.after = []; migrated = true; }
-      }
-      if (!Array.isArray(c.quotes)) {
-        c.quotes = [];
-        migrated = true;
-      }
-      if (c.currentQuoteId === undefined) {
-        c.currentQuoteId = "";
-        migrated = true;
-      }
-      if (!c.acceptance || typeof c.acceptance !== "object") {
-        c.acceptance = null;
-        migrated = true;
-      }
-      if (!Array.isArray(c.operationLogs)) {
-        c.operationLogs = [];
-        migrated = true;
-      }
+  if (!db.clients || !Array.isArray(db.clients)) {
+    db.clients = [];
+    migrated = true;
+  }
+  if (!db.materials || !Array.isArray(db.materials)) {
+    db.materials = [];
+    migrated = true;
+  }
+  if (!db.commissions || !Array.isArray(db.commissions)) {
+    db.commissions = [];
+    migrated = true;
+  }
+  for (const c of db.commissions) {
+    if (!c || typeof c !== "object" || Array.isArray(c)) continue;
+    if (!c.id) {
+      c.id = "SP-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6);
+      migrated = true;
+    }
+    if (!c.roleName) { c.roleName = ""; migrated = true; }
+    if (!c.era) { c.era = ""; migrated = true; }
+    if (!c.damage) { c.damage = ""; migrated = true; }
+    if (!c.steps || !Array.isArray(c.steps) || !c.steps.length) {
+      c.steps = [...defaultSteps];
+      migrated = true;
+    }
+    if (!c.images || typeof c.images !== "object" || Array.isArray(c.images)) {
+      c.images = { before: [], during: [], after: [] };
+      migrated = true;
+    } else {
+      if (!Array.isArray(c.images.before)) { c.images.before = []; migrated = true; }
+      if (!Array.isArray(c.images.during)) { c.images.during = []; migrated = true; }
+      if (!Array.isArray(c.images.after)) { c.images.after = []; migrated = true; }
+    }
+    if (!Array.isArray(c.quotes)) {
+      c.quotes = [];
+      migrated = true;
+    }
+    for (const q of c.quotes) {
+      if (!q || typeof q !== "object") continue;
+      if (q.version === undefined) { q.version = 1; migrated = true; }
+      if (!q.status) { q.status = "draft"; migrated = true; }
+      if (!Array.isArray(q.items)) { q.items = []; migrated = true; }
+      if (q.totalAmount === undefined) { q.totalAmount = 0; migrated = true; }
+      if (q.laborCost === undefined) { q.laborCost = 0; migrated = true; }
+      if (q.materialCost === undefined) { q.materialCost = 0; migrated = true; }
+      if (!q.createdAt) { q.createdAt = new Date().toISOString(); migrated = true; }
+    }
+    if (c.currentQuoteId === undefined) {
+      c.currentQuoteId = "";
+      migrated = true;
+    }
+    if (c.acceptance === undefined || c.acceptance === "" || c.acceptance === false) {
+      c.acceptance = null;
+      migrated = true;
+    } else if (typeof c.acceptance === "object" && c.acceptance !== null && !c.acceptance.result) {
+      c.acceptance = null;
+      migrated = true;
+    }
+    if (!Array.isArray(c.operationLogs)) {
+      c.operationLogs = [];
+      migrated = true;
+    }
+    if (!Array.isArray(c.fieldSnapshots)) {
+      c.fieldSnapshots = [];
+      migrated = true;
+    }
+    if (!Array.isArray(c.materials)) {
+      c.materials = [];
+      migrated = true;
+    }
+    if (!Array.isArray(c.records)) {
+      c.records = [];
+      migrated = true;
+    }
+    if (c.missingParts === undefined) {
+      c.missingParts = "";
+      migrated = true;
+    }
+    if (c.colorNotes === undefined) {
+      c.colorNotes = "";
+      migrated = true;
+    }
+    if (c.reinforcement === undefined) {
+      c.reinforcement = "";
+      migrated = true;
+    }
+    if (c.clientId === undefined) {
+      c.clientId = "";
+      migrated = true;
+    }
+    if (c.client === undefined) {
+      c.client = "";
+      migrated = true;
+    }
+    if (c.templateId === undefined) {
+      c.templateId = "";
+      migrated = true;
+    }
+    if (c.templateName === undefined) {
+      c.templateName = "";
+      migrated = true;
+    }
+    if (c.status === undefined) {
+      c.status = c.steps[0] || defaultSteps[0];
+      migrated = true;
+    }
+    if (c.owner === undefined) {
+      c.owner = "";
+      migrated = true;
+    }
+    if (c.dueDate === undefined) {
+      c.dueDate = "";
+      migrated = true;
+    }
+    if (!c.fieldSnapshots || !Array.isArray(c.fieldSnapshots) || c.fieldSnapshots.length === 0) {
+      const earliestRecord = c.records && c.records.length ? c.records[0] : null;
+      const snapshotAt = earliestRecord && earliestRecord.at ? earliestRecord.at : new Date().toISOString();
+      c.fieldSnapshots = [{
+        id: `SNAP-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        fields: {
+          roleName: c.roleName || "",
+          era: c.era || "",
+          damage: c.damage || "",
+          missingParts: c.missingParts || "",
+          colorNotes: c.colorNotes || "",
+          reinforcement: c.reinforcement || "",
+          owner: c.owner || "",
+          dueDate: c.dueDate || "",
+          status: c.status || "",
+          client: c.client || "",
+          materials: Array.isArray(c.materials) ? JSON.parse(JSON.stringify(c.materials)) : []
+        },
+        operator: "系统",
+        operatorId: "",
+        reason: "初始数据快照",
+        at: snapshotAt
+      }];
+      migrated = true;
     }
   }
   if (migrated) await saveDb(db);
@@ -623,6 +765,73 @@ const page = `<!doctype html>
     .oplog-time { color:var(--muted); }
     .oplog-operator { color:var(--accent); font-weight:600; }
     .oplog-detail { color:var(--ink); }
+
+    .detail-modal { max-width: 1100px; }
+    .detail-nav { display:flex; gap:2px; padding:0 24px; border-bottom:1px solid var(--line); overflow-x:auto; }
+    .detail-nav-btn { padding:10px 16px; background:var(--bg); border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; cursor:pointer; font-size:13px; white-space:nowrap; }
+    .detail-nav-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .detail-section { display:none; }
+    .detail-section.active { display:block; }
+    .detail-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .detail-info-item { background:var(--bg); border-radius:6px; padding:10px 12px; }
+    .detail-info-item .label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+    .detail-info-item .value { font-size:14px; word-break:break-all; }
+    .detail-info-item.full { grid-column:1/-1; }
+    .detail-edit-btn { display:inline-block; margin-left:8px; font-size:11px; color:var(--accent); cursor:pointer; border:0; background:none; padding:2px 6px; border-radius:3px; }
+    .detail-edit-btn:hover { background:var(--bg); text-decoration:underline; }
+
+    .detail-timeline { position:relative; padding-left:28px; }
+    .detail-timeline::before { content:''; position:absolute; left:10px; top:0; bottom:0; width:2px; background:var(--line); }
+    .timeline-item { position:relative; margin-bottom:18px; }
+    .timeline-item::before { content:''; position:absolute; left:-22px; top:6px; width:12px; height:12px; border-radius:50%; border:2px solid var(--line); background:#fff; }
+    .timeline-item.done::before { background:var(--green); border-color:var(--green); }
+    .timeline-item.current::before { background:var(--accent); border-color:var(--accent); }
+    .timeline-item .tl-step { font-weight:700; font-size:14px; }
+    .timeline-item .tl-time { font-size:12px; color:var(--muted); margin-left:8px; }
+    .timeline-item .tl-note { font-size:13px; color:var(--ink); margin-top:4px; }
+    .timeline-item .tl-future { color:var(--muted); font-style:italic; }
+
+    .detail-img-section { margin-top:12px; }
+    .detail-img-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+    .detail-img-card { background:var(--bg); border:1px solid var(--line); border-radius:6px; overflow:hidden; cursor:pointer; transition:all 0.2s; }
+    .detail-img-card:hover { box-shadow:0 2px 8px rgba(0,0,0,0.1); transform:translateY(-2px); }
+    .detail-img-card img { width:100%; height:100px; object-fit:cover; }
+    .detail-img-card .caption { padding:6px; font-size:11px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .detail-img-stage-label { font-size:13px; font-weight:700; color:var(--muted); margin:12px 0 6px; }
+
+    .detail-quote-summary { background:var(--bg); border-radius:8px; padding:14px; margin-bottom:12px; }
+    .detail-quote-row { display:flex; justify-content:space-between; padding:4px 0; font-size:13px; }
+    .detail-quote-row.total { border-top:2px solid var(--line); margin-top:8px; padding-top:8px; font-weight:700; font-size:15px; }
+    .detail-quote-row.total strong { color:var(--accent); font-size:18px; }
+
+    .detail-acceptance-box { background:var(--bg); border-radius:8px; padding:14px; }
+    .detail-acceptance-row { display:grid; grid-template-columns:90px 1fr; gap:4px; margin:4px 0; font-size:13px; }
+    .detail-acceptance-row .label { color:var(--muted); }
+
+    .detail-oplog-table { width:100%; border-collapse:collapse; }
+    .detail-oplog-table th, .detail-oplog-table td { padding:8px 10px; border-bottom:1px solid var(--line); font-size:13px; text-align:left; }
+    .detail-oplog-table th { color:var(--muted); font-weight:400; }
+    .detail-oplog-table td.oplog-time-col { white-space:nowrap; color:var(--muted); width:130px; }
+    .detail-oplog-table td.oplog-op-col { color:var(--accent); font-weight:600; width:70px; }
+
+    .version-list { display:flex; flex-direction:column; gap:8px; }
+    .version-item { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px 14px; cursor:pointer; transition:all 0.2s; }
+    .version-item:hover { border-color:var(--accent); }
+    .version-item.active { border-color:var(--accent); background:#fff; }
+    .version-item-header { display:flex; justify-content:space-between; align-items:center; }
+    .version-item-reason { font-weight:700; font-size:13px; }
+    .version-item-time { font-size:11px; color:var(--muted); }
+    .version-item-operator { font-size:11px; color:var(--accent); }
+    .version-diff { margin-top:8px; padding:8px; background:#fff; border-radius:4px; font-size:12px; display:none; }
+    .version-item.active .version-diff { display:block; }
+    .version-diff-row { display:grid; grid-template-columns:80px 1fr 1fr; gap:8px; margin:3px 0; }
+    .version-diff-row .field-name { color:var(--muted); }
+    .version-diff-row .old-val { color:#c0392b; text-decoration:line-through; }
+    .version-diff-row .new-val { color:var(--green); }
+    .version-diff-row .unchanged { color:var(--muted); }
+
+    .detail-section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .detail-section-header h4 { margin:0; font-size:16px; }
 
     @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} }
   </style>
@@ -1141,8 +1350,36 @@ const page = `<!doctype html>
     </div>
   </div>
 
+  <div class="modal-overlay" id="detailModal">
+    <div class="modal detail-modal">
+      <div class="modal-header">
+        <h3 id="detailTitle">委托详情</h3>
+        <button class="modal-close" id="detailModalClose">&times;</button>
+      </div>
+      <div class="detail-nav" id="detailNav">
+        <div class="detail-nav-btn active" data-detail-section="info">📋 基础信息</div>
+        <div class="detail-nav-btn" data-detail-section="timeline">🔄 步骤时间线</div>
+        <div class="detail-nav-btn" data-detail-section="images">📷 影像档案</div>
+        <div class="detail-nav-btn" data-detail-section="quotes">💰 报价</div>
+        <div class="detail-nav-btn" data-detail-section="acceptance">✅ 交付验收</div>
+        <div class="detail-nav-btn" data-detail-section="oplogs">📜 操作历史</div>
+        <div class="detail-nav-btn" data-detail-section="versions">🕐 版本追溯</div>
+      </div>
+      <div class="modal-body">
+        <div class="detail-section active" id="detail-info"></div>
+        <div class="detail-section" id="detail-timeline"></div>
+        <div class="detail-section" id="detail-images"></div>
+        <div class="detail-section" id="detail-quotes"></div>
+        <div class="detail-section" id="detail-acceptance"></div>
+        <div class="detail-section" id="detail-oplogs"></div>
+        <div class="detail-section" id="detail-versions"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     const defaultSteps = ${JSON.stringify(defaultSteps)};
+    const snapshotTrackedFields = ${JSON.stringify(snapshotTrackedFields)};
     let commissions = [];
     let materials = [];
     let clients = [];
@@ -1251,11 +1488,9 @@ const page = `<!doctype html>
       list.innerHTML = filteredCommissions.map(c => {
         const cSteps = c.steps || defaultSteps;
         const lastStep = cSteps[cSteps.length - 1];
-        const isAtDeliveryStep = c.status === lastStep;
         const hasAcceptance = c.acceptance !== null;
         const cardClass = hasAcceptance ? "card completed" : "card";
-
-        const matChips = (c.materials && c.materials.length) ? c.materials.map(m => '<span class="mat-chip">'+m.name+' ×'+m.quantity+(m.batch?' ('+m.batch+')':'')+'</span>').join("") : '';
+        const matChips = (c.materials && c.materials.length) ? c.materials.map(m => '<span class="mat-chip">'+m.name+' ×'+m.quantity+'</span>').join("") : '';
         const tplBadge = c.templateName ? '<span class="pill" style="margin-left:6px;background:var(--bg);">'+c.templateName+'</span>' : '';
         const imgCounts = c.images ? {
           before: c.images.before?.length || 0,
@@ -1263,62 +1498,52 @@ const page = `<!doctype html>
           after: c.images.after?.length || 0
         } : { before:0, during:0, after:0 };
         const totalImgs = imgCounts.before + imgCounts.during + imgCounts.after;
-
         const currentQuote = c.currentQuoteId ? (c.quotes || []).find(q => q.id === c.currentQuoteId) : null;
-        const quoteCount = (c.quotes || []).length;
         let quoteBadge = '';
         if (currentQuote) {
-          const statusText = currentQuote.status === 'draft' ? '草稿' : currentQuote.status === 'confirmed' ? '已确认' : '已作废';
-          const statusClass = currentQuote.status;
-          quoteBadge = '<span class="pill ' + statusClass + '" style="margin-left:6px;">报价：¥' + Number(currentQuote.totalAmount).toFixed(2) + '</span>';
+          quoteBadge = '<span class="pill ' + currentQuote.status + '" style="margin-left:6px;">¥' + Number(currentQuote.totalAmount).toFixed(2) + '</span>';
         } else {
           quoteBadge = '<span class="pill" style="margin-left:6px;background:var(--bg);">未报价</span>';
         }
-
-        let acceptanceBtn = '';
-        if (isAtDeliveryStep && !hasAcceptance) {
-          acceptanceBtn = '<button class="acceptance-btn" data-acceptance="'+c.id+'">✅ 交付验收</button>';
-        } else if (hasAcceptance) {
-          acceptanceBtn = '<button class="acceptance-btn" data-acceptance="'+c.id+'">📋 查看验收</button>';
-        } else {
-          acceptanceBtn = '<button class="acceptance-btn" data-acceptance="'+c.id+'" disabled>✅ 交付验收</button>';
-        }
-
-        let acceptanceDetail = '';
+        let acceptanceLine = '';
         if (hasAcceptance && c.acceptance) {
-          const acc = c.acceptance;
-          acceptanceDetail = '<div class="acceptance-detail"><div class="row"><span class="label">验收：</span><span>'+acc.result+'</span></div><div class="row"><span class="label">交付：</span><span>'+acc.deliveryDate+' · 领取人：'+acc.receiver+'</span></div></div>';
+          acceptanceLine = '<div style="margin-top:4px;font-size:12px;color:var(--green);font-weight:600;">✅ ' + c.acceptance.result + '</div>';
+        }
+        const daysLeft = c.dueDate ? getDaysUntilDue(c.dueDate) : null;
+        let dueBadge = '';
+        if (daysLeft !== null && !hasAcceptance) {
+          if (daysLeft < 0) dueBadge = '<span style="color:#c0392b;font-weight:700;font-size:12px;margin-left:6px;">逾期'+Math.abs(daysLeft)+'天</span>';
+          else if (daysLeft <= 3) dueBadge = '<span style="color:#e67e22;font-weight:700;font-size:12px;margin-left:6px;">还剩'+daysLeft+'天</span>';
         }
 
-        const opLogs = (c.operationLogs || []);
-        const opLogHtml = opLogs.length ? '<div class="oplog-section"><div class="oplog-title" data-oplog-toggle="'+c.id+'">📜 操作日志 ('+opLogs.length+')</div><div class="oplog-list" id="oplog-'+c.id+'">'+opLogs.map(l => '<div class="oplog-item"><span class="oplog-time">'+formatDate(l.at)+'</span><span class="oplog-operator">'+(l.operator||'系统')+'</span><span class="oplog-detail">'+l.detail+'</span></div>').join("")+'</div></div>' : '';
+        const isAtDeliveryStep = c.status === lastStep;
+        const canAcceptance = isAtDeliveryStep || hasAcceptance;
+        let quickButtons = '<div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px;">';
+        quickButtons += '<button class="small" data-quick-images="'+c.id+'" style="white-space:nowrap;background:var(--green);">📷 影像</button>';
+        quickButtons += '<button class="small" data-quick-quote="'+c.id+'" style="white-space:nowrap;background:var(--orange);">💰 报价</button>';
+        if (canAcceptance) {
+          quickButtons += '<button class="small" data-quick-acceptance="'+c.id+'" style="white-space:nowrap;">✅ 验收</button>';
+        }
+        quickButtons += '<button class="small" data-detail="'+c.id+'" style="white-space:nowrap;">📄 详情</button>';
+        quickButtons += '</div>';
 
-        return '<article class="'+cardClass+'"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">'+c.roleName+tplBadge+quoteBadge+'</h3><span class="pill">'+c.status+'</span><div class="meta">'+c.client+' · '+c.era+' · '+c.owner+'</div><div><b>破损</b> '+c.damage+'</div>'+(c.reinforcement?'<div><b>加固</b> '+c.reinforcement+'</div>':'')+(matChips?'<div><b>用料</b></div><div class="mat-chips">'+matChips+'</div>':'')+acceptanceDetail+'<label>更新步骤</label><select data-step="'+c.id+'">'+cSteps.map(s => '<option>'+s+'</option>').join("")+'</select><input data-note="'+c.id+'" placeholder="步骤备注"><button data-save="'+c.id+'">保存步骤</button><button class="images-btn" data-images="'+c.id+'">📷 影像档案 ('+totalImgs+')</button><button class="quote-btn" data-quote="'+c.id+'">💰 报价管理' + (quoteCount > 0 ? ' (' + quoteCount + '版)' : '') + '</button>'+acceptanceBtn+'<div class="meta">'+(c.records||[]).map(r => r.step+"："+r.note).join(" / ")+'</div>'+opLogHtml+'</article>';
+        return '<article class="'+cardClass+'" style="cursor:pointer;" data-detail="'+c.id+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:0;color:var(--accent);">'+c.roleName+tplBadge+'</h3><span class="pill">'+c.status+'</span></div><div class="meta" style="margin-top:4px;">'+(c.client||'')+' · '+(c.era||'')+' · '+(c.owner||'')+'</div><div style="font-size:13px;margin-top:4px;">'+(c.damage||'—')+'</div>'+(matChips?'<div class="mat-chips" style="margin-top:4px;">'+matChips+'</div>':'')+'<div style="display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted);"><span>📷 '+totalImgs+'</span>'+quoteBadge+'<span>📅 '+(c.dueDate||'—')+dueBadge+'</span></div>'+acceptanceLine+quickButtons+'</article>';
       }).join("");
-      document.querySelectorAll("[data-step]").forEach(sel => sel.value = filteredCommissions.find(c => c.id === sel.dataset.step).status);
-      document.querySelectorAll("[data-save]").forEach(btn => btn.onclick = async () => {
-        const id = btn.dataset.save;
-        const op = getOperator();
-        if (!op.operator) return alert("请先在页面顶部选择当前操作者");
-        await api('/api/commissions/'+id+'/records', { method:'POST', body: JSON.stringify({ step: document.querySelector('[data-step="'+id+'"]').value, note: document.querySelector('[data-note="'+id+'"]').value || "步骤完成", operator: op.operator, operatorId: op.operatorId }) });
-        await loadAll();
+      document.querySelectorAll("[data-detail]").forEach(btn => btn.onclick = (e) => {
+        e.stopPropagation();
+        openDetailModal(btn.dataset.detail);
       });
-      document.querySelectorAll("[data-images]").forEach(btn => btn.onclick = () => {
-        const id = btn.dataset.images;
-        openImagesModal(id);
+      document.querySelectorAll("[data-quick-images]").forEach(btn => btn.onclick = (e) => {
+        e.stopPropagation();
+        openImagesModal(btn.dataset.quickImages);
       });
-      document.querySelectorAll("[data-quote]").forEach(btn => btn.onclick = () => {
-        const id = btn.dataset.quote;
-        openQuoteModal(id);
+      document.querySelectorAll("[data-quick-quote]").forEach(btn => btn.onclick = (e) => {
+        e.stopPropagation();
+        openQuoteModal(btn.dataset.quickQuote);
       });
-      document.querySelectorAll("[data-acceptance]").forEach(btn => btn.onclick = () => {
-        const id = btn.dataset.acceptance;
-        openAcceptanceModal(id);
-      });
-      document.querySelectorAll("[data-oplog-toggle]").forEach(el => el.onclick = () => {
-        const id = el.dataset.oplogToggle;
-        const logList = document.getElementById("oplog-" + id);
-        if (logList) logList.classList.toggle("visible");
+      document.querySelectorAll("[data-quick-acceptance]").forEach(btn => btn.onclick = (e) => {
+        e.stopPropagation();
+        openAcceptanceModal(btn.dataset.quickAcceptance);
       });
     }
 
@@ -1387,11 +1612,11 @@ const page = `<!doctype html>
           (client.commissions && client.commissions.length ? client.commissions.map(c =>
             '<div class="client-commission-item">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-            '<strong>'+c.roleName+'</strong>' +
-            '<span class="pill">'+c.status+'</span>' +
+            '<strong>'+(c.roleName||'未命名')+'</strong>' +
+            '<span class="pill">'+(c.status||'')+'</span>' +
             '</div>' +
-            '<div class="meta">'+c.era+' · 负责人：'+c.owner+' · 截止：'+c.dueDate+'</div>' +
-            '<div class="meta">破损：'+c.damage+'</div>' +
+            '<div class="meta">'+(c.era||'')+' · 负责人：'+(c.owner||'')+' · 截止：'+(c.dueDate||'')+'</div>' +
+            '<div class="meta">破损：'+(c.damage||'—')+'</div>' +
             (c.records && c.records.length ? '<div class="meta" style="margin-top:4px;">'+c.records.map(r=>r.step+'：'+r.note).join(' → ')+'</div>' : '') +
             '</div>'
           ).join("") : '<div class="meta">暂无关联修复记录</div>') +
@@ -1771,7 +1996,7 @@ const page = `<!doctype html>
       
       return '<div class="kanban-card ' + (isExpanded ? 'expanded' : '') + '" data-schedule-id="' + item.id + '">' +
         '<div class="kanban-card-header">' +
-          '<h4 class="kanban-card-title">' + item.roleName + '</h4>' +
+          '<h4 class="kanban-card-title" style="cursor:pointer;color:var(--accent);" data-detail="' + item.id + '">' + item.roleName + '</h4>' +
           '<span class="kanban-card-badge ' + item.statusCategory + '">' + getStatusBadgeText(item.statusCategory) + '</span>' +
         '</div>' +
         '<div class="kanban-card-meta">' + item.client + ' · ' + item.era + '</div>' +
@@ -1921,6 +2146,10 @@ const page = `<!doctype html>
     function bindScheduleEvents() {
       document.querySelectorAll("[data-schedule-id]").forEach(card => {
         card.onclick = (e) => {
+          if (e.target.closest("[data-detail]")) {
+            openDetailModal(e.target.closest("[data-detail]").dataset.detail);
+            return;
+          }
           if (e.target.closest(".kanban-card-details") || e.target.tagName === "BUTTON" || e.target.tagName === "SELECT" || e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
             return;
           }
@@ -3664,6 +3893,542 @@ const page = `<!doctype html>
     }
 
     loadAll();
+
+    let currentDetailCommissionId = null;
+    let currentDetailSection = "info";
+
+    const detailFieldLabels = {
+      roleName: "角色名称", era: "年代", damage: "破损部位", missingParts: "缺失零件",
+      colorNotes: "补色记录", reinforcement: "加固材料", owner: "负责人", dueDate: "截止日期",
+      status: "当前步骤", client: "客户", materials: "选用材料"
+    };
+
+    function openDetailModal(commissionId) {
+      currentDetailCommissionId = commissionId;
+      currentDetailSection = "info";
+      const commission = commissions.find(c => c.id === commissionId);
+      if (!commission) return;
+      document.getElementById("detailTitle").textContent = "委托详情 - " + commission.roleName;
+      document.getElementById("detailModal").classList.add("active");
+      renderDetailAll(commission);
+    }
+
+    function closeDetailModal() {
+      document.getElementById("detailModal").classList.remove("active");
+      currentDetailCommissionId = null;
+    }
+
+    function switchDetailSection(section) {
+      currentDetailSection = section;
+      document.querySelectorAll(".detail-nav-btn").forEach(b => b.classList.toggle("active", b.dataset.detailSection === section));
+      document.querySelectorAll(".detail-section").forEach(s => s.classList.toggle("active", s.id === "detail-" + section));
+    }
+
+    function renderDetailAll(c) {
+      renderDetailInfo(c);
+      renderDetailTimeline(c);
+      renderDetailImages(c);
+      renderDetailQuotes(c);
+      renderDetailAcceptance(c);
+      renderDetailOpLogs(c);
+      renderDetailVersions(c);
+    }
+
+    function renderDetailInfo(c) {
+      const el = document.getElementById("detail-info");
+      if (!el) return;
+      const steps = c.steps || defaultSteps;
+      const currentIdx = steps.indexOf(c.status);
+      const matChips = (c.materials && c.materials.length) ? c.materials.map(m => '<span class="mat-chip">' + m.name + ' ×' + m.quantity + (m.batch ? ' (' + m.batch + ')' : '') + '</span>').join("") : '<span style="color:var(--muted);">无</span>';
+      const tplBadge = c.templateName ? '<span class="pill" style="margin-left:6px;background:var(--bg);">' + c.templateName + '</span>' : '';
+      const statusBadge = '<span class="pill">' + (c.status || '—') + '</span>';
+      const completedBadge = c.acceptance ? '<span class="pill confirmed" style="margin-left:6px;">已完成</span>' : '';
+      const progressHtml = '<div class="steps-progress" style="margin-bottom:12px;">' + steps.map((s, i) => {
+        let cls = "step-dot";
+        if (i < currentIdx) cls += " done";
+        else if (i === currentIdx) cls += " current";
+        return '<div class="' + cls + '" title="' + s + '"></div>';
+      }).join("") + '</div>';
+      const stepsBar = '<div style="display:flex;gap:4px;align-items:center;margin-bottom:12px;">' + steps.map((s, i) => {
+        let bg = "var(--line)";
+        let col = "var(--muted)";
+        if (i < currentIdx) { bg = "var(--green)"; col = "#fff"; }
+        else if (i === currentIdx) { bg = "var(--accent)"; col = "#fff"; }
+        return '<span style="background:'+bg+';color:'+col+';padding:2px 8px;border-radius:999px;font-size:11px;white-space:nowrap;">'+s+'</span>';
+      }).join('<span style="color:var(--muted);font-size:10px;">→</span>') + '</div>';
+
+      el.innerHTML = '<div class="detail-section-header"><h4>基础信息</h4><button class="small" id="detailEditInfoBtn">✏️ 编辑</button></div>' +
+        stepsBar +
+        '<div class="detail-info-grid">' +
+        '<div class="detail-info-item"><span class="label">角色名称</span><span class="value">' + (c.roleName || '—') + tplBadge + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">年代估计</span><span class="value">' + (c.era || '—') + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">客户</span><span class="value">' + (c.client || '—') + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">当前步骤</span><span class="value">' + statusBadge + completedBadge + '</span></div>' +
+        '<div class="detail-info-item full"><span class="label">破损部位</span><span class="value">' + (c.damage || '—') + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">缺失零件</span><span class="value">' + (c.missingParts || '—') + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">补色记录</span><span class="value">' + (c.colorNotes || '—') + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">加固材料</span><span class="value">' + (c.reinforcement || '—') + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">负责人</span><span class="value">' + (c.owner || '—') + '</span></div>' +
+        '<div class="detail-info-item"><span class="label">截止日期</span><span class="value">' + (c.dueDate || '—') + '</span></div>' +
+        '<div class="detail-info-item full"><span class="label">选用材料</span><span class="value"><div class="mat-chips">' + matChips + '</div></span></div>' +
+        '</div>' +
+        '<div id="detailEditForm" style="display:none;margin-top:16px;padding:16px;background:var(--bg);border-radius:8px;">' +
+        '<h4 style="margin:0 0 12px;">编辑基础信息</h4>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+        '<div><label style="margin:0;font-size:12px;color:var(--muted);">角色名称</label><input id="editRoleName" value="' + (c.roleName || '') + '"></div>' +
+        '<div><label style="margin:0;font-size:12px;color:var(--muted);">年代</label><input id="editEra" value="' + (c.era || '') + '"></div>' +
+        '<div><label style="margin:0;font-size:12px;color:var(--muted);">客户</label><input id="editClient" value="' + (c.client || '') + '"></div>' +
+        '<div><label style="margin:0;font-size:12px;color:var(--muted);">负责人</label><input id="editOwner" value="' + (c.owner || '') + '"></div>' +
+        '<div><label style="margin:0;font-size:12px;color:var(--muted);">截止日期</label><input type="date" id="editDueDate" value="' + (c.dueDate || '') + '"></div>' +
+        '<div><label style="margin:0;font-size:12px;color:var(--muted);">缺失零件</label><input id="editMissingParts" value="' + (c.missingParts || '') + '"></div>' +
+        '</div>' +
+        '<label style="margin:10px 0 3px;font-size:12px;color:var(--muted);">破损部位</label><textarea id="editDamage" rows="2">' + (c.damage || '') + '</textarea>' +
+        '<label style="margin:10px 0 3px;font-size:12px;color:var(--muted);">补色记录</label><textarea id="editColorNotes" rows="2">' + (c.colorNotes || '') + '</textarea>' +
+        '<label style="margin:10px 0 3px;font-size:12px;color:var(--muted);">加固材料</label><input id="editReinforcement" value="' + (c.reinforcement || '') + '">' +
+        '<div style="display:flex;gap:8px;margin-top:12px;"><button id="saveDetailInfoBtn">保存修改</button><button class="secondary" id="cancelDetailEditBtn">取消</button></div>' +
+        '</div>';
+
+      document.getElementById("detailEditInfoBtn").onclick = () => {
+        document.getElementById("detailEditForm").style.display = "block";
+      };
+      document.getElementById("cancelDetailEditBtn").onclick = () => {
+        document.getElementById("detailEditForm").style.display = "none";
+      };
+      document.getElementById("saveDetailInfoBtn").onclick = async () => {
+        const op = getOperator();
+        if (!op.operator) return alert("请先在页面顶部选择当前操作者");
+        try {
+          await api("/api/commissions/" + c.id, {
+            method: "PUT",
+            body: JSON.stringify({
+              roleName: document.getElementById("editRoleName").value,
+              era: document.getElementById("editEra").value,
+              client: document.getElementById("editClient").value,
+              owner: document.getElementById("editOwner").value,
+              dueDate: document.getElementById("editDueDate").value,
+              missingParts: document.getElementById("editMissingParts").value,
+              damage: document.getElementById("editDamage").value,
+              colorNotes: document.getElementById("editColorNotes").value,
+              reinforcement: document.getElementById("editReinforcement").value,
+              operator: op.operator,
+              operatorId: op.operatorId
+            })
+          });
+          await loadAll();
+          const updated = commissions.find(x => x.id === c.id);
+          if (updated) renderDetailAll(updated);
+          document.getElementById("detailTitle").textContent = "委托详情 - " + document.getElementById("editRoleName").value;
+        } catch (e) {
+          alert("保存失败：" + e.message);
+        }
+      };
+    }
+
+    function renderDetailTimeline(c) {
+      const el = document.getElementById("detail-timeline");
+      if (!el) return;
+      const steps = c.steps || defaultSteps;
+      const currentIdx = steps.indexOf(c.status);
+      const recordsByStep = {};
+      for (const r of (c.records || [])) {
+        if (!recordsByStep[r.step]) recordsByStep[r.step] = [];
+        recordsByStep[r.step].push(r);
+      }
+
+      let html = '<div class="detail-section-header"><h4>步骤时间线</h4></div><div class="detail-timeline">';
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const isDone = i < currentIdx;
+        const isCurrent = i === currentIdx;
+        const isFuture = i > currentIdx;
+        const cls = isDone ? "done" : isCurrent ? "current" : "";
+        const records = recordsByStep[step] || [];
+        html += '<div class="timeline-item ' + cls + '">' +
+          '<span class="tl-step' + (isFuture ? ' tl-future' : '') + '">' + (i + 1) + '. ' + step + '</span>';
+        if (records.length) {
+          html += records.map(r =>
+            '<div style="margin-top:4px;"><span class="tl-time">' + formatDate(r.at) + '</span>' +
+            (r.note ? '<div class="tl-note">' + r.note + '</div>' : '') + '</div>'
+          ).join("");
+        } else if (isFuture) {
+          html += '<div class="tl-note tl-future">待完成</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+
+      html += '<div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:8px;">' +
+        '<h4 style="margin:0 0 10px;font-size:14px;">更新步骤</h4>' +
+        '<div style="display:flex;gap:8px;align-items:center;">' +
+        '<select id="detailStepSelect" style="flex:1;">' + steps.map(s => '<option value="'+s+'"'+(s===c.status?' selected':'')+'>'+s+'</option>').join("") + '</select>' +
+        '<input id="detailStepNote" placeholder="步骤备注" style="flex:1;">' +
+        '<button id="detailStepSave">保存步骤</button>' +
+        '</div></div>';
+
+      el.innerHTML = html;
+
+      document.getElementById("detailStepSave").onclick = async () => {
+        const op = getOperator();
+        if (!op.operator) return alert("请先在页面顶部选择当前操作者");
+        const step = document.getElementById("detailStepSelect").value;
+        const note = document.getElementById("detailStepNote").value || "步骤完成";
+        try {
+          await api("/api/commissions/" + currentDetailCommissionId + "/records", {
+            method: "POST",
+            body: JSON.stringify({ step, note, operator: op.operator, operatorId: op.operatorId })
+          });
+          await loadAll();
+          const updated = commissions.find(x => x.id === currentDetailCommissionId);
+          if (updated) renderDetailAll(updated);
+        } catch (e) {
+          alert("保存步骤失败：" + e.message);
+        }
+      };
+    }
+
+    function renderDetailImages(c) {
+      const el = document.getElementById("detail-images");
+      if (!el) return;
+      const images = c.images || { before: [], during: [], after: [] };
+      const stages = [
+        { key: "before", label: "修复前" },
+        { key: "during", label: "修复中" },
+        { key: "after", label: "修复后" }
+      ];
+      let html = '<div class="detail-section-header"><h4>影像档案</h4><button class="small" data-detail-open-images="' + c.id + '">打开影像管理</button></div>';
+      let totalImgs = 0;
+      for (const stage of stages) {
+        const imgs = images[stage.key] || [];
+        totalImgs += imgs.length;
+        html += '<div class="detail-img-stage-label">' + stage.label + '（' + imgs.length + '张）</div>';
+        html += '<div style="position:relative;border:2px dashed var(--line);border-radius:6px;padding:12px;text-align:center;margin-bottom:8px;cursor:pointer;transition:all 0.2s;" data-detail-upload-stage="' + stage.key + '">';
+        html += '<input type="file" accept="image/jpeg,image/png,image/gif,image/webp" multiple style="display:none;" data-detail-upload-input="' + stage.key + '">';
+        html += '<span style="font-size:13px;color:var(--muted);">📷 点击上传' + stage.label + '图片</span></div>';
+        if (imgs.length) {
+          html += '<div class="detail-img-grid">';
+          for (const img of imgs) {
+            html += '<div class="detail-img-card" data-detail-view-img="' + img.filename + '">' +
+              '<img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">' +
+              '<div class="caption">' + (img.caption || img.originalName) + '</div></div>';
+          }
+          html += '</div>';
+        }
+      }
+      if (totalImgs === 0) {
+        html = '<div class="detail-section-header"><h4>影像档案</h4><button class="small" data-detail-open-images="' + c.id + '">打开影像管理</button></div>' +
+          '<div class="empty-state"><div class="icon">🖼️</div><div>暂无影像档案</div><div class="meta" style="margin-top:8px;">点击上方区域上传图片，或"打开影像管理"进行管理</div></div>';
+      }
+      el.innerHTML = html;
+      el.querySelector("[data-detail-open-images]")?.addEventListener("click", function () {
+        openImagesModal(this.dataset.detailOpenImages);
+      });
+      el.querySelectorAll("[data-detail-view-img]").forEach(card => {
+        card.onclick = () => window.open(card.dataset.detailViewImg, "_blank");
+      });
+      el.querySelectorAll("[data-detail-upload-stage]").forEach(area => {
+        const stage = area.dataset.detailUploadStage;
+        const input = el.querySelector('[data-detail-upload-input="' + stage + '"]');
+        area.onclick = () => input.click();
+        area.ondragover = (e) => { e.preventDefault(); area.style.borderColor = "var(--accent)"; area.style.background = "var(--bg)"; };
+        area.ondragleave = () => { area.style.borderColor = "var(--line)"; area.style.background = ""; };
+        area.ondrop = (e) => {
+          e.preventDefault();
+          area.style.borderColor = "var(--line)"; area.style.background = "";
+          if (e.dataTransfer?.files?.length) uploadDetailFiles(c.id, stage, e.dataTransfer.files);
+        };
+        if (input) {
+          input.onchange = () => {
+            if (input.files?.length) uploadDetailFiles(c.id, stage, input.files);
+            input.value = "";
+          };
+        }
+      });
+    }
+
+    async function uploadDetailFiles(commissionId, stage, files) {
+      const validFiles = [];
+      for (const file of files) {
+        if (!allowedImageTypes.includes(file.type)) { alert('文件 "' + file.name + '" 格式不支持'); continue; }
+        if (file.size > 10 * 1024 * 1024) { alert('文件 "' + file.name + '" 超过10MB'); continue; }
+        validFiles.push(file);
+      }
+      if (!validFiles.length) return;
+      for (const file of validFiles) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("stage", stage);
+        try {
+          const res = await fetch("/api/commissions/" + commissionId + "/images", { method: "POST", body: fd });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "上传失败");
+        } catch (e) {
+          alert('上传 "' + file.name + '" 失败：' + e.message);
+        }
+      }
+      await loadAll();
+      const updated = commissions.find(x => x.id === commissionId);
+      if (updated) renderDetailAll(updated);
+    }
+
+    function renderDetailQuotes(c) {
+      const el = document.getElementById("detail-quotes");
+      if (!el) return;
+      const quotes = c.quotes || [];
+      const currentQuote = c.currentQuoteId ? quotes.find(q => q.id === c.currentQuoteId) : null;
+      let html = '<div class="detail-section-header"><h4>报价</h4><button class="small" data-detail-open-quote="' + c.id + '">打开报价管理</button></div>';
+      if (!currentQuote) {
+        html += '<div class="empty-state"><div class="icon">💰</div><div>暂无报价</div><div class="meta" style="margin-top:8px;">点击"打开报价管理"创建报价</div></div>';
+      } else {
+        html += '<div class="detail-quote-summary">' +
+          '<div class="detail-quote-row"><span>报价版本</span><span>第 ' + currentQuote.version + ' 版</span></div>' +
+          '<div class="detail-quote-row"><span>状态</span><span class="pill ' + currentQuote.status + '">' + getStatusText(currentQuote.status) + '</span></div>';
+        if (currentQuote.items && currentQuote.items.length) {
+          html += '<div style="margin:8px 0;font-size:12px;color:var(--muted);">项目明细</div>';
+          for (const item of currentQuote.items) {
+            html += '<div class="detail-quote-row"><span>' + (item.description || '-') + ' ×' + (item.quantity || 0) + '</span><span>' + formatMoney(item.amount) + '</span></div>';
+          }
+        }
+        html += '<div class="detail-quote-row"><span>项目小计</span><span>' + formatMoney(currentQuote.items ? currentQuote.items.reduce((s, i) => s + (i.amount || 0), 0) : 0) + '</span></div>' +
+          '<div class="detail-quote-row"><span>人工费</span><span>' + formatMoney(currentQuote.laborCost || 0) + '</span></div>' +
+          '<div class="detail-quote-row"><span>材料费</span><span>' + formatMoney(currentQuote.materialCost || 0) + '</span></div>' +
+          '<div class="detail-quote-row total"><span>总计</span><strong>' + formatMoney(currentQuote.totalAmount || 0) + '</strong></div>';
+        if (currentQuote.remark) {
+          html += '<div style="margin-top:8px;font-size:12px;color:var(--muted);">备注：' + currentQuote.remark + '</div>';
+        }
+        html += '</div>';
+        if (quotes.length > 1) {
+          html += '<div style="margin-top:12px;"><div style="font-size:13px;font-weight:700;margin-bottom:8px;">历史版本</div>';
+          const sorted = [...quotes].sort((a, b) => b.version - a.version);
+          for (const q of sorted) {
+            html += '<div style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--bg);border-radius:6px;margin-bottom:4px;font-size:12px;">' +
+              '<span style="font-weight:600;">V' + q.version + '</span>' +
+              '<span class="pill ' + q.status + '" style="font-size:11px;">' + getStatusText(q.status) + '</span>' +
+              '<span style="color:var(--accent);font-weight:700;">' + formatMoney(q.totalAmount) + '</span>' +
+              '<span style="color:var(--muted);">' + formatDate(q.createdAt) + '</span>' +
+              '</div>';
+          }
+          html += '</div>';
+        }
+      }
+      el.innerHTML = html;
+      el.querySelector("[data-detail-open-quote]")?.addEventListener("click", function () {
+        openQuoteModal(this.dataset.detailOpenQuote);
+      });
+    }
+
+    function renderDetailAcceptance(c) {
+      const el = document.getElementById("detail-acceptance");
+      if (!el) return;
+      const cSteps = c.steps || defaultSteps;
+      const lastStep = cSteps[cSteps.length - 1];
+      const isAtDeliveryStep = c.status === lastStep;
+      let html = '<div class="detail-section-header"><h4>交付验收</h4>';
+      if (isAtDeliveryStep || c.acceptance) {
+        html += '<button class="small" data-detail-open-acceptance="' + c.id + '">打开验收管理</button>';
+      }
+      html += '</div>';
+      if (c.acceptance) {
+        const acc = c.acceptance;
+        html += '<div class="detail-acceptance-box">' +
+          '<div class="detail-acceptance-row"><span class="label">验收结果</span><span><strong>' + acc.result + '</strong></span></div>' +
+          '<div class="detail-acceptance-row"><span class="label">交付日期</span><span>' + (acc.deliveryDate || '—') + '</span></div>' +
+          '<div class="detail-acceptance-row"><span class="label">领取人</span><span>' + (acc.receiver || '—') + '</span></div>' +
+          '<div class="detail-acceptance-row"><span class="label">遗留问题</span><span>' + (acc.remainingIssues || '—') + '</span></div>' +
+          '<div class="detail-acceptance-row"><span class="label">保养建议</span><span>' + (acc.maintenanceAdvice || '—') + '</span></div>' +
+          '<div class="detail-acceptance-row"><span class="label">验收时间</span><span>' + (acc.acceptedAt ? formatDate(acc.acceptedAt) : '—') + '</span></div>' +
+          '</div>';
+      } else if (isAtDeliveryStep) {
+        html += '<div style="padding:14px;background:var(--bg);border-radius:8px;text-align:center;">' +
+          '<div style="font-size:14px;margin-bottom:8px;">当前步骤已进入交付阶段，可进行验收</div>' +
+          '<button class="small" data-detail-open-acceptance="' + c.id + '">✅ 前往验收</button></div>';
+      } else {
+        html += '<div class="empty-state"><div class="icon">✅</div><div>暂未验收</div><div class="meta" style="margin-top:8px;">进入交付步骤后可进行验收</div></div>';
+      }
+      el.innerHTML = html;
+      el.querySelector("[data-detail-open-acceptance]")?.addEventListener("click", function () {
+        openAcceptanceModal(this.dataset.detailOpenAcceptance);
+      });
+    }
+
+    function renderDetailOpLogs(c) {
+      const el = document.getElementById("detail-oplogs");
+      if (!el) return;
+      const logs = c.operationLogs || [];
+      let html = '<div class="detail-section-header"><h4>操作历史</h4></div>';
+      if (!logs.length) {
+        html += '<div class="empty-state"><div class="icon">📜</div><div>暂无操作记录</div></div>';
+      } else {
+        html += '<table class="detail-oplog-table"><thead><tr><th>时间</th><th>操作者</th><th>操作</th></tr></thead><tbody>';
+        const sortedLogs = [...logs].sort((a, b) => new Date(b.at) - new Date(a.at));
+        for (const log of sortedLogs) {
+          html += '<tr><td class="oplog-time-col">' + formatDate(log.at) + '</td><td class="oplog-op-col">' + (log.operator || '系统') + '</td><td>' + log.detail + '</td></tr>';
+        }
+        html += '</tbody></table>';
+      }
+      el.innerHTML = html;
+    }
+
+    function renderDetailVersions(c) {
+      const el = document.getElementById("detail-versions");
+      if (!el) return;
+      const snapshots = c.fieldSnapshots || [];
+      let html = '<div class="detail-section-header"><h4>版本追溯</h4><span class="meta">共 ' + snapshots.length + ' 个历史快照</span></div>';
+      if (!snapshots.length) {
+        html += '<div class="empty-state"><div class="icon">🕐</div><div>暂无版本记录</div><div class="meta" style="margin-top:8px;">编辑委托信息后将自动记录版本</div></div>';
+      } else {
+        html += '<div style="margin-bottom:14px;"><label style="display:block;margin:0 0 6px;font-size:12px;color:var(--muted);">按字段查看变更历史</label>' +
+          '<select id="versionFieldSelect" style="padding:6px;border:1px solid var(--line);border-radius:6px;font-size:13px;">' +
+          '<option value="">— 选择字段 —</option>';
+        for (const key of snapshotTrackedFields) {
+          html += '<option value="' + key + '">' + (detailFieldLabels[key] || key) + '</option>';
+        }
+        html += '<option value="materials">选用材料</option></select></div>';
+        html += '<div id="versionFieldHistory" style="display:none;margin-bottom:14px;padding:12px;background:var(--bg);border-radius:8px;"></div>';
+        html += '<div class="version-list">';
+        const sorted = [...snapshots].sort((a, b) => new Date(b.at) - new Date(a.at));
+        for (let si = 0; si < sorted.length; si++) {
+          const snap = sorted[si];
+          const prevSnap = si < sorted.length - 1 ? sorted[si + 1] : null;
+          const isOldest = si === sorted.length - 1;
+          html += '<div class="version-item' + (si === 0 ? ' active' : '') + '" data-version-idx="' + si + '">' +
+            '<div class="version-item-header">' +
+            '<span class="version-item-reason">' + (snap.reason || '数据快照') + '</span>' +
+            '<span class="version-item-time">' + formatDate(snap.at) + '</span>' +
+            '</div>' +
+            '<span class="version-item-operator">' + (snap.operator || '系统') + '</span>' +
+            '<div class="version-diff">';
+
+          const fields = snap.fields || {};
+          if (prevSnap) {
+            const prevFields = prevSnap.fields || {};
+            let hasChanges = false;
+            for (const key of snapshotTrackedFields) {
+              const label = detailFieldLabels[key] || key;
+              const oldVal = prevFields[key] !== undefined ? String(prevFields[key]) : '';
+              const newVal = fields[key] !== undefined ? String(fields[key]) : '';
+              if (oldVal !== newVal) {
+                hasChanges = true;
+                html += '<div class="version-diff-row"><span class="field-name">' + label + '</span><span class="old-val">' + (oldVal || '—') + '</span><span class="new-val">' + (newVal || '—') + '</span></div>';
+              }
+            }
+            if (fields.materials || prevFields.materials) {
+              const oldMat = JSON.stringify(prevFields.materials || []);
+              const newMat = JSON.stringify(fields.materials || []);
+              if (oldMat !== newMat) {
+                hasChanges = true;
+                const oldMatDisplay = (prevFields.materials || []).map(m => m.name + '×' + m.quantity).join(', ') || '—';
+                const newMatDisplay = (fields.materials || []).map(m => m.name + '×' + m.quantity).join(', ') || '—';
+                html += '<div class="version-diff-row"><span class="field-name">材料</span><span class="old-val">' + oldMatDisplay + '</span><span class="new-val">' + newMatDisplay + '</span></div>';
+              }
+            }
+            if (!hasChanges) {
+              html += '<div style="color:var(--muted);font-size:12px;padding:4px 0;">无字段变更</div>';
+            }
+          } else {
+            for (const key of snapshotTrackedFields) {
+              const label = detailFieldLabels[key] || key;
+              const val = fields[key] !== undefined ? String(fields[key]) : '—';
+              html += '<div class="version-diff-row"><span class="field-name">' + label + '</span><span class="unchanged"></span><span class="new-val">' + val + '</span></div>';
+            }
+            if (fields.materials && fields.materials.length > 0) {
+              const matDisplay = fields.materials.map(m => m.name + '×' + m.quantity).join(', ');
+              html += '<div class="version-diff-row"><span class="field-name">材料</span><span class="unchanged"></span><span class="new-val">' + matDisplay + '</span></div>';
+            }
+          }
+          html += '</div>';
+          if (!isOldest) {
+            html += '<div style="margin-top:8px;"><button class="small" data-restore-snapshot="' + snap.id + '" style="background:var(--orange);">🔄 恢复到此版本</button></div>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+      el.innerHTML = html;
+      el.querySelectorAll(".version-item").forEach(item => {
+        item.onclick = (e) => {
+          if (e.target.closest("[data-restore-snapshot]")) return;
+          el.querySelectorAll(".version-item").forEach(i => i.classList.remove("active"));
+          item.classList.add("active");
+        };
+      });
+      el.querySelectorAll("[data-restore-snapshot]").forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const snapId = btn.dataset.restoreSnapshot;
+          if (!confirm("确定要恢复到此版本吗？当前字段值将被覆盖，恢复操作本身也会被记录。")) return;
+          const op = getOperator();
+          if (!op.operator) return alert("请先在页面顶部选择当前操作者");
+          try {
+            await api("/api/commissions/" + currentDetailCommissionId + "/field-snapshots/" + snapId + "/restore", {
+              method: "POST",
+              body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
+            });
+            await loadAll();
+            const updated = commissions.find(x => x.id === currentDetailCommissionId);
+            if (updated) renderDetailAll(updated);
+            alert("版本已恢复");
+          } catch (e) {
+            alert("恢复失败：" + e.message);
+          }
+        };
+      });
+      const fieldSelect = document.getElementById("versionFieldSelect");
+      if (fieldSelect) {
+        fieldSelect.onchange = () => {
+          const fieldKey = fieldSelect.value;
+          const histEl = document.getElementById("versionFieldHistory");
+          if (!fieldKey || !histEl) { if (histEl) histEl.style.display = "none"; return; }
+          const sorted = [...(c.fieldSnapshots || [])].sort((a, b) => new Date(a.at) - new Date(b.at));
+          if (!sorted.length) { histEl.style.display = "none"; return; }
+          histEl.style.display = "block";
+          let fieldHtml = '<div style="font-size:13px;font-weight:700;margin-bottom:8px;">' + (detailFieldLabels[fieldKey] || fieldKey) + ' 变更历史</div>';
+          let prevVal = null;
+          const changes = [];
+          for (const snap of sorted) {
+            const val = fieldKey === "materials"
+              ? JSON.stringify((snap.fields?.materials || []))
+              : (snap.fields?.[fieldKey] !== undefined ? String(snap.fields[fieldKey]) : "");
+            if (prevVal !== null && prevVal !== val) {
+              changes.push({ at: snap.at, operator: snap.operator || "系统", reason: snap.reason || "", oldVal: prevVal, newVal: val });
+            }
+            prevVal = val;
+          }
+          if (!changes.length) {
+            fieldHtml += '<div style="color:var(--muted);font-size:12px;">该字段无历史变更</div>';
+          } else {
+            for (const ch of changes.reverse()) {
+              const displayOld = fieldKey === "materials"
+                ? JSON.parse(ch.oldVal || "[]").map(m => m.name + "×" + m.quantity).join(", ") || "无"
+                : (ch.oldVal || "—");
+              const displayNew = fieldKey === "materials"
+                ? JSON.parse(ch.newVal || "[]").map(m => m.name + "×" + m.quantity).join(", ") || "无"
+                : (ch.newVal || "—");
+              fieldHtml += '<div style="padding:8px 0;border-bottom:1px solid var(--line);">' +
+                '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);"><span>' + formatDate(ch.at) + '</span><span>' + ch.operator + '</span></div>' +
+                '<div style="margin-top:4px;font-size:12px;">' +
+                '<span style="color:#c0392b;text-decoration:line-through;">' + displayOld + '</span>' +
+                ' → <span style="color:var(--green);">' + displayNew + '</span></div>' +
+                (ch.reason ? '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' + ch.reason + '</div>' : '') +
+                '</div>';
+            }
+          }
+          histEl.innerHTML = fieldHtml;
+        };
+      }
+    }
+
+    document.getElementById("detailModalClose").onclick = closeDetailModal;
+    document.getElementById("detailModal").onclick = (e) => {
+      if (e.target.id === "detailModal") closeDetailModal();
+    };
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("detailModal").classList.contains("active")) {
+        closeDetailModal();
+      }
+    });
+    document.querySelectorAll(".detail-nav-btn").forEach(btn => {
+      btn.onclick = () => switchDetailSection(btn.dataset.detailSection);
+    });
   </script>
 </body>
 </html>`;
@@ -3686,6 +4451,12 @@ function addOperationLog(commission, type, operator, operatorId, detail) {
     at: new Date().toISOString()
   });
 }
+
+const detailFieldLabels = {
+  roleName: "角色名称", era: "年代", damage: "破损部位", missingParts: "缺失零件",
+  colorNotes: "补色记录", reinforcement: "加固材料", owner: "负责人", dueDate: "截止日期",
+  status: "当前步骤", client: "客户"
+};
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -3729,6 +4500,99 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, client);
     }
     if (req.method === "GET" && url.pathname === "/api/commissions") return sendJson(res, 200, db.commissions);
+
+    const commissionDetailMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)$/);
+    if (commissionDetailMatch && req.method === "GET") {
+      const commission = db.commissions.find(c => c.id === commissionDetailMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const client = db.clients.find(cl => cl.id === commission.clientId);
+      return sendJson(res, 200, { ...commission, clientInfo: client || null });
+    }
+
+    if (commissionDetailMatch && req.method === "PUT") {
+      const commission = db.commissions.find(c => c.id === commissionDetailMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
+      const before = {};
+      for (const field of snapshotTrackedFields) {
+        before[field] = commission[field] !== undefined ? commission[field] : "";
+      }
+      before.materials = Array.isArray(commission.materials) ? JSON.parse(JSON.stringify(commission.materials)) : [];
+
+      const changedFields = [];
+      if (input.roleName !== undefined && input.roleName !== commission.roleName) { commission.roleName = input.roleName; changedFields.push("角色名称"); }
+      if (input.era !== undefined && input.era !== commission.era) { commission.era = input.era; changedFields.push("年代"); }
+      if (input.damage !== undefined && input.damage !== commission.damage) { commission.damage = input.damage; changedFields.push("破损部位"); }
+      if (input.missingParts !== undefined && input.missingParts !== commission.missingParts) { commission.missingParts = input.missingParts; changedFields.push("缺失零件"); }
+      if (input.colorNotes !== undefined && input.colorNotes !== commission.colorNotes) { commission.colorNotes = input.colorNotes; changedFields.push("补色记录"); }
+      if (input.reinforcement !== undefined && input.reinforcement !== commission.reinforcement) { commission.reinforcement = input.reinforcement; changedFields.push("加固材料"); }
+      if (input.owner !== undefined && input.owner !== commission.owner) { commission.owner = input.owner; changedFields.push("负责人"); }
+      if (input.dueDate !== undefined && input.dueDate !== commission.dueDate) { commission.dueDate = input.dueDate; changedFields.push("截止日期"); }
+      if (input.client !== undefined && input.client !== commission.client) { commission.client = input.client; changedFields.push("客户"); }
+      if (Array.isArray(input.materials)) {
+        commission.materials = input.materials;
+        changedFields.push("材料");
+      }
+
+      if (changedFields.length > 0) {
+        const snapshot = createFieldSnapshot(before, input.operator, input.operatorId, "编辑：" + changedFields.join("、"));
+        commission.fieldSnapshots.push(snapshot);
+        addOperationLog(commission, "field_update", input.operator, input.operatorId, "更新字段：" + changedFields.join("、"));
+      }
+
+      await saveDb(db);
+      return sendJson(res, 200, commission);
+    }
+
+    const snapshotsMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/field-snapshots$/);
+    if (snapshotsMatch && req.method === "GET") {
+      const commission = db.commissions.find(c => c.id === snapshotsMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      return sendJson(res, 200, commission.fieldSnapshots || []);
+    }
+
+    const snapshotRestoreMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/field-snapshots\/([^/]+)\/restore$/);
+    if (snapshotRestoreMatch && req.method === "POST") {
+      const commission = db.commissions.find(c => c.id === snapshotRestoreMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const snapshot = (commission.fieldSnapshots || []).find(s => s.id === snapshotRestoreMatch[2]);
+      if (!snapshot) return sendJson(res, 404, { error: "snapshot_not_found" });
+      const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      const before = {};
+      for (const field of snapshotTrackedFields) {
+        before[field] = commission[field] !== undefined ? commission[field] : "";
+      }
+      before.materials = Array.isArray(commission.materials) ? JSON.parse(JSON.stringify(commission.materials)) : [];
+
+      const fields = snapshot.fields || {};
+      const restoredFields = [];
+      for (const field of snapshotTrackedFields) {
+        if (fields[field] !== undefined && commission[field] !== fields[field]) {
+          commission[field] = fields[field];
+          restoredFields.push(detailFieldLabels[field] || field);
+        }
+      }
+      if (Array.isArray(fields.materials)) {
+        commission.materials = JSON.parse(JSON.stringify(fields.materials));
+        restoredFields.push("材料");
+      }
+
+      if (restoredFields.length > 0) {
+        const newSnapshot = createFieldSnapshot(before, input.operator, input.operatorId, "恢复版本：" + (snapshot.reason || "历史快照"));
+        commission.fieldSnapshots.push(newSnapshot);
+        addOperationLog(commission, "version_restore", input.operator, input.operatorId, "恢复版本（" + (snapshot.reason || "历史快照") + "），恢复字段：" + restoredFields.join("、"));
+      }
+
+      await saveDb(db);
+      return sendJson(res, 200, commission);
+    }
 
     if (req.method === "GET" && url.pathname === "/api/commissions/export") {
       const exportData = {
@@ -4082,11 +4946,12 @@ const server = http.createServer(async (req, res) => {
           }
         }
       }
-      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] }, quotes: [], currentQuoteId: "" };
+      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] }, quotes: [], currentQuoteId: "", fieldSnapshots: [], operationLogs: [] };
       for (const m of selectedMaterials) {
         const mat = db.materials.find(item => item.id === m.materialId);
         if (mat) mat.stock -= m.quantity;
       }
+      commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "创建委托"));
       addOperationLog(commission, "create", input.operator, input.operatorId, "创建委托");
       db.commissions.unshift(commission);
       await saveDb(db);
@@ -4099,8 +4964,13 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+      if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
+      const oldStatus = commission.status;
       commission.status = input.step;
       commission.records.push({ at: new Date().toISOString(), step: input.step, note: input.note || "" });
+      if (oldStatus !== input.step) {
+        commission.fieldSnapshots.push(createFieldSnapshot({ ...commission, status: oldStatus }, input.operator, input.operatorId, "步骤更新：" + oldStatus + " → " + input.step));
+      }
       addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + input.step + (input.note ? " - " + input.note : ""));
       await saveDb(db);
       return sendJson(res, 200, commission);

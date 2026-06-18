@@ -78,7 +78,29 @@
           "at": "2026-06-18T06:52:16.083Z"
         }
       ],
-      "acceptance": null
+      "acceptance": null,
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279798-mp43",
+          "fields": {
+            "roleName": "有操作者测试",
+            "era": "清代",
+            "damage": "测试",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-09-01",
+            "status": "清洁",
+            "client": "洛川民俗馆",
+            "materials": []
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-18T06:51:56.998Z"
+        }
+      ]
     },
     {
       "id": "SP-1781761321438",
@@ -127,7 +149,29 @@
           "at": "2026-06-18T05:42:01.439Z"
         }
       ],
-      "acceptance": null
+      "acceptance": null,
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279798-23v8",
+          "fields": {
+            "roleName": "端到端测试皮影",
+            "era": "民国",
+            "damage": "轻微开裂",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "李学徒",
+            "dueDate": "2026-09-01",
+            "status": "接收",
+            "client": "洛川民俗馆",
+            "materials": []
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-18T05:42:01.438Z"
+        }
+      ]
     },
     {
       "id": "SP-1781760465843",
@@ -189,7 +233,29 @@
           "at": "2026-06-18T05:28:19.113Z"
         }
       ],
-      "acceptance": null
+      "acceptance": null,
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279798-yhe7",
+          "fields": {
+            "roleName": "测试协作皮影",
+            "era": "清代",
+            "damage": "表面污渍",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "许岚",
+            "dueDate": "2026-08-01",
+            "status": "清洁",
+            "client": "洛川民俗馆",
+            "materials": []
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-18T05:27:45.843Z"
+        }
+      ]
     },
     {
       "id": "SP-1781684862153-x1q9",
@@ -275,7 +341,29 @@
       ],
       "currentQuoteId": "Q-1781698071790-g646",
       "acceptance": null,
-      "operationLogs": []
+      "operationLogs": [],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279799-oj41",
+          "fields": {
+            "roleName": "导入测试皮影",
+            "era": "清代",
+            "damage": "表面有污渍",
+            "missingParts": "",
+            "colorNotes": "",
+            "reinforcement": "",
+            "owner": "测试员",
+            "dueDate": "2026-07-15",
+            "status": "接收",
+            "client": "测试博物馆",
+            "materials": []
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-17T10:00:00.000Z"
+        }
+      ]
     },
     {
       "id": "SP-001",
@@ -283,7 +371,7 @@
       "client": "洛川民俗馆",
       "roleName": "武生靠旗",
       "era": "民国早期",
-      "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
+      "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试（已更新）",
       "missingParts": "右侧靠旗尖",
       "colorNotes": "朱砂区域褪色",
       "reinforcement": "薄驴皮补片",
@@ -442,7 +530,152 @@
         "maintenanceAdvice": "",
         "acceptedAt": "2026-06-18T04:30:55.902Z"
       },
-      "operationLogs": []
+      "operationLogs": [
+        {
+          "id": "LOG-1781778444875-b4x0",
+          "type": "field_update",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "detail": "更新字段：破损部位",
+          "at": "2026-06-18T10:27:24.875Z"
+        },
+        {
+          "id": "LOG-1781778463094-5j3z",
+          "type": "field_update",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "detail": "更新字段：破损部位",
+          "at": "2026-06-18T10:27:43.094Z"
+        },
+        {
+          "id": "LOG-1781779634165-opbl",
+          "type": "version_restore",
+          "operator": "测试员",
+          "operatorId": "MB-001",
+          "detail": "恢复版本（编辑：破损部位），恢复字段：材料",
+          "at": "2026-06-18T10:47:14.165Z"
+        },
+        {
+          "id": "LOG-1781779652659-1uz6",
+          "type": "version_restore",
+          "operator": "测试员",
+          "operatorId": "MB-001",
+          "detail": "恢复版本（编辑：破损部位），恢复字段：破损部位、材料",
+          "at": "2026-06-18T10:47:32.659Z"
+        }
+      ],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781778444875-nsw4",
+          "fields": {
+            "roleName": "武生靠旗",
+            "era": "民国早期",
+            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
+            "missingParts": "右侧靠旗尖",
+            "colorNotes": "朱砂区域褪色",
+            "reinforcement": "薄驴皮补片",
+            "owner": "许岚",
+            "dueDate": "2026-06-28",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 2
+              }
+            ]
+          },
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "reason": "编辑：破损部位",
+          "at": "2026-06-18T10:27:24.875Z"
+        },
+        {
+          "id": "SNAP-1781778463094-bv8q",
+          "fields": {
+            "roleName": "武生靠旗",
+            "era": "民国早期",
+            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试（已更新）",
+            "missingParts": "右侧靠旗尖",
+            "colorNotes": "朱砂区域褪色",
+            "reinforcement": "薄驴皮补片",
+            "owner": "许岚",
+            "dueDate": "2026-06-28",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 2
+              }
+            ]
+          },
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "reason": "编辑：破损部位",
+          "at": "2026-06-18T10:27:43.094Z"
+        },
+        {
+          "id": "SNAP-1781779634165-uvqy",
+          "fields": {
+            "roleName": "武生靠旗",
+            "era": "民国早期",
+            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
+            "missingParts": "右侧靠旗尖",
+            "colorNotes": "朱砂区域褪色",
+            "reinforcement": "薄驴皮补片",
+            "owner": "许岚",
+            "dueDate": "2026-06-28",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 2
+              }
+            ]
+          },
+          "operator": "测试员",
+          "operatorId": "MB-001",
+          "reason": "恢复版本：编辑：破损部位",
+          "at": "2026-06-18T10:47:14.165Z"
+        },
+        {
+          "id": "SNAP-1781779652659-o0cl",
+          "fields": {
+            "roleName": "武生靠旗",
+            "era": "民国早期",
+            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
+            "missingParts": "右侧靠旗尖",
+            "colorNotes": "朱砂区域褪色",
+            "reinforcement": "薄驴皮补片",
+            "owner": "许岚",
+            "dueDate": "2026-06-28",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 2
+              }
+            ]
+          },
+          "operator": "测试员",
+          "operatorId": "MB-001",
+          "reason": "恢复版本：编辑：破损部位",
+          "at": "2026-06-18T10:47:32.659Z"
+        }
+      ],
+      "templateId": "",
+      "templateName": ""
     },
     {
       "id": "SP-002",
@@ -579,7 +812,42 @@
       ],
       "currentQuoteId": "Q-1781695891259-g80i",
       "acceptance": null,
-      "operationLogs": []
+      "operationLogs": [],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279799-8byi",
+          "fields": {
+            "roleName": "旦角凤冠",
+            "era": "清代晚期",
+            "damage": "头饰断裂，珠饰脱落",
+            "missingParts": "三粒珍珠饰珠",
+            "colorNotes": "石青颜料需重绘",
+            "reinforcement": "骨胶加固",
+            "owner": "王师傅",
+            "dueDate": "2026-06-25",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-3",
+                "name": "石黄矿物颜料",
+                "batch": "SH-2026-B01",
+                "quantity": 5
+              },
+              {
+                "materialId": "MAT-5",
+                "name": "骨胶",
+                "batch": "GJ-2026-C01",
+                "quantity": 10
+              }
+            ]
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-05T09:00:00.000Z"
+        }
+      ]
     },
     {
       "id": "SP-003",
@@ -645,7 +913,44 @@
       "quotes": [],
       "currentQuoteId": "",
       "acceptance": null,
-      "operationLogs": []
+      "operationLogs": [],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279799-0fto",
+          "fields": {
+            "roleName": "文官袍服",
+            "era": "民国中期",
+            "damage": "袍服大面积撕裂",
+            "missingParts": "无",
+            "colorNotes": "多处褪色",
+            "reinforcement": "鱼鳔胶",
+            "owner": "许岚",
+            "dueDate": "2026-06-18",
+            "status": "补色",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 3
+              },
+              {
+                "materialId": "MAT-4",
+                "name": "鱼鳔胶",
+                "batch": "YJ-2026-C02",
+                "quantity": 15
+              }
+            ]
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-08T10:00:00.000Z"
+        }
+      ],
+      "templateId": "",
+      "templateName": ""
     },
     {
       "id": "SP-004",
@@ -705,7 +1010,42 @@
       "quotes": [],
       "currentQuoteId": "",
       "acceptance": null,
-      "operationLogs": []
+      "operationLogs": [],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279799-452d",
+          "fields": {
+            "roleName": "影窗布景",
+            "era": "清代中期",
+            "damage": "边缘破损严重",
+            "missingParts": "无",
+            "colorNotes": "大面积褪色",
+            "reinforcement": "托裱加固",
+            "owner": "李师傅",
+            "dueDate": "2026-06-19",
+            "status": "展开检查",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 8
+              },
+              {
+                "materialId": "MAT-2",
+                "name": "朱砂矿物颜料",
+                "batch": "ZS-2026-B03",
+                "quantity": 30
+              }
+            ]
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-12T10:00:00.000Z"
+        }
+      ]
     },
     {
       "id": "SP-005",
@@ -805,7 +1145,38 @@
       ],
       "currentQuoteId": "Q-1781705495836-mwxb",
       "acceptance": null,
-      "operationLogs": []
+      "operationLogs": [],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279799-f0t6",
+          "fields": {
+            "roleName": "武将关羽",
+            "era": "民国晚期",
+            "damage": "刀枪把子断裂",
+            "missingParts": "刀柄装饰",
+            "colorNotes": "绿色颜料需调配",
+            "reinforcement": "薄驴皮补片",
+            "owner": "王师傅",
+            "dueDate": "2026-06-17",
+            "status": "补片",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 1
+              }
+            ]
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-10T10:00:00.000Z"
+        }
+      ],
+      "templateId": "",
+      "templateName": ""
     },
     {
       "id": "SP-006",
@@ -855,7 +1226,38 @@
       "quotes": [],
       "currentQuoteId": "",
       "acceptance": null,
-      "operationLogs": []
+      "operationLogs": [],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279799-0d01",
+          "fields": {
+            "roleName": "小生折扇",
+            "era": "民国早期",
+            "damage": "扇面撕裂",
+            "missingParts": "无",
+            "colorNotes": "扇面图案重绘",
+            "reinforcement": "骨胶",
+            "owner": "李师傅",
+            "dueDate": "2026-07-05",
+            "status": "清洁",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-5",
+                "name": "骨胶",
+                "batch": "GJ-2026-C01",
+                "quantity": 8
+              }
+            ]
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-14T10:00:00.000Z"
+        }
+      ],
+      "templateId": "",
+      "templateName": ""
     },
     {
       "id": "SP-007",
@@ -922,7 +1324,38 @@
         "maintenanceAdvice": "避免阳光直射，定期用软毛刷除尘，存放于干燥通风处",
         "acceptedAt": "2026-06-18T04:33:20.891Z"
       },
-      "operationLogs": []
+      "operationLogs": [],
+      "fieldSnapshots": [
+        {
+          "id": "SNAP-1781781279799-xrf3",
+          "fields": {
+            "roleName": "丑角官帽",
+            "era": "清代晚期",
+            "damage": "帽檐破损",
+            "missingParts": "帽翅装饰",
+            "colorNotes": "黑色颜料需补色",
+            "reinforcement": "鱼鳔胶",
+            "owner": "许岚",
+            "dueDate": "2026-07-10",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-4",
+                "name": "鱼鳔胶",
+                "batch": "YJ-2026-C02",
+                "quantity": 5
+              }
+            ]
+          },
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-15T10:00:00.000Z"
+        }
+      ],
+      "templateId": "",
+      "templateName": ""
     }
   ],
   "materials": [
