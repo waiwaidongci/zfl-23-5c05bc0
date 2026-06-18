@@ -194,7 +194,8 @@ const seed = {
       contact: "张馆长",
       phone: "0911-3821234",
       address: "陕西省延安市洛川县凤栖街道",
-      remark: "长期合作客户，主要修复民国时期皮影"
+      remark: "长期合作客户，主要修复民国时期皮影",
+      followUps: []
     }
   ],
   commissions: [
@@ -320,6 +321,14 @@ async function loadDb() {
   if (!db.clients || !Array.isArray(db.clients)) {
     db.clients = [];
     migrated = true;
+  } else {
+    for (const c of db.clients) {
+      if (!c || typeof c !== "object") continue;
+      if (!Array.isArray(c.followUps)) {
+        c.followUps = [];
+        migrated = true;
+      }
+    }
   }
   if (!db.materials || !Array.isArray(db.materials)) {
     db.materials = [];
@@ -548,6 +557,23 @@ const page = `<!doctype html>
     .client-new-fields.visible { display:block; }
     .client-new-fields label { margin:6px 0 3px; }
     .client-new-fields input { padding:7px; }
+    .client-followup-summary { background:var(--accent-soft); border-left:3px solid var(--accent); padding:8px 12px; border-radius:4px; margin-top:8px; font-size:13px; }
+    .client-followup-summary .date { color:var(--muted); font-size:12px; }
+    .client-followup-summary .content { margin-top:4px; line-height:1.4; }
+    .client-followup-list { margin-top:16px; }
+    .client-followup-item { background:var(--bg); border-radius:6px; padding:12px 14px; margin:8px 0; }
+    .client-followup-item .followup-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .client-followup-item .followup-date { font-weight:600; color:var(--accent); }
+    .client-followup-item .followup-operator { color:var(--muted); font-size:13px; }
+    .client-followup-item .followup-content { line-height:1.5; font-size:14px; }
+    .client-followup-item .followup-next { margin-top:8px; padding-top:8px; border-top:1px dashed var(--line); color:var(--orange); font-size:13px; }
+    .followup-form { margin-top:16px; padding:16px; background:var(--bg); border-radius:8px; }
+    .followup-form h4 { margin:0 0 12px; }
+    .followup-form .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .followup-form label { display:block; margin:8px 0 4px; font-size:14px; }
+    .followup-form textarea { min-height:80px; resize:vertical; }
+    .client-last-followup-tip { background:var(--accent-soft); border:1px solid var(--accent); border-radius:6px; padding:8px 12px; margin-top:8px; font-size:13px; line-height:1.4; }
+    .client-last-followup-tip strong { color:var(--accent); }
     .modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; z-index:1000; }
     .modal-overlay.active { display:flex; }
     .modal { background:#fff; border-radius:12px; width:90%; max-width:900px; max-height:90vh; overflow:hidden; display:flex; flex-direction:column; }
@@ -905,6 +931,7 @@ const page = `<!doctype html>
           <select id="clientSelect" name="clientId">
             <option value="">— 选择已有客户 —</option>
           </select>
+          <div id="clientFollowupTip" style="display:none;"></div>
           <div style="text-align:center;color:var(--muted);margin:6px 0;font-size:13px;">或录入新客户</div>
           <input id="newClientName" name="client" placeholder="客户名称">
           <div class="client-new-fields" id="clientNewFields">
@@ -1541,6 +1568,12 @@ const page = `<!doctype html>
       return data;
     }
 
+    function escapeHtml(str) {
+      const div = document.createElement("div");
+      div.textContent = String(str || "");
+      return div.innerHTML;
+    }
+
     document.querySelectorAll(".tab").forEach(tab => {
       tab.onclick = async () => {
         document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -1817,6 +1850,25 @@ const page = `<!doctype html>
       if (currentVal) select.value = currentVal;
       const nameInput = document.getElementById("newClientName");
       const newFields = document.getElementById("clientNewFields");
+      const tipDiv = document.getElementById("clientFollowupTip");
+      const updateFollowupTip = () => {
+        if (!tipDiv) return;
+        if (!select.value) {
+          tipDiv.style.display = "none";
+          return;
+        }
+        const client = clients.find(c => c.id === select.value);
+        if (client && client.lastFollowUp) {
+          const summary = client.lastFollowUp.content.length > 80 ? client.lastFollowUp.content.substring(0, 80) + '...' : client.lastFollowUp.content;
+          tipDiv.className = "client-last-followup-tip";
+          tipDiv.style.display = "block";
+          tipDiv.innerHTML = '<strong>📞 最近回访：</strong>' + client.lastFollowUp.date + (client.lastFollowUp.operator ? ' · ' + escapeHtml(client.lastFollowUp.operator) : '') + '<br>' +
+            '<span style="margin-top:4px;display:block;">' + escapeHtml(summary) + '</span>' +
+            (client.lastFollowUp.nextFollowDate ? '<br><span style="color:var(--orange);">📅 下次跟进：' + client.lastFollowUp.nextFollowDate + '</span>' : '');
+        } else {
+          tipDiv.style.display = "none";
+        }
+      };
       select.onchange = () => {
         if (select.value) {
           nameInput.value = "";
@@ -1825,7 +1877,9 @@ const page = `<!doctype html>
         } else {
           nameInput.setAttribute("required", "required");
         }
+        updateFollowupTip();
       };
+      updateFollowupTip();
       nameInput.oninput = () => {
         if (nameInput.value.trim()) {
           newFields.classList.add("visible");
@@ -1842,11 +1896,21 @@ const page = `<!doctype html>
         return;
       }
       list.innerHTML = clients.map(c => {
+        let followupHtml = '';
+        if (c.lastFollowUp) {
+          const summary = c.lastFollowUp.content.length > 50 ? c.lastFollowUp.content.substring(0, 50) + '...' : c.lastFollowUp.content;
+          followupHtml = '<div class="client-followup-summary">' +
+            '<div class="date">📞 最近回访：' + c.lastFollowUp.date + (c.lastFollowUp.operator ? ' · ' + c.lastFollowUp.operator : '') + '</div>' +
+            '<div class="content">' + escapeHtml(summary) + '</div>' +
+            (c.lastFollowUp.nextFollowDate ? '<div class="date" style="margin-top:4px;color:var(--orange);">📅 下次跟进：' + c.lastFollowUp.nextFollowDate + '</div>' : '') +
+            '</div>';
+        }
         return '<div class="card" style="cursor:pointer;" data-client-id="'+c.id+'">' +
           '<h3 style="margin:0;font-size:16px;">'+c.name+'</h3>' +
           (c.contact ? '<div class="meta">联系人：'+c.contact+'</div>' : '') +
           (c.phone ? '<div class="meta">电话：'+c.phone+'</div>' : '') +
           '<div class="meta">历史委托：<strong>'+c.commissionCount+'</strong> 条</div>' +
+          followupHtml +
           '</div>';
       }).join("");
       document.querySelectorAll("[data-client-id]").forEach(card => card.onclick = async () => {
@@ -1860,37 +1924,71 @@ const page = `<!doctype html>
       try {
         const client = await api("/api/clients/" + id);
         detail.style.display = "block";
+        
+        let followUpsHtml = '';
+        if (client.followUps && client.followUps.length) {
+          followUpsHtml = client.followUps.map(f => 
+            '<div class="client-followup-item">' +
+            '<div class="followup-header">' +
+            '<span class="followup-date">📞 ' + f.date + '</span>' +
+            (f.operator ? '<span class="followup-operator">回访人：' + escapeHtml(f.operator) + '</span>' : '') +
+            '</div>' +
+            '<div class="followup-content">' + escapeHtml(f.content).split(String.fromCharCode(10)).join('<br>') + '</div>' +
+            (f.nextFollowDate ? '<div class="followup-next">📅 下次跟进日期：' + f.nextFollowDate + '</div>' : '') +
+            '</div>'
+          ).join("");
+        } else {
+          followUpsHtml = '<div class="meta">暂无回访记录</div>';
+        }
+
+        const today = new Date().toISOString().slice(0, 10);
+        const currentOperator = members.find(m => m.id === localStorage.getItem("currentOperatorId"));
+        
         detail.innerHTML = '<div class="client-detail">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-          '<h3>'+client.name+'</h3>' +
+          '<h3>'+escapeHtml(client.name)+'</h3>' +
           '<button class="small secondary" id="editClientBtn">编辑</button>' +
           '</div>' +
-          '<div class="client-info-row"><span class="label">联系人</span><span>'+(client.contact||'—')+'</span></div>' +
-          '<div class="client-info-row"><span class="label">电话</span><span>'+(client.phone||'—')+'</span></div>' +
-          '<div class="client-info-row"><span class="label">地址</span><span>'+(client.address||'—')+'</span></div>' +
-          '<div class="client-info-row"><span class="label">备注</span><span>'+(client.remark||'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">联系人</span><span>'+(client.contact?escapeHtml(client.contact):'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">电话</span><span>'+(client.phone?escapeHtml(client.phone):'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">地址</span><span>'+(client.address?escapeHtml(client.address):'—')+'</span></div>' +
+          '<div class="client-info-row"><span class="label">备注</span><span>'+(client.remark?escapeHtml(client.remark):'—')+'</span></div>' +
           '<div class="client-info-row"><span class="label">委托数</span><span><strong>'+client.commissionCount+'</strong> 条</span></div>' +
+          '<div class="client-followup-list">' +
+          '<h4 style="margin:16px 0 8px;">回访记录</h4>' +
+          followUpsHtml +
+          '</div>' +
+          '<div class="followup-form">' +
+          '<h4>新增回访记录</h4>' +
+          '<div class="form-row">' +
+          '<div><label>回访时间 *</label><input type="date" id="followupDate" value="'+today+'"></div>' +
+          '<div><label>回访人</label><input type="text" id="followupOperator" placeholder="回访人姓名" value="'+(currentOperator?escapeHtml(currentOperator.name):'')+'"></div>' +
+          '</div>' +
+          '<label>沟通内容 *</label><textarea id="followupContent" placeholder="请输入沟通内容..."></textarea>' +
+          '<label>下次跟进日期</label><input type="date" id="followupNextDate">' +
+          '<div style="margin-top:10px;"><button id="addFollowupBtn">保存回访记录</button></div>' +
+          '</div>' +
           '<div class="client-commission-list">' +
-          '<h4 style="margin:12px 0 8px;">关联修复记录</h4>' +
+          '<h4 style="margin:16px 0 8px;">关联修复记录</h4>' +
           (client.commissions && client.commissions.length ? client.commissions.map(c =>
             '<div class="client-commission-item">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-            '<strong>'+(c.roleName||'未命名')+'</strong>' +
-            '<span class="pill">'+(c.status||'')+'</span>' +
+            '<strong>'+(c.roleName?escapeHtml(c.roleName):'未命名')+'</strong>' +
+            '<span class="pill">'+(c.status?escapeHtml(c.status):'')+'</span>' +
             '</div>' +
-            '<div class="meta">'+(c.era||'')+' · 负责人：'+(c.owner||'')+' · 截止：'+(c.dueDate||'')+'</div>' +
-            '<div class="meta">破损：'+(c.damage||'—')+'</div>' +
-            (c.records && c.records.length ? '<div class="meta" style="margin-top:4px;">'+c.records.map(r=>r.step+'：'+r.note).join(' → ')+'</div>' : '') +
+            '<div class="meta">'+(c.era?escapeHtml(c.era):'')+' · 负责人：'+(c.owner?escapeHtml(c.owner):'')+' · 截止：'+(c.dueDate?escapeHtml(c.dueDate):'')+'</div>' +
+            '<div class="meta">破损：'+(c.damage?escapeHtml(c.damage):'—')+'</div>' +
+            (c.records && c.records.length ? '<div class="meta" style="margin-top:4px;">'+c.records.map(r=>escapeHtml(r.step)+'：'+escapeHtml(r.note)).join(' → ')+'</div>' : '') +
             '</div>'
           ).join("") : '<div class="meta">暂无关联修复记录</div>') +
           '</div>' +
           '<div id="editClientForm" style="display:none;margin-top:16px;padding:16px;background:var(--bg);border-radius:6px;">' +
           '<h4>编辑客户信息</h4>' +
-          '<label>名称</label><input id="editName" value="'+client.name+'">' +
-          '<label>联系人</label><input id="editContact" value="'+(client.contact||'')+'">' +
-          '<label>电话</label><input id="editPhone" value="'+(client.phone||'')+'">' +
-          '<label>地址</label><input id="editAddress" value="'+(client.address||'')+'">' +
-          '<label>备注</label><textarea id="editRemark">'+(client.remark||'')+'</textarea>' +
+          '<label>名称</label><input id="editName" value="'+escapeHtml(client.name)+'">' +
+          '<label>联系人</label><input id="editContact" value="'+(client.contact?escapeHtml(client.contact):'')+'">' +
+          '<label>电话</label><input id="editPhone" value="'+(client.phone?escapeHtml(client.phone):'')+'">' +
+          '<label>地址</label><input id="editAddress" value="'+(client.address?escapeHtml(client.address):'')+'">' +
+          '<label>备注</label><textarea id="editRemark">'+(client.remark?escapeHtml(client.remark):'')+'</textarea>' +
           '<div style="display:flex;gap:8px;margin-top:10px;">' +
           '<button id="saveClientBtn">保存修改</button>' +
           '<button class="secondary" id="cancelEditBtn">取消</button>' +
@@ -1916,6 +2014,24 @@ const page = `<!doctype html>
           });
           await loadAll();
           await renderClientDetail(id);
+        };
+        document.getElementById("addFollowupBtn").onclick = async () => {
+          const date = document.getElementById("followupDate").value;
+          const content = document.getElementById("followupContent").value.trim();
+          const operator = document.getElementById("followupOperator").value.trim();
+          const nextFollowDate = document.getElementById("followupNextDate").value;
+          if (!date) return alert("请选择回访时间");
+          if (!content) return alert("请输入沟通内容");
+          try {
+            await api("/api/clients/" + id + "/followups", {
+              method: "POST",
+              body: JSON.stringify({ date, operator, content, nextFollowDate })
+            });
+            await loadAll();
+            await renderClientDetail(id);
+          } catch (e) {
+            alert(e.message);
+          }
         };
       } catch (e) {
         alert(e.message);
@@ -2607,6 +2723,8 @@ const page = `<!doctype html>
         await api("/api/commissions", { method:"POST", body: JSON.stringify(data) });
         event.target.reset();
         document.getElementById("clientNewFields").classList.remove("visible");
+        const tipDiv = document.getElementById("clientFollowupTip");
+        if (tipDiv) tipDiv.style.display = "none";
         currentCommissionSteps = [...defaultSteps];
         renderCommissionStepList();
         await loadAll();
@@ -4862,10 +4980,20 @@ const server = http.createServer(async (req, res) => {
       return res.end(page);
     }
     if (req.method === "GET" && url.pathname === "/api/clients") {
-      const clientsWithCount = db.clients.map(c => ({
-        ...c,
-        commissionCount: db.commissions.filter(com => com.clientId === c.id).length
-      }));
+      const clientsWithCount = db.clients.map(c => {
+        const sortedFollowUps = [...(c.followUps || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const lastFollowUp = sortedFollowUps.length > 0 ? sortedFollowUps[0] : null;
+        return {
+          ...c,
+          commissionCount: db.commissions.filter(com => com.clientId === c.id).length,
+          lastFollowUp: lastFollowUp ? {
+            date: lastFollowUp.date,
+            operator: lastFollowUp.operator,
+            content: lastFollowUp.content,
+            nextFollowDate: lastFollowUp.nextFollowDate || ""
+          } : null
+        };
+      });
       return sendJson(res, 200, clientsWithCount);
     }
     const clientMatch = url.pathname.match(/^\/api\/clients\/([^/]+)$/);
@@ -4873,11 +5001,47 @@ const server = http.createServer(async (req, res) => {
       const client = db.clients.find(c => c.id === clientMatch[1]);
       if (!client) return sendJson(res, 404, { error: "client_not_found" });
       const relatedCommissions = db.commissions.filter(c => c.clientId === client.id);
-      return sendJson(res, 200, { ...client, commissionCount: relatedCommissions.length, commissions: relatedCommissions });
+      const sortedFollowUps = [...(client.followUps || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+      const lastFollowUp = sortedFollowUps.length > 0 ? sortedFollowUps[0] : null;
+      return sendJson(res, 200, { 
+        ...client, 
+        commissionCount: relatedCommissions.length, 
+        commissions: relatedCommissions,
+        followUps: sortedFollowUps,
+        lastFollowUp: lastFollowUp ? {
+          date: lastFollowUp.date,
+          operator: lastFollowUp.operator,
+          content: lastFollowUp.content,
+          nextFollowDate: lastFollowUp.nextFollowDate || ""
+        } : null
+      });
+    }
+    const followUpMatch = url.pathname.match(/^\/api\/clients\/([^/]+)\/followups$/);
+    if (followUpMatch && req.method === "POST") {
+      const client = db.clients.find(c => c.id === followUpMatch[1]);
+      if (!client) return sendJson(res, 404, { error: "client_not_found" });
+      const input = await body(req);
+      if (!input.date || !input.content) {
+        return sendJson(res, 400, { error: "missing_fields", message: "回访时间和沟通内容为必填项" });
+      }
+      const followUp = {
+        id: `FU-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        date: input.date,
+        operator: input.operator || "",
+        content: input.content,
+        nextFollowDate: input.nextFollowDate || "",
+        createdAt: new Date().toISOString()
+      };
+      if (!Array.isArray(client.followUps)) {
+        client.followUps = [];
+      }
+      client.followUps.unshift(followUp);
+      await saveDb(db);
+      return sendJson(res, 201, followUp);
     }
     if (req.method === "POST" && url.pathname === "/api/clients") {
       const input = await body(req);
-      const client = { id: `CL-${Date.now()}`, name: input.name, contact: input.contact || "", phone: input.phone || "", address: input.address || "", remark: input.remark || "" };
+      const client = { id: `CL-${Date.now()}`, name: input.name, contact: input.contact || "", phone: input.phone || "", address: input.address || "", remark: input.remark || "", followUps: [] };
       db.clients.unshift(client);
       await saveDb(db);
       return sendJson(res, 201, client);
