@@ -9050,7 +9050,10 @@ const server = http.createServer(async (req, res) => {
         const idx = commission.images[stage].findIndex(i => i.id === imageId);
         if (idx !== -1) {
           const img = commission.images[stage][idx];
-          const filePath = join(__dirname, img.filename);
+          const relativePath = img.filename.startsWith("/uploads/")
+            ? img.filename.slice("/uploads/".length)
+            : img.filename.replace(/^\/+/, "");
+          const filePath = join(uploadsDir, relativePath);
           try {
             if (existsSync(filePath)) await unlink(filePath);
           } catch (e) {
