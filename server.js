@@ -5042,10 +5042,54 @@ const page = `<!doctype html>
       return { items, materialCost, totalDays };
     }
 
+    function getQuoteHistory(commission) {
+      const quotes = Array.isArray(commission.quotes) ? commission.quotes : [];
+      return quotes
+        .filter(q => q && Array.isArray(q.items))
+        .slice()
+        .sort((a, b) => {
+          const versionDiff = (Number(b.version) || 0) - (Number(a.version) || 0);
+          if (versionDiff) return versionDiff;
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        });
+    }
+
+    function applyHistoricalQuotePricing(items, historyQuote) {
+      if (!historyQuote || !Array.isArray(historyQuote.items)) return items;
+      const historyItemMap = new Map();
+      historyQuote.items.forEach(item => {
+        const key = (item.description || "").trim();
+        if (key && !historyItemMap.has(key)) historyItemMap.set(key, item);
+      });
+      return items.map(item => {
+        const historyItem = historyItemMap.get((item.description || "").trim());
+        if (!historyItem) return item;
+        const unitPrice = Number(historyItem.unitPrice);
+        if (!Number.isFinite(unitPrice) || unitPrice <= 0) return item;
+        const quantity = Number(item.quantity) || 0;
+        return {
+          ...item,
+          unitPrice,
+          amount: quantity * unitPrice
+        };
+      });
+    }
+
+    function estimateCostFromHistory(defaultCost, historyCost, defaultItemsTotal, finalItemsTotal) {
+      const oldCost = Number(historyCost);
+      if (!Number.isFinite(oldCost) || oldCost <= 0) return defaultCost;
+      const oldItems = Number(defaultItemsTotal) || 0;
+      if (oldItems <= 0) return oldCost;
+      const ratio = (Number(finalItemsTotal) || 0) / oldItems;
+      return Math.max(0, Math.round(oldCost * ratio));
+    }
+
     function generateSmartQuote(commission) {
       const allItems = [];
       let totalMaterialCost = 0;
       let totalBaseDays = 0;
+      const quoteHistory = getQuoteHistory(commission);
+      const historyQuote = quoteHistory[0] || null;
 
       const damageResult = analyzeDamage(commission.damage);
       allItems.push(...damageResult.items);
@@ -5066,25 +5110,35 @@ const page = `<!doctype html>
       totalMaterialCost += reinforceResult.materialCost;
       totalBaseDays += reinforceResult.totalDays;
 
-      const itemsSum = allItems.reduce((s, it) => s + it.amount, 0);
-      const projectLaborCost = Math.round(itemsSum * 0.5);
-
-      const dailyLaborRate = 120;
-      const estimatedDays = Math.max(3, Math.min(30, totalBaseDays + (commission.dueDate ? 0 : 2)));
-      const durationLaborCost = estimatedDays * dailyLaborRate;
-
-      const laborCost = projectLaborCost + durationLaborCost;
-      const baseItemMaterialCost = Math.round(itemsSum * 0.2);
-      const materialCost = baseItemMaterialCost + totalMaterialCost;
-
       let itemIdCounter = 0;
-      const finalItems = allItems.map(it => ({
+      const generatedItems = allItems.map(it => ({
         id: "QI-auto-" + Date.now() + "-" + (itemIdCounter++),
         description: it.description,
         quantity: it.quantity,
         unitPrice: it.unitPrice,
         amount: it.amount
       }));
+      const finalItems = applyHistoricalQuotePricing(generatedItems, historyQuote);
+      const defaultItemsSum = allItems.reduce((s, it) => s + it.amount, 0);
+      const itemsSum = finalItems.reduce((s, it) => s + it.amount, 0);
+      const projectLaborCost = Math.round(itemsSum * 0.5);
+
+      const dailyLaborRate = 120;
+      const estimatedDaysBase = Math.max(3, Math.min(30, totalBaseDays + (commission.dueDate ? 0 : 2)));
+      const estimatedDays = historyQuote && Number(historyQuote.estimatedDays) > 0
+        ? Math.max(1, Math.round(((Number(historyQuote.estimatedDays) || estimatedDaysBase) + estimatedDaysBase) / 2))
+        : estimatedDaysBase;
+      const durationLaborCost = estimatedDays * dailyLaborRate;
+
+      const defaultLaborCost = projectLaborCost + durationLaborCost;
+      const baseItemMaterialCost = Math.round(itemsSum * 0.2);
+      const defaultMaterialCost = baseItemMaterialCost + totalMaterialCost;
+      const laborCost = historyQuote
+        ? estimateCostFromHistory(defaultLaborCost, historyQuote.laborCost, defaultItemsSum, itemsSum)
+        : defaultLaborCost;
+      const materialCost = historyQuote
+        ? estimateCostFromHistory(defaultMaterialCost, historyQuote.materialCost, defaultItemsSum, itemsSum)
+        : defaultMaterialCost;
 
       const remarkLines = [];
       if (commission.damage && commission.damage !== "-") remarkLines.push("破损修复");
@@ -5092,6 +5146,7 @@ const page = `<!doctype html>
       if (commission.colorNotes && commission.colorNotes !== "-") remarkLines.push("补色重绘");
       if (commission.reinforcement && commission.reinforcement !== "-") remarkLines.push("加固处理");
       remarkLines.push("含人工及材料");
+      if (historyQuote) remarkLines.push("参考历史报价V" + historyQuote.version);
 
       return {
         items: finalItems,
@@ -5181,10 +5236,14 @@ const page = `<!doctype html>
       if (!currentQuoteData) return;
 
       const mode = prompt(
-        "请选择重新报价方式：\n\n" +
-        "1 - 复制当前报价（保留原有项目和价格）\n" +
-        "2 - 基于修复信息重新生成（智能生成新草稿）\n\n" +
-        "请输入数字 1 或 2：",
+        [
+          "请选择重新报价方式：",
+          "",
+          "1 - 复制当前报价（保留原有项目和价格）",
+          "2 - 基于修复信息重新生成（智能生成新草稿）",
+          "",
+          "请输入数字 1 或 2："
+        ].join("\\n"),
         "1"
       );
       if (mode === null) return;
