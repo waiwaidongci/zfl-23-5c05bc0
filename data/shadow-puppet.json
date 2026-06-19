@@ -1,1180 +1,23 @@
 {
   "clients": [
     {
-      "id": "CL-1781800666780",
-      "name": "排期验证客户",
-      "contact": "",
-      "phone": "",
-      "address": "",
-      "remark": "",
-      "followUps": []
-    },
-    {
-      "id": "CL-1781800568171",
-      "name": "导入覆盖客户",
-      "contact": "",
-      "phone": "",
-      "address": "",
-      "remark": "",
-      "followUps": []
-    },
-    {
-      "id": "CL-1781800535115",
-      "name": "接口验证客户",
-      "contact": "",
-      "phone": "",
-      "address": "",
-      "remark": "",
-      "followUps": []
-    },
-    {
-      "id": "CL-1781798552554",
-      "name": "测试客户A",
-      "contact": "",
-      "phone": "",
-      "address": "",
-      "remark": "",
-      "followUps": []
-    },
-    {
-      "id": "CL-1781684862153-yyu8",
-      "name": "测试博物馆",
-      "contact": "",
-      "phone": "",
-      "address": "",
-      "remark": "",
-      "followUps": []
-    },
-    {
       "id": "CL-001",
       "name": "洛川民俗馆",
       "contact": "张馆长",
       "phone": "0911-3821234",
       "address": "陕西省延安市洛川县凤栖街道",
       "remark": "长期合作客户，主要修复民国时期皮影",
-      "followUps": [
-        {
-          "id": "FU-1781795101272-s73j",
-          "date": "2026-06-18",
-          "operator": "许岚",
-          "content": "客户反馈上次修复的皮影保存良好，询问下次修复时间和报价。计划下周发送详细修复方案。",
-          "nextFollowDate": "2026-06-25",
-          "createdAt": "2026-06-18T15:05:01.272Z"
-        },
-        {
-          "id": "FU-1781795094168-22vd",
-          "date": "2026-06-18",
-          "operator": "许岚",
-          "content": "客户反馈上次修复的皮影保存良好，询问下次修复时间和报价。计划下周发送详细修复方案。2026-06-25",
-          "nextFollowDate": "",
-          "createdAt": "2026-06-18T15:04:54.168Z"
-        }
-      ]
+      "followUps": []
     }
   ],
   "commissions": [
-    {
-      "id": "SP-1781800666780",
-      "clientId": "CL-1781800666780",
-      "client": "排期验证客户",
-      "roleName": "排期推进验证",
-      "era": "民国",
-      "damage": "测试",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [
-        {
-          "materialId": "MAT-5",
-          "name": "骨胶",
-          "batch": "GJ-2026-C01",
-          "quantity": 6,
-          "reservedQty": 6,
-          "consumedQty": 0,
-          "consumedAt": "",
-          "consumedBy": "",
-          "consumedStep": ""
-        }
-      ],
-      "consumeStepName": "补片",
-      "owner": "李师傅",
-      "dueDate": "2026-07-03",
-      "status": "补片",
-      "steps": [
-        "接收",
-        "清洁",
-        "补片",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-18T16:37:46.780Z",
-          "step": "接收",
-          "note": "登记委托"
-        },
-        {
-          "at": "2026-06-18T16:37:46.784Z",
-          "step": "补片",
-          "note": "从排期推进到消耗点"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [],
-      "currentQuoteId": "",
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781800666780-dsat",
-          "fields": {
-            "roleName": "排期推进验证",
-            "era": "民国",
-            "damage": "测试",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "李师傅",
-            "dueDate": "2026-07-03",
-            "status": "接收",
-            "client": "排期验证客户",
-            "materials": [
-              {
-                "materialId": "MAT-5",
-                "name": "骨胶",
-                "batch": "GJ-2026-C01",
-                "quantity": 6,
-                "reservedQty": 6,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "排期创建员",
-          "operatorId": "schedule-test",
-          "reason": "创建委托",
-          "at": "2026-06-18T16:37:46.780Z"
-        },
-        {
-          "id": "SNAP-1781800666784-1jrj",
-          "fields": {
-            "roleName": "排期推进验证",
-            "era": "民国",
-            "damage": "测试",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "李师傅",
-            "dueDate": "2026-07-03",
-            "status": "补片",
-            "client": "排期验证客户",
-            "materials": [
-              {
-                "materialId": "MAT-5",
-                "name": "骨胶",
-                "batch": "GJ-2026-C01",
-                "quantity": 6,
-                "reservedQty": 6,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "排期验证员",
-          "operatorId": "schedule-test",
-          "reason": "排期更新：步骤",
-          "at": "2026-06-18T16:37:46.784Z"
-        }
-      ],
-      "operationLogs": [
-        {
-          "id": "LOG-1781800666780-c8d6",
-          "type": "create",
-          "operator": "排期创建员",
-          "operatorId": "schedule-test",
-          "detail": "创建委托",
-          "at": "2026-06-18T16:37:46.780Z"
-        },
-        {
-          "id": "LOG-1781800666784-zdwl",
-          "type": "schedule_update",
-          "operator": "排期验证员",
-          "operatorId": "schedule-test",
-          "detail": "步骤→补片，负责人→李师傅，截止日期→2026-07-03",
-          "at": "2026-06-18T16:37:46.784Z"
-        }
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "SP-1781800568171",
-      "clientId": "CL-1781800568171",
-      "client": "导入覆盖客户",
-      "roleName": "导入覆盖验证",
-      "era": "民国",
-      "damage": "测试",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [
-        {
-          "materialId": "MAT-4",
-          "name": "鱼鳔胶",
-          "batch": "YJ-2026-C02",
-          "quantity": 2,
-          "reservedQty": 2,
-          "consumedQty": 0,
-          "consumedAt": "",
-          "consumedBy": "",
-          "consumedStep": ""
-        }
-      ],
-      "consumeStepName": "补片",
-      "owner": "许岚",
-      "dueDate": "2026-07-02",
-      "status": "接收",
-      "steps": [
-        "接收",
-        "清洁",
-        "补片",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-18T16:36:08.171Z",
-          "step": "接收",
-          "note": "登记委托"
-        },
-        {
-          "at": "2026-06-18T16:36:08.175Z",
-          "step": "补片",
-          "note": "先消耗"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [],
-      "currentQuoteId": "",
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781800568171-2dya",
-          "fields": {
-            "roleName": "导入覆盖验证",
-            "era": "民国",
-            "damage": "测试",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-07-02",
-            "status": "接收",
-            "client": "导入覆盖客户",
-            "materials": [
-              {
-                "materialId": "MAT-4",
-                "name": "鱼鳔胶",
-                "batch": "YJ-2026-C02",
-                "quantity": 4,
-                "reservedQty": 4,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "导入覆盖创建员",
-          "operatorId": "import-test",
-          "reason": "创建委托",
-          "at": "2026-06-18T16:36:08.171Z"
-        },
-        {
-          "id": "SNAP-1781800568175-oz4j",
-          "fields": {
-            "roleName": "导入覆盖验证",
-            "era": "民国",
-            "damage": "测试",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-07-02",
-            "status": "补片",
-            "client": "导入覆盖客户",
-            "materials": [
-              {
-                "materialId": "MAT-4",
-                "name": "鱼鳔胶",
-                "batch": "YJ-2026-C02",
-                "quantity": 4,
-                "reservedQty": 0,
-                "consumedQty": 4,
-                "consumedAt": "2026-06-18T16:36:08.175Z",
-                "consumedBy": "导入覆盖创建员",
-                "consumedStep": "补片"
-              }
-            ]
-          },
-          "operator": "导入覆盖创建员",
-          "operatorId": "import-test",
-          "reason": "步骤更新：接收 → 补片",
-          "at": "2026-06-18T16:36:08.175Z"
-        }
-      ],
-      "operationLogs": [
-        {
-          "id": "LOG-1781800568171-qr1f",
-          "type": "create",
-          "operator": "导入覆盖创建员",
-          "operatorId": "import-test",
-          "detail": "创建委托",
-          "at": "2026-06-18T16:36:08.171Z"
-        },
-        {
-          "id": "LOG-1781800568175-e9c8",
-          "type": "step_update",
-          "operator": "导入覆盖创建员",
-          "operatorId": "import-test",
-          "detail": "步骤更新：补片 - 先消耗",
-          "at": "2026-06-18T16:36:08.175Z"
-        }
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "SP-1781800535117",
-      "clientId": "CL-1781800535115",
-      "client": "接口验证客户",
-      "roleName": "接口验证委托",
-      "era": "清代",
-      "damage": "测试破损",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [
-        {
-          "materialId": "MAT-3",
-          "name": "石黄矿物颜料",
-          "batch": "SH-2026-B01",
-          "quantity": 7,
-          "reservedQty": 7,
-          "consumedQty": 0,
-          "consumedAt": "",
-          "consumedBy": "",
-          "consumedStep": ""
-        }
-      ],
-      "consumeStepName": "补片",
-      "owner": "许岚",
-      "dueDate": "2026-07-01",
-      "status": "清洁",
-      "steps": [
-        "接收",
-        "清洁",
-        "补片",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-18T16:35:35.117Z",
-          "step": "接收",
-          "note": "登记委托"
-        },
-        {
-          "at": "2026-06-18T16:35:35.130Z",
-          "step": "清洁",
-          "note": "验证未到消耗点"
-        },
-        {
-          "at": "2026-06-18T16:35:35.135Z",
-          "step": "补片",
-          "note": "验证到消耗点"
-        },
-        {
-          "at": "2026-06-18T16:35:35.143Z",
-          "step": "清洁",
-          "note": "验证回退"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [],
-      "currentQuoteId": "",
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781800535119-zkq0",
-          "fields": {
-            "roleName": "接口验证委托",
-            "era": "清代",
-            "damage": "测试破损",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-07-01",
-            "status": "接收",
-            "client": "接口验证客户",
-            "materials": [
-              {
-                "materialId": "MAT-3",
-                "name": "石黄矿物颜料",
-                "batch": "SH-2026-B01",
-                "quantity": 7,
-                "reservedQty": 7,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "reason": "创建委托",
-          "at": "2026-06-18T16:35:35.119Z"
-        },
-        {
-          "id": "SNAP-1781800535130-zdns",
-          "fields": {
-            "roleName": "接口验证委托",
-            "era": "清代",
-            "damage": "测试破损",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-07-01",
-            "status": "清洁",
-            "client": "接口验证客户",
-            "materials": [
-              {
-                "materialId": "MAT-3",
-                "name": "石黄矿物颜料",
-                "batch": "SH-2026-B01",
-                "quantity": 7,
-                "reservedQty": 7,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "reason": "步骤更新：接收 → 清洁",
-          "at": "2026-06-18T16:35:35.130Z"
-        },
-        {
-          "id": "SNAP-1781800535135-yipj",
-          "fields": {
-            "roleName": "接口验证委托",
-            "era": "清代",
-            "damage": "测试破损",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-07-01",
-            "status": "补片",
-            "client": "接口验证客户",
-            "materials": [
-              {
-                "materialId": "MAT-3",
-                "name": "石黄矿物颜料",
-                "batch": "SH-2026-B01",
-                "quantity": 7,
-                "reservedQty": 0,
-                "consumedQty": 7,
-                "consumedAt": "2026-06-18T16:35:35.135Z",
-                "consumedBy": "接口验证员",
-                "consumedStep": "补片"
-              }
-            ]
-          },
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "reason": "步骤更新：清洁 → 补片",
-          "at": "2026-06-18T16:35:35.135Z"
-        },
-        {
-          "id": "SNAP-1781800535143-bzif",
-          "fields": {
-            "roleName": "接口验证委托",
-            "era": "清代",
-            "damage": "测试破损",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-07-01",
-            "status": "清洁",
-            "client": "接口验证客户",
-            "materials": [
-              {
-                "materialId": "MAT-3",
-                "name": "石黄矿物颜料",
-                "batch": "SH-2026-B01",
-                "quantity": 7,
-                "reservedQty": 7,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "reason": "步骤更新：补片 → 清洁",
-          "at": "2026-06-18T16:35:35.143Z"
-        }
-      ],
-      "operationLogs": [
-        {
-          "id": "LOG-1781800535119-bf3z",
-          "type": "create",
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "detail": "创建委托",
-          "at": "2026-06-18T16:35:35.119Z"
-        },
-        {
-          "id": "LOG-1781800535130-fc0g",
-          "type": "step_update",
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "detail": "步骤更新：清洁 - 验证未到消耗点",
-          "at": "2026-06-18T16:35:35.130Z"
-        },
-        {
-          "id": "LOG-1781800535135-verx",
-          "type": "step_update",
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "detail": "步骤更新：补片 - 验证到消耗点",
-          "at": "2026-06-18T16:35:35.135Z"
-        },
-        {
-          "id": "LOG-1781800535143-j5td",
-          "type": "step_update",
-          "operator": "接口验证员",
-          "operatorId": "review-api",
-          "detail": "步骤更新：清洁 - 验证回退",
-          "at": "2026-06-18T16:35:35.143Z"
-        }
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "SP-1781798552554",
-      "clientId": "CL-1781798552554",
-      "client": "测试客户A",
-      "roleName": "武生关羽",
-      "era": "清末民初",
-      "damage": "左臂破损3厘米，头部色彩脱落",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [
-        {
-          "materialId": "MAT-1",
-          "name": "薄驴皮补片",
-          "batch": "LP-2026-A01",
-          "quantity": 5,
-          "reservedQty": 5,
-          "consumedQty": 0,
-          "consumedAt": "",
-          "consumedBy": "",
-          "consumedStep": ""
-        }
-      ],
-      "consumeStepName": "补片",
-      "owner": "张师傅",
-      "dueDate": "2026-03-31",
-      "status": "清洁",
-      "steps": [
-        "接收",
-        "清洁",
-        "补片",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-18T16:02:32.554Z",
-          "step": "接收",
-          "note": "登记委托"
-        },
-        {
-          "at": "2026-06-18T16:03:04.876Z",
-          "step": "清洁",
-          "note": "完成清洁"
-        },
-        {
-          "at": "2026-06-18T16:03:04.894Z",
-          "step": "补片",
-          "note": "完成补片，材料实际消耗"
-        },
-        {
-          "at": "2026-06-18T16:03:38.161Z",
-          "step": "清洁",
-          "note": "回退步骤验证"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [],
-      "currentQuoteId": "",
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781798552554-etx8",
-          "fields": {
-            "roleName": "武生关羽",
-            "era": "清末民初",
-            "damage": "左臂破损3厘米，头部色彩脱落",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "张师傅",
-            "dueDate": "2026-03-31",
-            "status": "接收",
-            "client": "测试客户A",
-            "materials": [
-              {
-                "materialId": "MAT-1",
-                "name": "薄驴皮补片",
-                "batch": "LP-2026-A01",
-                "quantity": 5,
-                "reservedQty": 5,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "reason": "创建委托",
-          "at": "2026-06-18T16:02:32.554Z"
-        },
-        {
-          "id": "SNAP-1781798584876-uj2l",
-          "fields": {
-            "roleName": "武生关羽",
-            "era": "清末民初",
-            "damage": "左臂破损3厘米，头部色彩脱落",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "张师傅",
-            "dueDate": "2026-03-31",
-            "status": "清洁",
-            "client": "测试客户A",
-            "materials": [
-              {
-                "materialId": "MAT-1",
-                "name": "薄驴皮补片",
-                "batch": "LP-2026-A01",
-                "quantity": 5,
-                "reservedQty": 5,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "reason": "步骤更新：接收 → 清洁",
-          "at": "2026-06-18T16:03:04.876Z"
-        },
-        {
-          "id": "SNAP-1781798584894-y1sh",
-          "fields": {
-            "roleName": "武生关羽",
-            "era": "清末民初",
-            "damage": "左臂破损3厘米，头部色彩脱落",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "张师傅",
-            "dueDate": "2026-03-31",
-            "status": "补片",
-            "client": "测试客户A",
-            "materials": [
-              {
-                "materialId": "MAT-1",
-                "name": "薄驴皮补片",
-                "batch": "LP-2026-A01",
-                "quantity": 5,
-                "reservedQty": 0,
-                "consumedQty": 5,
-                "consumedAt": "2026-06-18T16:03:04.894Z",
-                "consumedBy": "测试操作者",
-                "consumedStep": "补片"
-              }
-            ]
-          },
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "reason": "步骤更新：清洁 → 补片",
-          "at": "2026-06-18T16:03:04.894Z"
-        },
-        {
-          "id": "SNAP-1781798618161-yvx6",
-          "fields": {
-            "roleName": "武生关羽",
-            "era": "清末民初",
-            "damage": "左臂破损3厘米，头部色彩脱落",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "张师傅",
-            "dueDate": "2026-03-31",
-            "status": "清洁",
-            "client": "测试客户A",
-            "materials": [
-              {
-                "materialId": "MAT-1",
-                "name": "薄驴皮补片",
-                "batch": "LP-2026-A01",
-                "quantity": 5,
-                "reservedQty": 5,
-                "consumedQty": 0,
-                "consumedAt": "",
-                "consumedBy": "",
-                "consumedStep": ""
-              }
-            ]
-          },
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "reason": "步骤更新：补片 → 清洁",
-          "at": "2026-06-18T16:03:38.161Z"
-        }
-      ],
-      "operationLogs": [
-        {
-          "id": "LOG-1781798552555-xm04",
-          "type": "create",
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "detail": "创建委托",
-          "at": "2026-06-18T16:02:32.555Z"
-        },
-        {
-          "id": "LOG-1781798584876-iak1",
-          "type": "step_update",
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "detail": "步骤更新：清洁 - 完成清洁",
-          "at": "2026-06-18T16:03:04.876Z"
-        },
-        {
-          "id": "LOG-1781798584894-ltrc",
-          "type": "step_update",
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "detail": "步骤更新：补片 - 完成补片，材料实际消耗",
-          "at": "2026-06-18T16:03:04.894Z"
-        },
-        {
-          "id": "LOG-1781798618161-8l4z",
-          "type": "step_update",
-          "operator": "测试操作者",
-          "operatorId": "test-001",
-          "detail": "步骤更新：清洁 - 回退步骤验证",
-          "at": "2026-06-18T16:03:38.161Z"
-        }
-      ],
-      "acceptance": null
-    },
-    {
-      "id": "SP-1781765516998",
-      "clientId": "CL-001",
-      "client": "洛川民俗馆",
-      "roleName": "有操作者测试",
-      "era": "清代",
-      "damage": "测试",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [],
-      "owner": "许岚",
-      "dueDate": "2026-09-01",
-      "status": "清洁",
-      "steps": [
-        "接收",
-        "清洁",
-        "补片",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-18T06:51:56.998Z",
-          "step": "接收",
-          "note": "登记委托"
-        },
-        {
-          "at": "2026-06-18T06:52:16.083Z",
-          "step": "清洁",
-          "note": "测试有操作者"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [],
-      "currentQuoteId": "",
-      "operationLogs": [
-        {
-          "id": "LOG-1781765516998-uq1p",
-          "type": "create",
-          "operator": "许岚",
-          "operatorId": "MB-001",
-          "detail": "创建委托",
-          "at": "2026-06-18T06:51:56.998Z"
-        },
-        {
-          "id": "LOG-1781765536083-ggcm",
-          "type": "step_update",
-          "operator": "张师傅",
-          "operatorId": "MB-002",
-          "detail": "步骤更新：清洁 - 测试有操作者",
-          "at": "2026-06-18T06:52:16.083Z"
-        }
-      ],
-      "acceptance": null,
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781781279798-mp43",
-          "fields": {
-            "roleName": "有操作者测试",
-            "era": "清代",
-            "damage": "测试",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-09-01",
-            "status": "清洁",
-            "client": "洛川民俗馆",
-            "materials": []
-          },
-          "operator": "系统",
-          "operatorId": "",
-          "reason": "初始数据快照",
-          "at": "2026-06-18T06:51:56.998Z"
-        }
-      ],
-      "consumeStepName": "补片"
-    },
-    {
-      "id": "SP-1781761321438",
-      "clientId": "CL-001",
-      "client": "洛川民俗馆",
-      "roleName": "端到端测试皮影",
-      "era": "民国",
-      "damage": "轻微开裂",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [],
-      "owner": "李学徒",
-      "dueDate": "2026-09-01",
-      "status": "接收",
-      "steps": [
-        "接收",
-        "清洁",
-        "补片",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-18T05:42:01.438Z",
-          "step": "接收",
-          "note": "登记委托"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [],
-      "currentQuoteId": "",
-      "operationLogs": [
-        {
-          "id": "LOG-1781761321439-gdfj",
-          "type": "create",
-          "operator": "李学徒",
-          "operatorId": "MB-003",
-          "detail": "创建委托",
-          "at": "2026-06-18T05:42:01.439Z"
-        }
-      ],
-      "acceptance": null,
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781781279798-23v8",
-          "fields": {
-            "roleName": "端到端测试皮影",
-            "era": "民国",
-            "damage": "轻微开裂",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "李学徒",
-            "dueDate": "2026-09-01",
-            "status": "接收",
-            "client": "洛川民俗馆",
-            "materials": []
-          },
-          "operator": "系统",
-          "operatorId": "",
-          "reason": "初始数据快照",
-          "at": "2026-06-18T05:42:01.438Z"
-        }
-      ],
-      "consumeStepName": "补片"
-    },
-    {
-      "id": "SP-1781760465843",
-      "clientId": "CL-001",
-      "client": "洛川民俗馆",
-      "roleName": "测试协作皮影",
-      "era": "清代",
-      "damage": "表面污渍",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [],
-      "owner": "许岚",
-      "dueDate": "2026-08-01",
-      "status": "清洁",
-      "steps": [
-        "接收",
-        "清洁",
-        "补片",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-18T05:27:45.843Z",
-          "step": "接收",
-          "note": "登记委托"
-        },
-        {
-          "at": "2026-06-18T05:28:19.113Z",
-          "step": "清洁",
-          "note": "开始清洁处理"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [],
-      "currentQuoteId": "",
-      "operationLogs": [
-        {
-          "id": "LOG-1781760465843-ke02",
-          "type": "create",
-          "operator": "许岚",
-          "operatorId": "MB-001",
-          "detail": "创建委托",
-          "at": "2026-06-18T05:27:45.843Z"
-        },
-        {
-          "id": "LOG-1781760499113-qypu",
-          "type": "step_update",
-          "operator": "张师傅",
-          "operatorId": "MB-002",
-          "detail": "步骤更新：清洁 - 开始清洁处理",
-          "at": "2026-06-18T05:28:19.113Z"
-        }
-      ],
-      "acceptance": null,
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781781279798-yhe7",
-          "fields": {
-            "roleName": "测试协作皮影",
-            "era": "清代",
-            "damage": "表面污渍",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "许岚",
-            "dueDate": "2026-08-01",
-            "status": "清洁",
-            "client": "洛川民俗馆",
-            "materials": []
-          },
-          "operator": "系统",
-          "operatorId": "",
-          "reason": "初始数据快照",
-          "at": "2026-06-18T05:27:45.843Z"
-        }
-      ],
-      "consumeStepName": "补片"
-    },
-    {
-      "id": "SP-1781684862153-x1q9",
-      "clientId": "CL-1781684862153-yyu8",
-      "client": "测试博物馆",
-      "roleName": "导入测试皮影",
-      "era": "清代",
-      "damage": "表面有污渍",
-      "missingParts": "",
-      "colorNotes": "",
-      "reinforcement": "",
-      "materials": [],
-      "owner": "测试员",
-      "dueDate": "2026-07-15",
-      "status": "接收",
-      "steps": [
-        "接收",
-        "清洁",
-        "补色",
-        "交付"
-      ],
-      "templateId": "",
-      "templateName": "",
-      "records": [
-        {
-          "at": "2026-06-17T10:00:00.000Z",
-          "step": "接收",
-          "note": "导入测试委托"
-        }
-      ],
-      "images": {
-        "before": [],
-        "during": [],
-        "after": []
-      },
-      "quotes": [
-        {
-          "id": "Q-1781698038293-mmas",
-          "version": 1,
-          "status": "superseded",
-          "items": [
-            {
-              "id": "QI-1781698038293-0",
-              "description": "表面有污渍修复",
-              "quantity": 1,
-              "unitPrice": 200,
-              "amount": 200
-            }
-          ],
-          "laborCost": 300,
-          "materialCost": 100,
-          "totalAmount": 600,
-          "estimatedDays": 7,
-          "remark": "根据破损描述、缺失零件、补色记录和加固材料初步估算",
-          "createdAt": "2026-06-17T12:07:18.293Z",
-          "confirmedAt": "2026-06-17T12:07:44.406Z",
-          "createdBy": "",
-          "previousVersionId": ""
-        },
-        {
-          "id": "Q-1781698071790-g646",
-          "version": 2,
-          "status": "draft",
-          "items": [
-            {
-              "id": "QI-1781698071790-tofq",
-              "description": "表面有污渍修复",
-              "quantity": 1,
-              "unitPrice": 200,
-              "amount": 200
-            }
-          ],
-          "laborCost": 300,
-          "materialCost": 100,
-          "totalAmount": 600,
-          "estimatedDays": 7,
-          "remark": "根据破损描述、缺失零件、补色记录和加固材料初步估算",
-          "createdAt": "2026-06-17T12:07:51.790Z",
-          "confirmedAt": null,
-          "createdBy": "",
-          "previousVersionId": "Q-1781698038293-mmas"
-        }
-      ],
-      "currentQuoteId": "Q-1781698071790-g646",
-      "acceptance": null,
-      "operationLogs": [],
-      "fieldSnapshots": [
-        {
-          "id": "SNAP-1781781279799-oj41",
-          "fields": {
-            "roleName": "导入测试皮影",
-            "era": "清代",
-            "damage": "表面有污渍",
-            "missingParts": "",
-            "colorNotes": "",
-            "reinforcement": "",
-            "owner": "测试员",
-            "dueDate": "2026-07-15",
-            "status": "接收",
-            "client": "测试博物馆",
-            "materials": []
-          },
-          "operator": "系统",
-          "operatorId": "",
-          "reason": "初始数据快照",
-          "at": "2026-06-17T10:00:00.000Z"
-        }
-      ],
-      "consumeStepName": "补片"
-    },
     {
       "id": "SP-001",
       "clientId": "CL-001",
       "client": "洛川民俗馆",
       "roleName": "武生靠旗",
       "era": "民国早期",
-      "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试（已更新）",
+      "damage": "腿部开裂，靠旗缺角",
       "missingParts": "右侧靠旗尖",
       "colorNotes": "朱砂区域褪色",
       "reinforcement": "薄驴皮补片",
@@ -1186,14 +29,14 @@
           "quantity": 2,
           "reservedQty": 0,
           "consumedQty": 2,
-          "consumedAt": "2026-06-18T16:02:04.843Z",
+          "consumedAt": "2026-06-19T02:30:02.881Z",
           "consumedBy": "系统迁移",
           "consumedStep": "补片"
         }
       ],
       "owner": "许岚",
       "dueDate": "2026-06-28",
-      "status": "交付",
+      "status": "补片",
       "records": [
         {
           "at": "2026-06-10T10:00:00.000Z",
@@ -1204,21 +47,6 @@
           "at": "2026-06-12T14:30:00.000Z",
           "step": "清洁",
           "note": "完成低湿清洁"
-        },
-        {
-          "at": "2026-06-17T15:01:26.193Z",
-          "step": "交付",
-          "note": "修复完成，准备交付"
-        },
-        {
-          "at": "2026-06-17T15:05:44.276Z",
-          "step": "交付",
-          "note": "交付验收完成"
-        },
-        {
-          "at": "2026-06-18T04:30:55.902Z",
-          "step": "交付",
-          "note": "交付验收完成"
         }
       ],
       "steps": [
@@ -1270,221 +98,196 @@
       },
       "quotes": [
         {
-          "id": "Q-1781692010647-yfl3",
+          "id": "Q-1781837133432-qmv1",
           "version": 1,
           "status": "superseded",
           "items": [
             {
-              "id": "QI-1781692010646-0",
+              "id": "QI-1781837133432-0",
               "description": "腿部开裂修复",
+              "quantity": 1,
+              "unitPrice": 350,
+              "amount": 350
+            },
+            {
+              "id": "QI-1781837133432-1",
+              "description": "靠旗缺角补片",
+              "quantity": 1,
+              "unitPrice": 450,
+              "amount": 450
+            },
+            {
+              "id": "QI-1781837133432-2",
+              "description": "右侧靠旗尖配补",
               "quantity": 1,
               "unitPrice": 300,
               "amount": 300
             },
             {
-              "id": "QI-1781692010646-1",
-              "description": "靠旗缺角补片",
+              "id": "QI-1781837133432-3",
+              "description": "朱砂区域褪色补色",
               "quantity": 1,
-              "unitPrice": 200,
-              "amount": 200
+              "unitPrice": 112,
+              "amount": 112
+            },
+            {
+              "id": "QI-1781837133432-4",
+              "description": "薄驴皮补片加固",
+              "quantity": 1,
+              "unitPrice": 120,
+              "amount": 120
             }
           ],
-          "laborCost": 500,
-          "materialCost": 150,
-          "totalAmount": 1150,
-          "estimatedDays": 7,
-          "remark": "测试报价",
-          "createdAt": "2026-06-17T10:26:50.647Z",
-          "confirmedAt": "2026-06-17T10:27:20.337Z",
-          "createdBy": ""
+          "laborCost": 1866,
+          "materialCost": 826,
+          "totalAmount": 4024,
+          "estimatedDays": 10,
+          "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约10天",
+          "createdAt": "2026-06-19T02:45:33.432Z",
+          "confirmedAt": "2026-06-19T02:47:25.172Z",
+          "createdBy": "",
+          "previousVersionId": ""
         },
         {
-          "id": "Q-1781692051862-p5zx",
+          "id": "Q-1781837331857-eok4",
           "version": 2,
-          "status": "draft",
+          "status": "confirmed",
           "items": [
             {
-              "id": "QI-1781692010646-0",
+              "id": "QI-1781837331857-0-3j",
               "description": "腿部开裂修复",
+              "quantity": 1,
+              "unitPrice": 350,
+              "amount": 350
+            },
+            {
+              "id": "QI-1781837331857-1-lp",
+              "description": "靠旗缺角补片",
+              "quantity": 2,
+              "unitPrice": 450,
+              "amount": 900
+            },
+            {
+              "id": "QI-1781837331857-2-o9",
+              "description": "右侧靠旗尖配补",
               "quantity": 1,
               "unitPrice": 300,
               "amount": 300
             },
             {
-              "id": "QI-1781692010646-1",
-              "description": "靠旗缺角补片",
+              "id": "QI-1781837331857-3-9v",
+              "description": "朱砂区域褪色补色",
+              "quantity": 1,
+              "unitPrice": 150,
+              "amount": 150
+            },
+            {
+              "id": "QI-1781837331857-4-q5",
+              "description": "薄驴皮补片加固",
+              "quantity": 1,
+              "unitPrice": 120,
+              "amount": 120
+            },
+            {
+              "id": "QI-new-1",
+              "description": "整体清洁除尘保养",
               "quantity": 1,
               "unitPrice": 200,
               "amount": 200
             }
           ],
-          "laborCost": 500,
-          "materialCost": 150,
-          "totalAmount": 1150,
-          "estimatedDays": 7,
-          "remark": "测试报价",
-          "createdAt": "2026-06-17T10:27:31.862Z",
-          "confirmedAt": null,
-          "createdBy": "",
-          "previousVersionId": "Q-1781692010647-yfl3"
+          "laborCost": 2066,
+          "materialCost": 976,
+          "totalAmount": 5062,
+          "estimatedDays": 12,
+          "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约12天，含清洁保养服务",
+          "createdAt": "2026-06-19T02:48:51.857Z",
+          "confirmedAt": "2026-06-19T03:02:46.997Z",
+          "createdBy": "许岚",
+          "previousVersionId": "Q-1781837133432-qmv1"
         }
       ],
-      "currentQuoteId": "Q-1781692051862-p5zx",
-      "acceptance": {
-        "result": "验收通过",
-        "deliveryDate": "2026-06-18",
-        "receiver": "张三",
-        "remainingIssues": "",
-        "maintenanceAdvice": "",
-        "acceptedAt": "2026-06-18T04:30:55.902Z"
-      },
+      "currentQuoteId": "Q-1781837331857-eok4",
+      "acceptance": null,
       "operationLogs": [
         {
-          "id": "LOG-1781778444875-b4x0",
-          "type": "field_update",
+          "id": "LOG-1781837133432-1jv3",
+          "type": "quote_create",
           "operator": "许岚",
           "operatorId": "MB-001",
-          "detail": "更新字段：破损部位",
-          "at": "2026-06-18T10:27:24.875Z"
+          "detail": "创建报价 V1",
+          "at": "2026-06-19T02:45:33.432Z"
         },
         {
-          "id": "LOG-1781778463094-5j3z",
-          "type": "field_update",
+          "id": "LOG-1781837245172-bda9",
+          "type": "quote_confirm",
           "operator": "许岚",
           "operatorId": "MB-001",
-          "detail": "更新字段：破损部位",
-          "at": "2026-06-18T10:27:43.094Z"
+          "detail": "确认报价 V1",
+          "at": "2026-06-19T02:47:25.173Z"
         },
         {
-          "id": "LOG-1781779634165-opbl",
-          "type": "version_restore",
-          "operator": "测试员",
+          "id": "LOG-1781837331858-rz4c",
+          "type": "quote_revise",
+          "operator": "许岚",
           "operatorId": "MB-001",
-          "detail": "恢复版本（编辑：破损部位），恢复字段：材料",
-          "at": "2026-06-18T10:47:14.165Z"
+          "detail": "重新报价 V2（从修复信息重新生成）",
+          "at": "2026-06-19T02:48:51.858Z"
         },
         {
-          "id": "LOG-1781779652659-1uz6",
-          "type": "version_restore",
-          "operator": "测试员",
+          "id": "LOG-1781837981811-2ok6",
+          "type": "quote_edit",
+          "operator": "许岚",
+          "operatorId": "",
+          "detail": "修改报价 V2",
+          "at": "2026-06-19T02:59:41.811Z"
+        },
+        {
+          "id": "LOG-1781838167002-tj23",
+          "type": "quote_confirm",
+          "operator": "许岚",
           "operatorId": "MB-001",
-          "detail": "恢复版本（编辑：破损部位），恢复字段：破损部位、材料",
-          "at": "2026-06-18T10:47:32.659Z"
+          "detail": "确认报价 V2",
+          "at": "2026-06-19T03:02:47.002Z"
         }
       ],
       "fieldSnapshots": [
         {
-          "id": "SNAP-1781778444875-nsw4",
+          "id": "SNAP-1781836202881-jj5j",
           "fields": {
             "roleName": "武生靠旗",
             "era": "民国早期",
-            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
+            "damage": "腿部开裂，靠旗缺角",
             "missingParts": "右侧靠旗尖",
             "colorNotes": "朱砂区域褪色",
             "reinforcement": "薄驴皮补片",
             "owner": "许岚",
             "dueDate": "2026-06-28",
-            "status": "交付",
+            "status": "补片",
             "client": "洛川民俗馆",
             "materials": [
               {
                 "materialId": "MAT-1",
                 "name": "薄驴皮补片",
                 "batch": "LP-2026-A01",
-                "quantity": 2
+                "quantity": 2,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               }
             ]
           },
-          "operator": "许岚",
-          "operatorId": "MB-001",
-          "reason": "编辑：破损部位",
-          "at": "2026-06-18T10:27:24.875Z"
-        },
-        {
-          "id": "SNAP-1781778463094-bv8q",
-          "fields": {
-            "roleName": "武生靠旗",
-            "era": "民国早期",
-            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试（已更新）",
-            "missingParts": "右侧靠旗尖",
-            "colorNotes": "朱砂区域褪色",
-            "reinforcement": "薄驴皮补片",
-            "owner": "许岚",
-            "dueDate": "2026-06-28",
-            "status": "交付",
-            "client": "洛川民俗馆",
-            "materials": [
-              {
-                "materialId": "MAT-1",
-                "name": "薄驴皮补片",
-                "batch": "LP-2026-A01",
-                "quantity": 2
-              }
-            ]
-          },
-          "operator": "许岚",
-          "operatorId": "MB-001",
-          "reason": "编辑：破损部位",
-          "at": "2026-06-18T10:27:43.094Z"
-        },
-        {
-          "id": "SNAP-1781779634165-uvqy",
-          "fields": {
-            "roleName": "武生靠旗",
-            "era": "民国早期",
-            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
-            "missingParts": "右侧靠旗尖",
-            "colorNotes": "朱砂区域褪色",
-            "reinforcement": "薄驴皮补片",
-            "owner": "许岚",
-            "dueDate": "2026-06-28",
-            "status": "交付",
-            "client": "洛川民俗馆",
-            "materials": [
-              {
-                "materialId": "MAT-1",
-                "name": "薄驴皮补片",
-                "batch": "LP-2026-A01",
-                "quantity": 2
-              }
-            ]
-          },
-          "operator": "测试员",
-          "operatorId": "MB-001",
-          "reason": "恢复版本：编辑：破损部位",
-          "at": "2026-06-18T10:47:14.165Z"
-        },
-        {
-          "id": "SNAP-1781779652659-o0cl",
-          "fields": {
-            "roleName": "武生靠旗",
-            "era": "民国早期",
-            "damage": "腿部开裂，靠旗缺角 - 导入覆盖测试",
-            "missingParts": "右侧靠旗尖",
-            "colorNotes": "朱砂区域褪色",
-            "reinforcement": "薄驴皮补片",
-            "owner": "许岚",
-            "dueDate": "2026-06-28",
-            "status": "交付",
-            "client": "洛川民俗馆",
-            "materials": [
-              {
-                "materialId": "MAT-1",
-                "name": "薄驴皮补片",
-                "batch": "LP-2026-A01",
-                "quantity": 2
-              }
-            ]
-          },
-          "operator": "测试员",
-          "operatorId": "MB-001",
-          "reason": "恢复版本：编辑：破损部位",
-          "at": "2026-06-18T10:47:32.659Z"
+          "operator": "系统",
+          "operatorId": "",
+          "reason": "初始数据快照",
+          "at": "2026-06-10T10:00:00.000Z"
         }
       ],
+      "consumeStepName": "补片",
       "templateId": "",
-      "templateName": "",
-      "consumeStepName": "补片"
+      "templateName": ""
     },
     {
       "id": "SP-002",
@@ -1504,7 +307,7 @@
           "quantity": 5,
           "reservedQty": 0,
           "consumedQty": 5,
-          "consumedAt": "2026-06-18T16:02:04.850Z",
+          "consumedAt": "2026-06-19T02:30:02.881Z",
           "consumedBy": "系统迁移",
           "consumedStep": "补片"
         },
@@ -1515,14 +318,14 @@
           "quantity": 10,
           "reservedQty": 0,
           "consumedQty": 10,
-          "consumedAt": "2026-06-18T16:02:04.851Z",
+          "consumedAt": "2026-06-19T02:30:02.881Z",
           "consumedBy": "系统迁移",
           "consumedStep": "补片"
         }
       ],
       "owner": "王师傅",
       "dueDate": "2026-06-25",
-      "status": "交付",
+      "status": "补色",
       "records": [
         {
           "at": "2026-06-05T09:00:00.000Z",
@@ -1553,16 +356,6 @@
           "at": "2026-06-17T07:04:47.644Z",
           "step": "补色",
           "note": "完成头饰重绘，正在进行补色处理"
-        },
-        {
-          "at": "2026-06-18T04:47:13.759Z",
-          "step": "交付",
-          "note": "所有修复步骤完成，进入交付环节"
-        },
-        {
-          "at": "2026-06-18T04:47:42.434Z",
-          "step": "交付",
-          "note": "交付验收完成"
         }
       ],
       "steps": [
@@ -1582,59 +375,13 @@
         "during": [],
         "after": []
       },
-      "quotes": [
-        {
-          "id": "Q-1781695891248-n5id",
-          "version": 1,
-          "status": "superseded",
-          "items": [
-            {
-              "id": "QI-1781695891248-0",
-              "description": "头饰断裂修复",
-              "quantity": 1,
-              "unitPrice": 500,
-              "amount": 500
-            }
-          ],
-          "laborCost": 300,
-          "materialCost": 100,
-          "totalAmount": 900,
-          "estimatedDays": 5,
-          "remark": "头饰修复报价",
-          "createdAt": "2026-06-17T11:31:31.248Z",
-          "confirmedAt": "2026-06-17T11:31:31.255Z",
-          "createdBy": ""
-        },
-        {
-          "id": "Q-1781695891259-g80i",
-          "version": 2,
-          "status": "draft",
-          "items": [
-            {
-              "id": "QI-1781695891248-0",
-              "description": "头饰断裂修复",
-              "quantity": 1,
-              "unitPrice": 500,
-              "amount": 500
-            }
-          ],
-          "laborCost": 300,
-          "materialCost": 100,
-          "totalAmount": 900,
-          "estimatedDays": 5,
-          "remark": "头饰修复报价",
-          "createdAt": "2026-06-17T11:31:31.259Z",
-          "confirmedAt": null,
-          "createdBy": "",
-          "previousVersionId": "Q-1781695891248-n5id"
-        }
-      ],
-      "currentQuoteId": "Q-1781695891259-g80i",
+      "quotes": [],
+      "currentQuoteId": "",
       "acceptance": null,
       "operationLogs": [],
       "fieldSnapshots": [
         {
-          "id": "SNAP-1781781279799-8byi",
+          "id": "SNAP-1781836202881-sess",
           "fields": {
             "roleName": "旦角凤冠",
             "era": "清代晚期",
@@ -1644,20 +391,30 @@
             "reinforcement": "骨胶加固",
             "owner": "王师傅",
             "dueDate": "2026-06-25",
-            "status": "交付",
+            "status": "补色",
             "client": "洛川民俗馆",
             "materials": [
               {
                 "materialId": "MAT-3",
                 "name": "石黄矿物颜料",
                 "batch": "SH-2026-B01",
-                "quantity": 5
+                "quantity": 5,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               },
               {
                 "materialId": "MAT-5",
                 "name": "骨胶",
                 "batch": "GJ-2026-C01",
-                "quantity": 10
+                "quantity": 10,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               }
             ]
           },
@@ -1687,7 +444,7 @@
           "quantity": 3,
           "reservedQty": 0,
           "consumedQty": 3,
-          "consumedAt": "2026-06-18T16:02:04.851Z",
+          "consumedAt": "2026-06-19T02:30:02.881Z",
           "consumedBy": "系统迁移",
           "consumedStep": "补片"
         },
@@ -1698,7 +455,7 @@
           "quantity": 15,
           "reservedQty": 0,
           "consumedQty": 15,
-          "consumedAt": "2026-06-18T16:02:04.851Z",
+          "consumedAt": "2026-06-19T02:30:02.881Z",
           "consumedBy": "系统迁移",
           "consumedStep": "补片"
         }
@@ -1746,7 +503,7 @@
       "operationLogs": [],
       "fieldSnapshots": [
         {
-          "id": "SNAP-1781781279799-0fto",
+          "id": "SNAP-1781836202881-86la",
           "fields": {
             "roleName": "文官袍服",
             "era": "民国中期",
@@ -1763,13 +520,23 @@
                 "materialId": "MAT-1",
                 "name": "薄驴皮补片",
                 "batch": "LP-2026-A01",
-                "quantity": 3
+                "quantity": 3,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               },
               {
                 "materialId": "MAT-4",
                 "name": "鱼鳔胶",
                 "batch": "YJ-2026-C02",
-                "quantity": 15
+                "quantity": 15,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               }
             ]
           },
@@ -1779,9 +546,9 @@
           "at": "2026-06-08T10:00:00.000Z"
         }
       ],
+      "consumeStepName": "补片",
       "templateId": "",
-      "templateName": "",
-      "consumeStepName": "补片"
+      "templateName": ""
     },
     {
       "id": "SP-004",
@@ -1854,7 +621,7 @@
       "operationLogs": [],
       "fieldSnapshots": [
         {
-          "id": "SNAP-1781781279799-452d",
+          "id": "SNAP-1781836202881-1gwl",
           "fields": {
             "roleName": "影窗布景",
             "era": "清代中期",
@@ -1871,13 +638,23 @@
                 "materialId": "MAT-1",
                 "name": "薄驴皮补片",
                 "batch": "LP-2026-A01",
-                "quantity": 8
+                "quantity": 8,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               },
               {
                 "materialId": "MAT-2",
                 "name": "朱砂矿物颜料",
                 "batch": "ZS-2026-B03",
-                "quantity": 30
+                "quantity": 30,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               }
             ]
           },
@@ -1907,7 +684,7 @@
           "quantity": 1,
           "reservedQty": 0,
           "consumedQty": 1,
-          "consumedAt": "2026-06-18T16:02:04.854Z",
+          "consumedAt": "2026-06-19T02:30:02.881Z",
           "consumedBy": "系统迁移",
           "consumedStep": "补片"
         }
@@ -1944,58 +721,13 @@
         "during": [],
         "after": []
       },
-      "quotes": [
-        {
-          "id": "Q-1781705495836-mwxb",
-          "version": 1,
-          "status": "draft",
-          "items": [
-            {
-              "id": "QI-1781705495836-0",
-              "description": "刀枪把子断裂修复",
-              "quantity": 1,
-              "unitPrice": 500,
-              "amount": 500
-            },
-            {
-              "id": "QI-1781705495836-1",
-              "description": "刀柄装饰配补",
-              "quantity": 1,
-              "unitPrice": 120,
-              "amount": 120
-            },
-            {
-              "id": "QI-1781705495836-2",
-              "description": "绿色颜料需调配补色",
-              "quantity": 1,
-              "unitPrice": 80,
-              "amount": 80
-            },
-            {
-              "id": "QI-1781705495836-3",
-              "description": "薄驴皮补片加固",
-              "quantity": 1,
-              "unitPrice": 120,
-              "amount": 120
-            }
-          ],
-          "laborCost": 1250,
-          "materialCost": 468,
-          "totalAmount": 2538,
-          "estimatedDays": 7,
-          "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约7天",
-          "createdAt": "2026-06-17T14:11:35.836Z",
-          "confirmedAt": null,
-          "createdBy": "",
-          "previousVersionId": ""
-        }
-      ],
-      "currentQuoteId": "Q-1781705495836-mwxb",
+      "quotes": [],
+      "currentQuoteId": "",
       "acceptance": null,
       "operationLogs": [],
       "fieldSnapshots": [
         {
-          "id": "SNAP-1781781279799-f0t6",
+          "id": "SNAP-1781836202881-5ddf",
           "fields": {
             "roleName": "武将关羽",
             "era": "民国晚期",
@@ -2012,7 +744,12 @@
                 "materialId": "MAT-1",
                 "name": "薄驴皮补片",
                 "batch": "LP-2026-A01",
-                "quantity": 1
+                "quantity": 1,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               }
             ]
           },
@@ -2022,9 +759,9 @@
           "at": "2026-06-10T10:00:00.000Z"
         }
       ],
+      "consumeStepName": "补片",
       "templateId": "",
-      "templateName": "",
-      "consumeStepName": "补片"
+      "templateName": ""
     },
     {
       "id": "SP-006",
@@ -2082,7 +819,7 @@
       "operationLogs": [],
       "fieldSnapshots": [
         {
-          "id": "SNAP-1781781279799-0d01",
+          "id": "SNAP-1781836202881-1ftg",
           "fields": {
             "roleName": "小生折扇",
             "era": "民国早期",
@@ -2099,7 +836,12 @@
                 "materialId": "MAT-5",
                 "name": "骨胶",
                 "batch": "GJ-2026-C01",
-                "quantity": 8
+                "quantity": 8,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               }
             ]
           },
@@ -2109,9 +851,9 @@
           "at": "2026-06-14T10:00:00.000Z"
         }
       ],
+      "consumeStepName": "补片",
       "templateId": "",
-      "templateName": "",
-      "consumeStepName": "补片"
+      "templateName": ""
     },
     {
       "id": "SP-007",
@@ -2129,36 +871,21 @@
           "name": "鱼鳔胶",
           "batch": "YJ-2026-C02",
           "quantity": 5,
-          "reservedQty": 0,
-          "consumedQty": 5,
-          "consumedAt": "2026-06-18T16:02:04.855Z",
-          "consumedBy": "系统迁移",
-          "consumedStep": "补片"
+          "reservedQty": 5,
+          "consumedQty": 0,
+          "consumedAt": "",
+          "consumedBy": "",
+          "consumedStep": ""
         }
       ],
       "owner": "许岚",
       "dueDate": "2026-07-10",
-      "status": "交付",
+      "status": "接收",
       "records": [
         {
           "at": "2026-06-15T10:00:00.000Z",
           "step": "接收",
           "note": "丑角官帽新委托"
-        },
-        {
-          "at": "2026-06-18T04:32:07.296Z",
-          "step": "交付",
-          "note": "修复完成，进入交付阶段"
-        },
-        {
-          "at": "2026-06-18T04:32:16.771Z",
-          "step": "交付",
-          "note": "交付验收完成"
-        },
-        {
-          "at": "2026-06-18T04:33:20.891Z",
-          "step": "交付",
-          "note": "交付验收完成"
         }
       ],
       "steps": [
@@ -2175,18 +902,11 @@
       },
       "quotes": [],
       "currentQuoteId": "",
-      "acceptance": {
-        "result": "有条件通过",
-        "deliveryDate": "2026-06-18",
-        "receiver": "李馆长",
-        "remainingIssues": "帽翅装饰需后续观察是否牢固",
-        "maintenanceAdvice": "避免阳光直射，定期用软毛刷除尘，存放于干燥通风处",
-        "acceptedAt": "2026-06-18T04:33:20.891Z"
-      },
+      "acceptance": null,
       "operationLogs": [],
       "fieldSnapshots": [
         {
-          "id": "SNAP-1781781279799-xrf3",
+          "id": "SNAP-1781836202881-g17a",
           "fields": {
             "roleName": "丑角官帽",
             "era": "清代晚期",
@@ -2196,14 +916,19 @@
             "reinforcement": "鱼鳔胶",
             "owner": "许岚",
             "dueDate": "2026-07-10",
-            "status": "交付",
+            "status": "接收",
             "client": "洛川民俗馆",
             "materials": [
               {
                 "materialId": "MAT-4",
                 "name": "鱼鳔胶",
                 "batch": "YJ-2026-C02",
-                "quantity": 5
+                "quantity": 5,
+                "reservedQty": 0,
+                "consumedQty": 0,
+                "consumedAt": "",
+                "consumedBy": "",
+                "consumedStep": ""
               }
             ]
           },
@@ -2213,9 +938,9 @@
           "at": "2026-06-15T10:00:00.000Z"
         }
       ],
+      "consumeStepName": "补片",
       "templateId": "",
-      "templateName": "",
-      "consumeStepName": "补片"
+      "templateName": ""
     }
   ],
   "materials": [
@@ -2227,8 +952,8 @@
       "stock": 58,
       "unit": "张",
       "remark": "陕西洛川产，厚度0.8mm",
-      "minStock": 30,
-      "reserved": 13
+      "minStock": 0,
+      "reserved": 8
     },
     {
       "id": "MAT-2",
@@ -2250,18 +975,18 @@
       "unit": "克",
       "remark": "老矿坑料，色泽沉稳",
       "minStock": 0,
-      "reserved": 7
+      "reserved": 0
     },
     {
       "id": "MAT-4",
       "name": "鱼鳔胶",
       "category": "胶料",
       "batch": "YJ-2026-C02",
-      "stock": 76,
+      "stock": 85,
       "unit": "克",
       "remark": "传统手工熬制",
       "minStock": 0,
-      "reserved": 2
+      "reserved": 5
     },
     {
       "id": "MAT-5",
@@ -2272,7 +997,7 @@
       "unit": "克",
       "remark": "高纯度牛骨胶粒",
       "minStock": 0,
-      "reserved": 14
+      "reserved": 8
     }
   ],
   "stepTemplates": [
@@ -2356,197 +1081,6 @@
       "remark": ""
     }
   ],
-  "stockLedger": [
-    {
-      "id": "LEDGER-1781800666780-gswmc8",
-      "materialId": "MAT-5",
-      "materialName": "骨胶",
-      "batch": "GJ-2026-C01",
-      "type": "reserve",
-      "quantity": 6,
-      "stockBefore": 128,
-      "stockAfter": 128,
-      "reservedBefore": 8,
-      "reservedAfter": 14,
-      "commissionId": "SP-1781800666780",
-      "commissionName": "排期推进验证",
-      "step": "接收",
-      "operator": "排期创建员",
-      "operatorId": "schedule-test",
-      "note": "委托创建占用",
-      "at": "2026-06-18T16:37:46.780Z"
-    },
-    {
-      "id": "LEDGER-1781800568180-pknrmp",
-      "materialId": "MAT-4",
-      "materialName": "鱼鳔胶",
-      "batch": "YJ-2026-C02",
-      "type": "reserve",
-      "quantity": 2,
-      "stockBefore": 76,
-      "stockAfter": 76,
-      "reservedBefore": 0,
-      "reservedAfter": 2,
-      "commissionId": "SP-1781800568171",
-      "commissionName": "导入覆盖验证",
-      "step": "接收",
-      "operator": "导入覆盖员",
-      "operatorId": "import-overwrite",
-      "note": "委托创建占用",
-      "at": "2026-06-18T16:36:08.180Z"
-    },
-    {
-      "id": "LEDGER-1781800568175-9gcpw1",
-      "materialId": "MAT-4",
-      "materialName": "鱼鳔胶",
-      "batch": "YJ-2026-C02",
-      "type": "consume",
-      "quantity": 4,
-      "stockBefore": 80,
-      "stockAfter": 76,
-      "reservedBefore": 4,
-      "reservedAfter": 0,
-      "commissionId": "SP-1781800568171",
-      "commissionName": "导入覆盖验证",
-      "step": "补片",
-      "operator": "导入覆盖创建员",
-      "operatorId": "import-test",
-      "note": "步骤推进至【补片】，实际出库消耗",
-      "at": "2026-06-18T16:36:08.175Z"
-    },
-    {
-      "id": "LEDGER-1781800568171-ew9z8d",
-      "materialId": "MAT-4",
-      "materialName": "鱼鳔胶",
-      "batch": "YJ-2026-C02",
-      "type": "reserve",
-      "quantity": 4,
-      "stockBefore": 80,
-      "stockAfter": 80,
-      "reservedBefore": 0,
-      "reservedAfter": 4,
-      "commissionId": "SP-1781800568171",
-      "commissionName": "导入覆盖验证",
-      "step": "接收",
-      "operator": "导入覆盖创建员",
-      "operatorId": "import-test",
-      "note": "委托创建占用",
-      "at": "2026-06-18T16:36:08.171Z"
-    },
-    {
-      "id": "LEDGER-1781800535143-3zorvi",
-      "materialId": "MAT-3",
-      "materialName": "石黄矿物颜料",
-      "batch": "SH-2026-B01",
-      "type": "undo_consume",
-      "quantity": 7,
-      "stockBefore": 143,
-      "stockAfter": 150,
-      "reservedBefore": 0,
-      "reservedAfter": 7,
-      "commissionId": "SP-1781800535117",
-      "commissionName": "接口验证委托",
-      "step": "补片",
-      "operator": "接口验证员",
-      "operatorId": "review-api",
-      "note": "步骤回退：补片 → 清洁，撤销消耗",
-      "at": "2026-06-18T16:35:35.143Z"
-    },
-    {
-      "id": "LEDGER-1781800535135-b37qwv",
-      "materialId": "MAT-3",
-      "materialName": "石黄矿物颜料",
-      "batch": "SH-2026-B01",
-      "type": "consume",
-      "quantity": 7,
-      "stockBefore": 150,
-      "stockAfter": 143,
-      "reservedBefore": 7,
-      "reservedAfter": 0,
-      "commissionId": "SP-1781800535117",
-      "commissionName": "接口验证委托",
-      "step": "补片",
-      "operator": "接口验证员",
-      "operatorId": "review-api",
-      "note": "步骤推进至【补片】，实际出库消耗",
-      "at": "2026-06-18T16:35:35.135Z"
-    },
-    {
-      "id": "LEDGER-1781800535118-dbaget",
-      "materialId": "MAT-3",
-      "materialName": "石黄矿物颜料",
-      "batch": "SH-2026-B01",
-      "type": "reserve",
-      "quantity": 7,
-      "stockBefore": 150,
-      "stockAfter": 150,
-      "reservedBefore": 0,
-      "reservedAfter": 7,
-      "commissionId": "SP-1781800535117",
-      "commissionName": "接口验证委托",
-      "step": "接收",
-      "operator": "接口验证员",
-      "operatorId": "review-api",
-      "note": "委托创建占用",
-      "at": "2026-06-18T16:35:35.118Z"
-    },
-    {
-      "id": "LEDGER-1781798618161-dc3pf9",
-      "materialId": "MAT-1",
-      "materialName": "薄驴皮补片",
-      "batch": "LP-2026-A01",
-      "type": "undo_consume",
-      "quantity": 5,
-      "stockBefore": 53,
-      "stockAfter": 58,
-      "reservedBefore": 8,
-      "reservedAfter": 13,
-      "commissionId": "SP-1781798552554",
-      "commissionName": "武生关羽",
-      "step": "补片",
-      "operator": "测试操作者",
-      "operatorId": "test-001",
-      "note": "步骤回退：补片 → 清洁，撤销消耗",
-      "at": "2026-06-18T16:03:38.161Z"
-    },
-    {
-      "id": "LEDGER-1781798584894-xyu8sk",
-      "materialId": "MAT-1",
-      "materialName": "薄驴皮补片",
-      "batch": "LP-2026-A01",
-      "type": "consume",
-      "quantity": 5,
-      "stockBefore": 58,
-      "stockAfter": 53,
-      "reservedBefore": 13,
-      "reservedAfter": 8,
-      "commissionId": "SP-1781798552554",
-      "commissionName": "武生关羽",
-      "step": "补片",
-      "operator": "测试操作者",
-      "operatorId": "test-001",
-      "note": "步骤推进至【补片】，实际出库消耗",
-      "at": "2026-06-18T16:03:04.894Z"
-    },
-    {
-      "id": "LEDGER-1781798552554-we013b",
-      "materialId": "MAT-1",
-      "materialName": "薄驴皮补片",
-      "batch": "LP-2026-A01",
-      "type": "reserve",
-      "quantity": 5,
-      "stockBefore": 58,
-      "stockAfter": 58,
-      "reservedBefore": 8,
-      "reservedAfter": 13,
-      "commissionId": "SP-1781798552554",
-      "commissionName": "武生关羽",
-      "step": "接收",
-      "operator": "测试操作者",
-      "operatorId": "test-001",
-      "note": "委托创建占用",
-      "at": "2026-06-18T16:02:32.554Z"
-    }
-  ],
-  "_stockMigratedV2": "2026-06-18T16:02:04.855Z"
+  "stockLedger": [],
+  "_stockMigratedV2": "2026-06-19T02:30:02.881Z"
 }

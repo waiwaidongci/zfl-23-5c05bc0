@@ -1296,7 +1296,62 @@ const page = `<!doctype html>
     .detail-section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
     .detail-section-header h4 { margin:0; font-size:16px; }
 
-    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} }
+    .quote-diff-section { margin-top:20px; padding-top:20px; border-top:2px dashed var(--line); }
+    .quote-diff-section .quote-section-header { margin-bottom:14px; }
+    .quote-diff-container { background:var(--bg); border-radius:10px; padding:16px; }
+
+    .quote-diff-amount-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px; }
+    .quote-diff-amount-card { background:#fff; border-radius:8px; padding:12px; border:1px solid var(--line); }
+    .quote-diff-amount-card.highlight { border:2px solid var(--accent); background:#fff9f5; }
+    .quote-diff-label { font-size:12px; color:var(--muted); margin-bottom:8px; }
+    .quote-diff-values { font-size:13px; line-height:1.6; }
+    .quote-diff-values.total { font-size:14px; font-weight:600; }
+    .quote-diff-old { color:var(--muted); text-decoration:line-through; font-size:12px; }
+    .quote-diff-new { font-weight:600; }
+    .quote-diff-delta { font-size:12px; margin-top:2px; display:inline-block; padding:1px 6px; border-radius:4px; font-weight:600; }
+    .quote-diff-delta.up { background:var(--red-soft); color:var(--red); }
+    .quote-diff-delta.down { background:var(--green-soft); color:var(--green); }
+    .quote-diff-delta.zero { background:#eee; color:var(--muted); }
+    .quote-diff-delta::before { content:"Δ "; font-weight:400; }
+
+    .quote-diff-subtitle { font-size:13px; font-weight:700; color:var(--ink); margin:14px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+    .quote-diff-subtitle:first-child { margin-top:0; }
+
+    .quote-diff-item-group { margin-bottom:12px; }
+    .quote-diff-group-title { font-size:12px; font-weight:700; padding:6px 10px; border-radius:6px 6px 0 0; display:flex; align-items:center; gap:6px; }
+    .quote-diff-group-title.added { background:var(--green-soft); color:var(--green); }
+    .quote-diff-group-title.removed { background:var(--red-soft); color:var(--red); }
+    .quote-diff-group-title.modified { background:var(--orange-soft); color:var(--orange); }
+    .count-badge { font-size:11px; padding:1px 8px; border-radius:999px; background:rgba(255,255,255,0.7); font-weight:700; }
+
+    .quote-diff-item-row { display:grid; grid-template-columns:1fr 60px 80px 80px; gap:6px; padding:8px 10px; font-size:12px; align-items:center; border-left:3px solid transparent; background:#fff; border-bottom:1px solid var(--line); }
+    .quote-diff-item-row.added { border-left-color:var(--green); background:#f3faf6; }
+    .quote-diff-item-row.removed { border-left-color:var(--red); background:#fcf2f2; }
+    .quote-diff-item-row.modified { border-left-color:var(--orange); background:#fef8f2; }
+    .quote-diff-item-row:last-child { border-bottom:none; border-radius:0 0 6px 6px; }
+    .quote-diff-item-row .diff-col-desc { grid-column:1; }
+    .quote-diff-item-row .diff-col-qty { grid-column:2; text-align:center; }
+    .quote-diff-item-row .diff-col-price { grid-column:3; text-align:right; }
+    .quote-diff-item-row .diff-col-amount { grid-column:4; text-align:right; font-weight:600; }
+    .quote-diff-item-row .diff-old-val { color:var(--red); text-decoration:line-through; font-size:11px; }
+    .quote-diff-item-row .diff-new-val { color:var(--green); font-weight:600; }
+    .quote-diff-item-row .diff-arrow { display:inline-block; margin:0 4px; color:var(--muted); }
+
+    .quote-diff-modified-detail { font-size:11px; color:var(--muted); margin-top:3px; grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:10px; }
+    .quote-diff-modified-detail span { display:inline-flex; align-items:center; gap:3px; }
+
+    .quote-diff-remark-block { margin-top:12px; }
+    .quote-diff-remark-compare { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .quote-diff-remark-old, .quote-diff-remark-new { background:#fff; border-radius:6px; padding:10px; border:1px solid var(--line); }
+    .quote-diff-remark-old { border-left:3px solid var(--muted); }
+    .quote-diff-remark-new { border-left:3px solid var(--accent); }
+    .quote-diff-remark-label { font-size:11px; color:var(--muted); margin-bottom:4px; font-weight:600; }
+    .quote-diff-remark-old div:last-child { color:var(--muted); font-size:12px; line-height:1.5; }
+    .quote-diff-remark-new div:last-child { color:var(--ink); font-size:12px; line-height:1.5; font-weight:500; }
+
+    .quote-diff-empty { text-align:center; padding:20px; color:var(--muted); font-size:13px; background:#fff; border-radius:8px; }
+
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} .quote-diff-amount-grid{grid-template-columns:1fr 1fr;} .quote-diff-remark-compare{grid-template-columns:1fr;} .quote-diff-item-row{grid-template-columns:1fr 50px 70px 70px;} }
   </style>
 </head>
 <body>
@@ -1759,6 +1814,74 @@ const page = `<!doctype html>
             <div class="quote-other-row">
               <label>备注</label>
               <textarea id="quoteRemark" rows="3" disabled></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote-diff-section" id="quoteDiffSection" style="display:none;">
+          <div class="quote-section-header">
+            <h4>与上一版对比 <span class="meta" id="quoteDiffVersions"></span></h4>
+            <button type="button" class="small secondary" id="quoteDiffToggleBtn">隐藏对比</button>
+          </div>
+          <div class="quote-diff-container">
+            <div class="quote-diff-amount-grid">
+              <div class="quote-diff-amount-card">
+                <div class="quote-diff-label">项目小计</div>
+                <div class="quote-diff-values" id="diffItemsTotal"></div>
+              </div>
+              <div class="quote-diff-amount-card">
+                <div class="quote-diff-label">人工费</div>
+                <div class="quote-diff-values" id="diffLaborCost"></div>
+              </div>
+              <div class="quote-diff-amount-card">
+                <div class="quote-diff-label">材料费</div>
+                <div class="quote-diff-values" id="diffMaterialCost"></div>
+              </div>
+              <div class="quote-diff-amount-card highlight">
+                <div class="quote-diff-label">总金额</div>
+                <div class="quote-diff-values total" id="diffTotalAmount"></div>
+              </div>
+              <div class="quote-diff-amount-card">
+                <div class="quote-diff-label">预计工期</div>
+                <div class="quote-diff-values" id="diffEstimatedDays"></div>
+              </div>
+            </div>
+
+            <div class="quote-diff-items-block" id="diffItemsBlock" style="display:none;">
+              <div class="quote-diff-subtitle">项目明细变化</div>
+
+              <div class="quote-diff-item-group" id="diffAddedGroup" style="display:none;">
+                <div class="quote-diff-group-title added">新增项目 <span class="count-badge" id="diffAddedCount"></span></div>
+                <div id="diffAddedList"></div>
+              </div>
+
+              <div class="quote-diff-item-group" id="diffRemovedGroup" style="display:none;">
+                <div class="quote-diff-group-title removed">删除项目 <span class="count-badge" id="diffRemovedCount"></span></div>
+                <div id="diffRemovedList"></div>
+              </div>
+
+              <div class="quote-diff-item-group" id="diffModifiedGroup" style="display:none;">
+                <div class="quote-diff-group-title modified">调整项目 <span class="count-badge" id="diffModifiedCount"></span></div>
+                <div id="diffModifiedList"></div>
+              </div>
+            </div>
+
+            <div class="quote-diff-remark-block" id="diffRemarkBlock" style="display:none;">
+              <div class="quote-diff-subtitle">备注变化</div>
+              <div class="quote-diff-remark-compare">
+                <div class="quote-diff-remark-old">
+                  <div class="quote-diff-remark-label">上一版</div>
+                  <div id="diffRemarkOld"></div>
+                </div>
+                <div class="quote-diff-remark-new">
+                  <div class="quote-diff-remark-label">当前版</div>
+                  <div id="diffRemarkNew"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="quote-diff-empty" id="diffEmpty" style="display:none;">
+              两版内容完全一致，没有差异
             </div>
           </div>
         </div>
@@ -4131,6 +4254,163 @@ const page = `<!doctype html>
     let currentQuoteItems = [];
     let isQuoteEditing = false;
     let quoteHistory = [];
+    let quoteDiffData = null;
+    let quoteDiffVisible = false;
+
+    function formatDelta(value, isDays) {
+      const num = Number(value) || 0;
+      if (num === 0) return '<span class="quote-diff-delta zero">' + (isDays ? '0天' : '¥0.00') + '</span>';
+      const sign = num > 0 ? '+' : '';
+      const cls = num > 0 ? 'up' : 'down';
+      const text = isDays ? (sign + num + '天') : (sign + '¥' + Math.abs(num).toFixed(2));
+      return '<span class="quote-diff-delta ' + cls + '">' + text + '</span>';
+    }
+
+    function renderAmountDiff(containerId, data, isDays) {
+      const el = document.getElementById(containerId);
+      if (!el || !data) return;
+      const oldVal = isDays ? (data.oldValue + '天') : formatMoney(data.oldValue);
+      const newVal = isDays ? (data.newValue + '天') : formatMoney(data.newValue);
+      el.innerHTML = '<div class="quote-diff-old">' + oldVal + '</div>' +
+        '<div class="quote-diff-new">' + newVal + '</div>' +
+        formatDelta(data.difference, isDays);
+    }
+
+    function renderQuoteDiff() {
+      const diffSection = document.getElementById("quoteDiffSection");
+      if (!diffSection) return;
+
+      if (!quoteDiffData || !quoteDiffVisible) {
+        diffSection.style.display = "none";
+        return;
+      }
+
+      diffSection.style.display = "block";
+      document.getElementById("quoteDiffVersions").textContent =
+        '(V' + quoteDiffData.baseVersion + ' → V' + quoteDiffData.targetVersion + ')';
+      const toggleBtn = document.getElementById("quoteDiffToggleBtn");
+      if (toggleBtn) toggleBtn.textContent = quoteDiffVisible ? "隐藏对比" : "显示对比";
+
+      renderAmountDiff("diffItemsTotal", quoteDiffData.amount.itemsTotal, false);
+      renderAmountDiff("diffLaborCost", quoteDiffData.amount.laborCost, false);
+      renderAmountDiff("diffMaterialCost", quoteDiffData.amount.materialCost, false);
+      renderAmountDiff("diffTotalAmount", quoteDiffData.amount.totalAmount, false);
+      renderAmountDiff("diffEstimatedDays", quoteDiffData.amount.estimatedDays, true);
+
+      const added = quoteDiffData.items.added || [];
+      const removed = quoteDiffData.items.removed || [];
+      const modified = quoteDiffData.items.modified || [];
+      const hasItemChanges = added.length || removed.length || modified.length;
+
+      const itemsBlock = document.getElementById("diffItemsBlock");
+      itemsBlock.style.display = hasItemChanges ? "block" : "none";
+
+      const addedGroup = document.getElementById("diffAddedGroup");
+      if (added.length) {
+        addedGroup.style.display = "block";
+        document.getElementById("diffAddedCount").textContent = added.length;
+        document.getElementById("diffAddedList").innerHTML = added.map(item =>
+          '<div class="quote-diff-item-row added">' +
+          '<div class="diff-col-desc">➕ ' + escapeHtml(item.description || '') + '</div>' +
+          '<div class="diff-col-qty">' + (item.quantity || 0) + '</div>' +
+          '<div class="diff-col-price">' + formatMoney(item.unitPrice || 0) + '</div>' +
+          '<div class="diff-col-amount">' + formatMoney(item.amount || 0) + '</div>' +
+          '</div>'
+        ).join("");
+      } else {
+        addedGroup.style.display = "none";
+      }
+
+      const removedGroup = document.getElementById("diffRemovedGroup");
+      if (removed.length) {
+        removedGroup.style.display = "block";
+        document.getElementById("diffRemovedCount").textContent = removed.length;
+        document.getElementById("diffRemovedList").innerHTML = removed.map(item =>
+          '<div class="quote-diff-item-row removed">' +
+          '<div class="diff-col-desc">➖ ' + escapeHtml(item.description || '') + '</div>' +
+          '<div class="diff-col-qty">' + (item.quantity || 0) + '</div>' +
+          '<div class="diff-col-price">' + formatMoney(item.unitPrice || 0) + '</div>' +
+          '<div class="diff-col-amount">' + formatMoney(item.amount || 0) + '</div>' +
+          '</div>'
+        ).join("");
+      } else {
+        removedGroup.style.display = "none";
+      }
+
+      const modifiedGroup = document.getElementById("diffModifiedGroup");
+      if (modified.length) {
+        modifiedGroup.style.display = "block";
+        document.getElementById("diffModifiedCount").textContent = modified.length;
+        document.getElementById("diffModifiedList").innerHTML = modified.map(m => {
+          const oldItem = m.oldItem || {};
+          const newItem = m.newItem || {};
+          const qtyChanged = (oldItem.quantity || 0) !== (newItem.quantity || 0);
+          const priceChanged = (oldItem.unitPrice || 0) !== (newItem.unitPrice || 0);
+          const amountChanged = (oldItem.amount || 0) !== (newItem.amount || 0);
+          const details = [];
+          if (qtyChanged) details.push('<span>数量: <span class="diff-old-val">' + (oldItem.quantity || 0) + '</span><span class="diff-arrow">→</span><span class="diff-new-val">' + (newItem.quantity || 0) + '</span></span>');
+          if (priceChanged) details.push('<span>单价: <span class="diff-old-val">' + formatMoney(oldItem.unitPrice || 0) + '</span><span class="diff-arrow">→</span><span class="diff-new-val">' + formatMoney(newItem.unitPrice || 0) + '</span></span>');
+          return '<div class="quote-diff-item-row modified">' +
+            '<div class="diff-col-desc">✏️ ' + escapeHtml(newItem.description || oldItem.description || '') +
+            (details.length ? '<div class="quote-diff-modified-detail">' + details.join('') + '</div>' : '') +
+            '</div>' +
+            '<div class="diff-col-qty">' + (newItem.quantity || 0) + '</div>' +
+            '<div class="diff-col-price">' + formatMoney(newItem.unitPrice || 0) + '</div>' +
+            '<div class="diff-col-amount">' +
+              (amountChanged ? '<div><span class="diff-old-val">' + formatMoney(oldItem.amount || 0) + '</span><span class="diff-arrow">→</span><span class="diff-new-val">' + formatMoney(newItem.amount || 0) + '</span></div>' : formatMoney(newItem.amount || 0)) +
+            '</div>' +
+            '</div>';
+        }).join("");
+      } else {
+        modifiedGroup.style.display = "none";
+      }
+
+      const remarkBlock = document.getElementById("diffRemarkBlock");
+      if (quoteDiffData.remark && quoteDiffData.remark.changed) {
+        remarkBlock.style.display = "block";
+        document.getElementById("diffRemarkOld").textContent = quoteDiffData.remark.oldValue || "(空)";
+        document.getElementById("diffRemarkNew").textContent = quoteDiffData.remark.newValue || "(空)";
+      } else {
+        remarkBlock.style.display = "none";
+      }
+
+      const emptyEl = document.getElementById("diffEmpty");
+      if (!hasItemChanges && !(quoteDiffData.remark && quoteDiffData.remark.changed) &&
+          quoteDiffData.amount.totalAmount.difference === 0 &&
+          quoteDiffData.amount.itemsTotal.difference === 0 &&
+          quoteDiffData.amount.laborCost.difference === 0 &&
+          quoteDiffData.amount.materialCost.difference === 0 &&
+          quoteDiffData.amount.estimatedDays.difference === 0) {
+        emptyEl.style.display = "block";
+      } else {
+        emptyEl.style.display = "none";
+      }
+    }
+
+    async function loadQuoteDiff(baseQuoteId, targetQuoteId) {
+      if (!baseQuoteId || !targetQuoteId || baseQuoteId === targetQuoteId) {
+        quoteDiffData = null;
+        quoteDiffVisible = false;
+        renderQuoteDiff();
+        return;
+      }
+      try {
+        const diff = await api("/api/commissions/" + currentQuoteCommissionId +
+          "/quotes/" + baseQuoteId + "/diff/" + targetQuoteId);
+        quoteDiffData = diff;
+        quoteDiffVisible = true;
+        renderQuoteDiff();
+      } catch (e) {
+        quoteDiffData = null;
+        quoteDiffVisible = false;
+        renderQuoteDiff();
+      }
+    }
+
+    function toggleQuoteDiff() {
+      quoteDiffVisible = !quoteDiffVisible;
+      renderQuoteDiff();
+    }
 
     function getStatusText(status) {
       const statusMap = {
@@ -4259,14 +4539,19 @@ const page = `<!doctype html>
       }).join("");
 
       historyList.querySelectorAll("[data-history-id]").forEach(item => {
-        item.onclick = () => {
+        item.onclick = async () => {
           const quoteId = item.dataset.historyId;
           const quote = quoteHistory.find(q => q.id === quoteId);
           if (quote) {
             currentQuoteData = quote;
             currentQuoteItems = JSON.parse(JSON.stringify(quote.items || []));
             isQuoteEditing = false;
+            quoteDiffData = null;
+            quoteDiffVisible = false;
             renderQuoteDetail();
+            if (quote.previousVersionId) {
+              await loadQuoteDiff(quote.previousVersionId, quote.id);
+            }
           }
         };
       });
@@ -4338,6 +4623,8 @@ const page = `<!doctype html>
         if (confirmedActions) confirmedActions.style.display = "flex";
         if (createQuoteBtn) createQuoteBtn.style.display = "none";
       }
+
+      renderQuoteDiff();
     }
 
     async function loadQuoteData() {
@@ -4355,7 +4642,12 @@ const page = `<!doctype html>
           currentQuoteItems = [];
         }
         isQuoteEditing = false;
+        quoteDiffData = null;
+        quoteDiffVisible = false;
         renderQuoteDetail();
+        if (currentQuoteData && currentQuoteData.previousVersionId) {
+          await loadQuoteDiff(currentQuoteData.previousVersionId, currentQuoteData.id);
+        }
       } catch (e) {
         alert("加载报价失败：" + e.message);
       }
@@ -4374,6 +4666,8 @@ const page = `<!doctype html>
       currentQuoteItems = [];
       isQuoteEditing = false;
       quoteHistory = [];
+      quoteDiffData = null;
+      quoteDiffVisible = false;
     }
 
     const DAMAGE_RULES = [
@@ -4865,6 +5159,9 @@ const page = `<!doctype html>
         el.oninput = calculateQuoteTotals;
       }
     });
+
+    const quoteDiffToggleBtn = document.getElementById("quoteDiffToggleBtn");
+    if (quoteDiffToggleBtn) quoteDiffToggleBtn.onclick = toggleQuoteDiff;
 
     let currentAcceptanceCommissionId = null;
 
@@ -6936,6 +7233,92 @@ const server = http.createServer(async (req, res) => {
       addOperationLog(commission, "quote_revise", reviseInput.operator || "", reviseInput.operatorId || "", "重新报价 V" + newQuote.version);
       await saveDb(db);
       return sendJson(res, 201, newQuote);
+    }
+
+    const quoteDiffMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/quotes\/([^/]+)\/diff\/([^/]+)$/);
+    if (quoteDiffMatch && req.method === "GET") {
+      const commission = db.commissions.find(c => c.id === quoteDiffMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const quoteA = commission.quotes?.find(q => q.id === quoteDiffMatch[2]);
+      const quoteB = commission.quotes?.find(q => q.id === quoteDiffMatch[3]);
+      if (!quoteA || !quoteB) return sendJson(res, 404, { error: "quote_not_found" });
+
+      function itemKey(item) {
+        return (item.description || "").trim();
+      }
+
+      const aKeys = new Map(quoteA.items.map(i => [itemKey(i), i]));
+      const bKeys = new Map(quoteB.items.map(i => [itemKey(i), i]));
+      const addedItems = [];
+      const removedItems = [];
+      const modifiedItems = [];
+
+      for (const [key, bItem] of bKeys) {
+        if (!aKeys.has(key)) {
+          addedItems.push(bItem);
+        } else {
+          const aItem = aKeys.get(key);
+          if ((aItem.quantity || 0) !== (bItem.quantity || 0) ||
+              (aItem.unitPrice || 0) !== (bItem.unitPrice || 0) ||
+              (aItem.amount || 0) !== (bItem.amount || 0)) {
+            modifiedItems.push({ oldItem: aItem, newItem: bItem });
+          }
+        }
+      }
+      for (const [key, aItem] of aKeys) {
+        if (!bKeys.has(key)) {
+          removedItems.push(aItem);
+        }
+      }
+
+      const aItemsTotal = quoteA.items.reduce((s, i) => s + (i.amount || 0), 0);
+      const bItemsTotal = quoteB.items.reduce((s, i) => s + (i.amount || 0), 0);
+
+      const diff = {
+        baseVersion: quoteA.version,
+        targetVersion: quoteB.version,
+        baseQuoteId: quoteA.id,
+        targetQuoteId: quoteB.id,
+        amount: {
+          itemsTotal: {
+            oldValue: aItemsTotal,
+            newValue: bItemsTotal,
+            difference: bItemsTotal - aItemsTotal
+          },
+          laborCost: {
+            oldValue: quoteA.laborCost || 0,
+            newValue: quoteB.laborCost || 0,
+            difference: (quoteB.laborCost || 0) - (quoteA.laborCost || 0)
+          },
+          materialCost: {
+            oldValue: quoteA.materialCost || 0,
+            newValue: quoteB.materialCost || 0,
+            difference: (quoteB.materialCost || 0) - (quoteA.materialCost || 0)
+          },
+          totalAmount: {
+            oldValue: quoteA.totalAmount || 0,
+            newValue: quoteB.totalAmount || 0,
+            difference: (quoteB.totalAmount || 0) - (quoteA.totalAmount || 0)
+          },
+          estimatedDays: {
+            oldValue: quoteA.estimatedDays || 0,
+            newValue: quoteB.estimatedDays || 0,
+            difference: (quoteB.estimatedDays || 0) - (quoteA.estimatedDays || 0)
+          }
+        },
+        items: {
+          added: addedItems,
+          removed: removedItems,
+          modified: modifiedItems
+        },
+        remark: {
+          oldValue: quoteA.remark || "",
+          newValue: quoteB.remark || "",
+          changed: (quoteA.remark || "") !== (quoteB.remark || "")
+        }
+      };
+
+      return sendJson(res, 200, diff);
     }
 
     sendJson(res, 404, { error: "not_found" });
