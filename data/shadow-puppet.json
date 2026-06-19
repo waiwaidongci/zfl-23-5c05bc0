@@ -1947,6 +1947,54 @@
   "_stockMigratedV2": "2026-06-19T02:30:02.881Z",
   "deniedOperations": [
     {
+      "id": "DENY-1781871361547-ktdu",
+      "operatorId": "OP-1",
+      "operator": "张修复师",
+      "permission": "commission_edit",
+      "permissionLabel": "委托编辑",
+      "operation": "创建委托",
+      "reason": "操作者不存在或已被删除，请重新选择当前操作者",
+      "targetType": "commission",
+      "targetId": "new_commission",
+      "at": "2026-06-19T12:16:01.547Z"
+    },
+    {
+      "id": "DENY-1781871361539-1x0a",
+      "operatorId": "OP-1",
+      "operator": "张修复师",
+      "permission": "commission_edit",
+      "permissionLabel": "委托编辑",
+      "operation": "创建委托",
+      "reason": "操作者不存在或已被删除，请重新选择当前操作者",
+      "targetType": "commission",
+      "targetId": "new_commission",
+      "at": "2026-06-19T12:16:01.539Z"
+    },
+    {
+      "id": "DENY-1781871361533-ahyb",
+      "operatorId": "OP-1",
+      "operator": "张修复师",
+      "permission": "commission_edit",
+      "permissionLabel": "委托编辑",
+      "operation": "创建委托",
+      "reason": "操作者不存在或已被删除，请重新选择当前操作者",
+      "targetType": "commission",
+      "targetId": "new_commission",
+      "at": "2026-06-19T12:16:01.533Z"
+    },
+    {
+      "id": "DENY-1781871361523-0j6j",
+      "operatorId": "OP-TEST",
+      "operator": "测试员",
+      "permission": "commission_edit",
+      "permissionLabel": "委托编辑",
+      "operation": "创建委托",
+      "reason": "操作者不存在或已被删除，请重新选择当前操作者",
+      "targetType": "commission",
+      "targetId": "new_commission",
+      "at": "2026-06-19T12:16:01.523Z"
+    },
+    {
       "id": "DENY-1781862469124-gp63",
       "operatorId": "MB-003",
       "operator": "李学徒",

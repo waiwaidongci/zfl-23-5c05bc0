@@ -6,8 +6,13 @@ import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, "data", "shadow-puppet.json");
+const dataDir = join(__dirname, "data");
 const uploadsDir = join(__dirname, "uploads");
+
+function getDbPath() {
+  const dbFileName = process.env.DB_FILE || "shadow-puppet.json";
+  return join(dataDir, dbFileName);
+}
 const port = Number(process.env.PORT || 3023);
 const defaultSteps = ["接收", "清洁", "补片", "补色", "交付"];
 const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
@@ -705,6 +710,7 @@ const seed = {
 };
 
 async function loadDb() {
+  const dbPath = getDbPath();
   if (!existsSync(dbPath)) {
     await mkdir(dirname(dbPath), { recursive: true });
     await writeFile(dbPath, JSON.stringify(seed, null, 2));
@@ -953,9 +959,13 @@ async function loadDb() {
   return db;
 }
 
-async function saveDb(db) { await writeFile(dbPath, JSON.stringify(db, null, 2)); }
+async function saveDb(db) {
+  const dbPath = getDbPath();
+  await writeFile(dbPath, JSON.stringify(db, null, 2));
+}
 
 async function saveDbAtomic(db) {
+  const dbPath = getDbPath();
   const tempPath = dbPath + ".tmp";
   await writeFile(tempPath, JSON.stringify(db, null, 2));
   await rename(tempPath, dbPath);
@@ -11052,4 +11062,28 @@ async function startServer() {
   await ensureUploadsDir();
   server.listen(port, () => console.log(`Shadow puppet restoration app listening on http://localhost:${port}`));
 }
-startServer();
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startServer();
+}
+
+export {
+  getMaterialAvailable,
+  reserveCommissionMaterials,
+  releaseCommissionMaterials,
+  adjustCommissionMaterials,
+  consumeCommissionMaterialsAtStep,
+  undoCommissionMaterialsConsume,
+  createStockLedgerEntry,
+  addStockLedger,
+  ensureStockLedger,
+  STOCK_LEDGER_TYPES,
+  STOCK_LEDGER_LABELS,
+  DEFAULT_CONSUME_STEP_NAME,
+  defaultSteps,
+  loadDb,
+  saveDb,
+  createFieldSnapshot,
+  server,
+  startServer
+};
