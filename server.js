@@ -871,6 +871,10 @@ async function loadDb() {
       c.templateName = "";
       migrated = true;
     }
+    if (!Array.isArray(c.archives)) {
+      c.archives = [];
+      migrated = true;
+    }
     if (c.status === undefined) {
       c.status = c.steps[0] || defaultSteps[0];
       migrated = true;
@@ -968,6 +972,318 @@ async function body(req) {
 function sendJson(res, status, data) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(data, null, 2));
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    return `${y}-${m}-${day} ${hh}:${mm}`;
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+function generateArchiveHtml(archive) {
+  const snap = archive.snapshot;
+  const comm = snap.commission;
+  const client = snap.client;
+  const acceptance = comm.acceptance;
+  const allImages = [];
+  const imgTypes = [
+    { key: "before", label: "修复前" },
+    { key: "during", label: "修复中" },
+    { key: "after", label: "修复后" }
+  ];
+  for (const type of imgTypes) {
+    const imgs = comm.images[type.key] || [];
+    for (const img of imgs) {
+      allImages.push({ ...img, stage: type.key, stageLabel: type.label });
+    }
+  }
+  const quoteCount = (comm.quotes || []).length;
+  const materialCount = (comm.materials || []).length;
+
+  let quotesHtml = "";
+  for (const q of comm.quotes || []) {
+    const isCurrent = q.id === comm.currentQuoteId;
+    const statusLabel = q.status === "confirmed" ? "已确认" : q.status === "superseded" ? "已替代" : "草稿";
+    let itemsHtml = "";
+    for (const item of q.items || []) {
+      itemsHtml += `<tr><td>${escapeHtml(item.description)}</td><td style="text-align:right;">${item.quantity}</td><td style="text-align:right;">¥${item.unitPrice?.toFixed(2) || "0.00"}</td><td style="text-align:right;">¥${item.amount?.toFixed(2) || "0.00"}</td></tr>`;
+    }
+    quotesHtml += `
+      <div class="archive-quote-card">
+        <div class="archive-quote-header">
+          <span class="archive-quote-title">报价 V${q.version}${isCurrent ? ' <span class="archive-quote-current">当前版本</span>' : ''}</span>
+          <span class="archive-quote-status">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="archive-quote-meta">
+          <span>创建时间：${formatDate(q.createdAt)}</span>
+          ${q.confirmedAt ? `<span>确认时间：${formatDate(q.confirmedAt)}</span>` : ''}
+          <span>预计工期：${q.estimatedDays || 0} 天</span>
+        </div>
+        <table class="archive-table">
+          <thead><tr><th>项目</th><th style="text-align:right;">数量</th><th style="text-align:right;">单价</th><th style="text-align:right;">金额</th></tr></thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+        <div class="archive-quote-total">
+          <div><span>人工费</span><span>¥${q.laborCost?.toFixed(2) || "0.00"}</span></div>
+          <div><span>材料费</span><span>¥${q.materialCost?.toFixed(2) || "0.00"}</span></div>
+          <div class="archive-total-row"><span>总计</span><span>¥${q.totalAmount?.toFixed(2) || "0.00"}</span></div>
+        </div>
+        ${q.remark ? `<div class="archive-quote-remark">备注：${escapeHtml(q.remark)}</div>` : ''}
+      </div>`;
+  }
+
+  let materialsHtml = "";
+  for (const m of comm.materials || []) {
+    materialsHtml += `
+      <div class="archive-material-item">
+        <div class="archive-material-name">${escapeHtml(m.name || m.materialId)}</div>
+        <div class="archive-material-meta">
+          <span>批次：${escapeHtml(m.batch || "—")}</span>
+          <span>数量：${m.quantity || 0}</span>
+          ${m.consumedQty ? `<span>已消耗：${m.consumedQty}</span>` : ''}
+          ${m.consumedStep ? `<span>消耗步骤：${escapeHtml(m.consumedStep)}</span>` : ''}
+        </div>
+      </div>`;
+  }
+
+  let timelineHtml = "";
+  const records = comm.records || [];
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    const isLast = i === records.length - 1;
+    timelineHtml += `
+      <div class="archive-timeline-item ${isLast ? 'last' : ''}">
+        <div class="archive-timeline-dot"></div>
+        <div class="archive-timeline-content">
+          <div class="archive-timeline-step">${escapeHtml(r.step || "")}</div>
+          <div class="archive-timeline-time">${formatDate(r.at)}</div>
+          ${r.note ? `<div class="archive-timeline-note">${escapeHtml(r.note)}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  let imagesHtml = "";
+  for (const type of imgTypes) {
+    const imgs = comm.images[type.key] || [];
+    if (imgs.length === 0) continue;
+    let imgCards = "";
+    for (const img of imgs) {
+      imgCards += `
+        <div class="archive-image-card">
+          <img src="${escapeHtml(img.filename)}" alt="${escapeHtml(img.caption || img.originalName || "")}">
+          <div class="archive-image-caption">${escapeHtml(img.caption || img.originalName || "")}</div>
+        </div>`;
+    }
+    imagesHtml += `
+      <div class="archive-image-section">
+        <h4>${type.label}（${imgs.length}张）</h4>
+        <div class="archive-image-grid">${imgCards}</div>
+      </div>`;
+  }
+
+  const html = `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(comm.roleName)} - 修复交付归档包</title>
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --panel: #fff;
+      --ink: #29231e;
+      --muted: #76695f;
+      --line: #ddcfc0;
+      --accent: #7d3f2e;
+      --green: #47705b;
+      --green-soft: #e7f1ea;
+      --orange: #c4702c;
+      --orange-soft: #f7e4d6;
+      --red: #b4372f;
+      --red-soft: #f8dddd;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14px; line-height: 1.6; }
+    .archive-container { max-width: 960px; margin: 0 auto; padding: 40px 24px 60px; }
+    .archive-header { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 28px; margin-bottom: 20px; }
+    .archive-title { font-size: 24px; font-weight: 700; color: var(--accent); margin: 0 0 8px; }
+    .archive-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .archive-badge { display: inline-block; padding: 4px 12px; background: var(--green-soft); color: var(--green); border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .archive-section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+    .archive-section h3 { margin: 0 0 16px; font-size: 18px; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 8px; }
+    .archive-section h4 { margin: 16px 0 12px; font-size: 15px; color: var(--ink); }
+    .archive-info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+    .archive-info-row { display: flex; gap: 8px; }
+    .archive-info-label { color: var(--muted); min-width: 80px; flex-shrink: 0; }
+    .archive-info-value { font-weight: 500; }
+    .archive-timeline { position: relative; padding-left: 28px; }
+    .archive-timeline::before { content: ""; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+    .archive-timeline-item { position: relative; margin-bottom: 18px; }
+    .archive-timeline-item.last { margin-bottom: 0; }
+    .archive-timeline-dot { position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid var(--panel); }
+    .archive-timeline-step { font-weight: 600; font-size: 15px; }
+    .archive-timeline-time { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .archive-timeline-note { margin-top: 6px; color: var(--ink); font-size: 13px; }
+    .archive-quote-card { border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+    .archive-quote-card:last-child { margin-bottom: 0; }
+    .archive-quote-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .archive-quote-title { font-weight: 600; font-size: 15px; }
+    .archive-quote-current { display: inline-block; padding: 2px 8px; background: var(--green-soft); color: var(--green); border-radius: 4px; font-size: 11px; font-weight: 500; margin-left: 6px; }
+    .archive-quote-status { color: var(--muted); font-size: 12px; }
+    .archive-quote-meta { display: flex; gap: 16px; color: var(--muted); font-size: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .archive-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .archive-table th, .archive-table td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+    .archive-table th { background: var(--bg); font-weight: 600; }
+    .archive-quote-total { margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--line); }
+    .archive-quote-total > div { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .archive-quote-total > div:last-child { margin-bottom: 0; }
+    .archive-total-row { font-weight: 700; font-size: 16px; color: var(--accent); padding-top: 6px; border-top: 1px dashed var(--line); margin-top: 6px; }
+    .archive-quote-remark { margin-top: 12px; padding: 10px; background: var(--bg); border-radius: 6px; font-size: 13px; color: var(--muted); }
+    .archive-material-item { padding: 12px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px; }
+    .archive-material-item:last-child { margin-bottom: 0; }
+    .archive-material-name { font-weight: 600; margin-bottom: 4px; }
+    .archive-material-meta { display: flex; gap: 16px; color: var(--muted); font-size: 12px; flex-wrap: wrap; }
+    .archive-image-section { margin-bottom: 20px; }
+    .archive-image-section:last-child { margin-bottom: 0; }
+    .archive-image-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .archive-image-card { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--bg); }
+    .archive-image-card img { width: 100%; height: 160px; object-fit: cover; display: block; }
+    .archive-image-caption { padding: 8px; font-size: 12px; color: var(--muted); text-align: center; background: var(--panel); }
+    .archive-acceptance-box { background: var(--green-soft); border: 1px solid var(--green); border-radius: 8px; padding: 16px; }
+    .archive-acceptance-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .archive-acceptance-row:last-child { margin-bottom: 0; }
+    .archive-acceptance-label { color: var(--muted); min-width: 100px; flex-shrink: 0; }
+    .archive-acceptance-value { font-weight: 500; }
+    .archive-acceptance-result { font-size: 18px; font-weight: 700; color: var(--green); }
+    .archive-footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--line); }
+    @media print {
+      body { background: #fff; }
+      .archive-container { padding: 0; }
+      .archive-section, .archive-header { break-inside: avoid; page-break-inside: avoid; }
+    }
+    @media (max-width: 640px) {
+      .archive-info-grid { grid-template-columns: 1fr; }
+      .archive-image-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="archive-container">
+    <div class="archive-header">
+      <div class="archive-badge">✓ 修复交付归档包</div>
+      <h1 class="archive-title">${escapeHtml(comm.roleName)}</h1>
+      <div class="archive-subtitle">
+        委托编号：${escapeHtml(comm.id)} ｜ 归档版本：V${archive.version} ｜ 生成时间：${formatDate(archive.snapshotAt)}
+      </div>
+    </div>
+
+    <div class="archive-section">
+      <h3>一、基础信息</h3>
+      <div class="archive-info-grid">
+        <div class="archive-info-row"><span class="archive-info-label">角色名称</span><span class="archive-info-value">${escapeHtml(comm.roleName)}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">年代</span><span class="archive-info-value">${escapeHtml(comm.era)}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">客户</span><span class="archive-info-value">${escapeHtml(client?.name || comm.client || "—")}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">负责人</span><span class="archive-info-value">${escapeHtml(comm.owner)}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">破损部位</span><span class="archive-info-value">${escapeHtml(comm.damage)}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">缺失零件</span><span class="archive-info-value">${escapeHtml(comm.missingParts || "—")}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">补色记录</span><span class="archive-info-value">${escapeHtml(comm.colorNotes || "—")}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">加固材料</span><span class="archive-info-value">${escapeHtml(comm.reinforcement || "—")}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">截止日期</span><span class="archive-info-value">${escapeHtml(comm.dueDate)}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">当前状态</span><span class="archive-info-value">${escapeHtml(comm.status)}</span></div>
+      </div>
+      ${client ? `
+      <h4>客户信息</h4>
+      <div class="archive-info-grid">
+        <div class="archive-info-row"><span class="archive-info-label">联系人</span><span class="archive-info-value">${escapeHtml(client.contact || "—")}</span></div>
+        <div class="archive-info-row"><span class="archive-info-label">电话</span><span class="archive-info-value">${escapeHtml(client.phone || "—")}</span></div>
+        <div class="archive-info-row" style="grid-column: span 2;"><span class="archive-info-label">地址</span><span class="archive-info-value">${escapeHtml(client.address || "—")}</span></div>
+        ${client.remark ? `<div class="archive-info-row" style="grid-column: span 2;"><span class="archive-info-label">备注</span><span class="archive-info-value">${escapeHtml(client.remark)}</span></div>` : ''}
+      </div>` : ''}
+    </div>
+
+    <div class="archive-section">
+      <h3>二、步骤时间线</h3>
+      <div class="archive-timeline">${timelineHtml}</div>
+    </div>
+
+    <div class="archive-section">
+      <h3>三、影像档案 <span style="font-size:13px;color:var(--muted);font-weight:400;">（${allImages.length}张）</span></h3>
+      ${imagesHtml || '<div style="color:var(--muted);text-align:center;padding:20px;">暂无影像资料</div>'}
+    </div>
+
+    <div class="archive-section">
+      <h3>四、报价版本 <span style="font-size:13px;color:var(--muted);font-weight:400;">（${quoteCount}个版本）</span></h3>
+      ${quoteCount > 0 ? quotesHtml : '<div style="color:var(--muted);text-align:center;padding:20px;">暂无报价记录</div>'}
+    </div>
+
+    <div class="archive-section">
+      <h3>五、材料消耗 <span style="font-size:13px;color:var(--muted);font-weight:400;">（${materialCount}种）</span></h3>
+      ${materialCount > 0 ? materialsHtml : '<div style="color:var(--muted);text-align:center;padding:20px;">暂无材料记录</div>'}
+    </div>
+
+    <div class="archive-section">
+      <h3>六、验收结果</h3>
+      ${acceptance ? `
+        <div class="archive-acceptance-box">
+          <div class="archive-acceptance-row">
+            <span class="archive-acceptance-label">验收结果</span>
+            <span class="archive-acceptance-value archive-acceptance-result">${escapeHtml(acceptance.result)}</span>
+          </div>
+          <div class="archive-acceptance-row">
+            <span class="archive-acceptance-label">交付日期</span>
+            <span class="archive-acceptance-value">${escapeHtml(acceptance.deliveryDate || "—")}</span>
+          </div>
+          <div class="archive-acceptance-row">
+            <span class="archive-acceptance-label">领取人</span>
+            <span class="archive-acceptance-value">${escapeHtml(acceptance.receiver || "—")}</span>
+          </div>
+          ${acceptance.remainingIssues ? `
+          <div class="archive-acceptance-row">
+            <span class="archive-acceptance-label">遗留问题</span>
+            <span class="archive-acceptance-value">${escapeHtml(acceptance.remainingIssues)}</span>
+          </div>` : ''}
+          <div class="archive-acceptance-row">
+            <span class="archive-acceptance-label">验收时间</span>
+            <span class="archive-acceptance-value">${formatDate(acceptance.acceptedAt)}</span>
+          </div>
+        </div>
+      ` : '<div style="color:var(--muted);text-align:center;padding:20px;">暂无验收记录</div>'}
+    </div>
+
+    ${acceptance?.maintenanceAdvice ? `
+    <div class="archive-section">
+      <h3>七、保养建议</h3>
+      <div style="background: var(--bg); border-radius: 8px; padding: 16px; line-height: 1.8; white-space: pre-wrap;">${escapeHtml(acceptance.maintenanceAdvice)}</div>
+    </div>` : ''}
+
+    <div class="archive-footer">
+      <p>本归档包由皮影修复小作坊系统自动生成 ｜ 归档编号：${escapeHtml(archive.id)}</p>
+      <p>生成人：${escapeHtml(archive.createdBy)} ｜ 生成时间：${formatDate(archive.snapshotAt)}</p>
+      <p>归档数据为生成时的快照，后续修改不影响本归档包内容</p>
+    </div>
+  </div>
+</body>
+</html>`;
+  return html;
 }
 
 const page = `<!doctype html>
@@ -1491,6 +1807,16 @@ const page = `<!doctype html>
     .detail-acceptance-box { background:var(--bg); border-radius:8px; padding:14px; }
     .detail-acceptance-row { display:grid; grid-template-columns:90px 1fr; gap:4px; margin:4px 0; font-size:13px; }
     .detail-acceptance-row .label { color:var(--muted); }
+
+    .archive-list { display:flex; flex-direction:column; gap:10px; }
+    .archive-item { background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+    .archive-item-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+    .archive-item-name { font-weight:700; font-size:14px; }
+    .archive-item-version { display:inline-block; padding:2px 8px; background:var(--green-soft); color:var(--green); border-radius:4px; font-size:11px; font-weight:600; }
+    .archive-item-meta { display:flex; gap:16px; color:var(--muted); font-size:12px; flex-wrap:wrap; }
+    .archive-item-actions { display:flex; gap:8px; margin-top:10px; }
+    .archive-empty { text-align:center; padding:30px; color:var(--muted); }
+    .archive-empty .icon { font-size:36px; margin-bottom:8px; }
 
     .detail-oplog-table { width:100%; border-collapse:collapse; }
     .detail-oplog-table th, .detail-oplog-table td { padding:8px 10px; border-bottom:1px solid var(--line); font-size:13px; text-align:left; }
@@ -2335,6 +2661,7 @@ const page = `<!doctype html>
         <div class="detail-nav-btn" data-detail-section="images">📷 影像档案</div>
         <div class="detail-nav-btn" data-detail-section="quotes">💰 报价</div>
         <div class="detail-nav-btn" data-detail-section="acceptance">✅ 交付验收</div>
+        <div class="detail-nav-btn" data-detail-section="archives">📦 归档包</div>
         <div class="detail-nav-btn" data-detail-section="oplogs">📜 操作历史</div>
         <div class="detail-nav-btn" data-detail-section="versions">🕐 版本追溯</div>
       </div>
@@ -2344,6 +2671,7 @@ const page = `<!doctype html>
         <div class="detail-section" id="detail-images"></div>
         <div class="detail-section" id="detail-quotes"></div>
         <div class="detail-section" id="detail-acceptance"></div>
+        <div class="detail-section" id="detail-archives"></div>
         <div class="detail-section" id="detail-oplogs"></div>
         <div class="detail-section" id="detail-versions"></div>
       </div>
@@ -4440,6 +4768,16 @@ const page = `<!doctype html>
     function formatDate(isoStr) {
       const d = new Date(isoStr);
       return d.toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
 
     function toLocalDateStr(date) {
@@ -6865,6 +7203,7 @@ const page = `<!doctype html>
       renderDetailImages(c);
       renderDetailQuotes(c);
       renderDetailAcceptance(c);
+      renderDetailArchives(c);
       renderDetailOpLogs(c);
       renderDetailVersions(c);
     }
@@ -7563,6 +7902,95 @@ const page = `<!doctype html>
       el.querySelector("[data-detail-open-acceptance]")?.addEventListener("click", function () {
         openAcceptanceModal(this.dataset.detailOpenAcceptance);
       });
+    }
+
+    function renderDetailArchives(c) {
+      const el = document.getElementById("detail-archives");
+      if (!el) return;
+      const archives = c.archives || [];
+      const cSteps = c.steps || defaultSteps;
+      const lastStep = cSteps[cSteps.length - 1];
+      const isAtDeliveryStep = c.status === lastStep;
+      const canCreate = c.acceptance && c.acceptance.result;
+
+      let html = '<div class="detail-section-header"><h4>归档包</h4>';
+      if (canCreate) {
+        html += '<button class="small" data-create-archive="' + c.id + '">📦 生成归档包</button>';
+      }
+      html += '</div>';
+
+      if (!archives.length) {
+        if (canCreate) {
+          html += '<div style="padding:14px;background:var(--bg);border-radius:8px;text-align:center;">' +
+            '<div style="font-size:14px;margin-bottom:8px;">验收已完成，可生成归档包</div>' +
+            '<button class="small" data-create-archive="' + c.id + '">📦 立即生成</button></div>';
+        } else {
+          html += '<div class="empty-state"><div class="icon">📦</div><div>暂无归档包</div>' +
+            '<div class="meta" style="margin-top:8px;">完成交付验收后可生成归档包</div></div>';
+        }
+      } else {
+        html += '<div class="archive-list">';
+        for (const a of archives) {
+          html += '<div class="archive-item">' +
+            '<div class="archive-item-header">' +
+              '<span class="archive-item-name">' + escapeHtml(a.name || '归档包') + '</span>' +
+              '<span class="archive-item-version">V' + a.version + '</span>' +
+            '</div>' +
+            '<div class="archive-item-meta">' +
+              '<span>生成时间：' + formatDate(a.createdAt) + '</span>' +
+              '<span>生成人：' + escapeHtml(a.createdBy || '—') + '</span>' +
+            '</div>' +
+            '<div class="archive-item-actions">' +
+              '<button class="small" data-preview-archive="' + a.id + '">👁️ 预览</button>' +
+              '<button class="small secondary" data-export-archive="' + a.id + '">📤 导出</button>' +
+            '</div>' +
+          '</div>';
+        }
+        html += '</div>';
+      }
+      el.innerHTML = html;
+
+      el.querySelectorAll("[data-create-archive]").forEach(btn => {
+        btn.addEventListener("click", function () {
+          createArchive(btn.dataset.createArchive);
+        });
+      });
+      el.querySelectorAll("[data-preview-archive]").forEach(btn => {
+        btn.addEventListener("click", function () {
+          window.open("/archive/" + btn.dataset.previewArchive, "_blank");
+        });
+      });
+      el.querySelectorAll("[data-export-archive]").forEach(btn => {
+        btn.addEventListener("click", function () {
+          window.location.href = "/api/archives/" + btn.dataset.exportArchive + "/export";
+        });
+      });
+    }
+
+    async function createArchive(commissionId) {
+      const op = getOperator();
+      if (!op.operator) return alert("请先在页面顶部选择当前操作者");
+      if (!confirm("确定要生成归档包吗？归档包将保存当前的所有数据快照。")) return;
+      try {
+        const res = await api("/api/commissions/" + commissionId + "/archives", {
+          method: "POST",
+          body: JSON.stringify({
+            operator: op.operator,
+            operatorId: op.operatorId
+          })
+        });
+        await loadAll();
+        if (currentDetailCommissionId === commissionId) {
+          const commission = commissions.find(c => c.id === commissionId);
+          if (commission) {
+            renderDetailArchives(commission);
+            switchDetailSection("archives");
+          }
+        }
+        alert("归档包生成成功！");
+      } catch (e) {
+        alert("生成归档包失败：" + e.message);
+      }
     }
 
     function renderDetailOpLogs(c) {
@@ -9321,6 +9749,161 @@ const server = http.createServer(async (req, res) => {
       addOperationLog(commission, "acceptance_revoke", revokeInput.operator || "", revokeInput.operatorId || "", "撤销验收", db);
       await saveDb(db);
       return sendJson(res, 200, { ok: true });
+    }
+    const archivesMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/archives$/);
+    if (archivesMatch && req.method === "GET") {
+      const commission = db.commissions.find(item => item.id === archivesMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      const archiveList = (commission.archives || []).map(a => ({
+        id: a.id,
+        name: a.name,
+        createdAt: a.createdAt,
+        createdBy: a.createdBy,
+        version: a.version,
+        snapshotAt: a.snapshotAt
+      }));
+      return sendJson(res, 200, archiveList);
+    }
+    if (archivesMatch && req.method === "POST") {
+      const commission = db.commissions.find(item => item.id === archivesMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      if (!commission.acceptance) {
+        return sendJson(res, 400, { error: "no_acceptance", message: "请先完成交付验收后再生成归档包" });
+      }
+      const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "生成归档包",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: archivesMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+      const client = db.clients.find(cl => cl.id === commission.clientId);
+      const currentArchives = commission.archives || [];
+      const nextVersion = currentArchives.length + 1;
+      const snapshotAt = new Date().toISOString();
+      const archive = {
+        id: `ARC-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        version: nextVersion,
+        name: input.name || `归档包 V${nextVersion}`,
+        commissionId: commission.id,
+        createdAt: snapshotAt,
+        createdBy: input.operator,
+        createdById: input.operatorId,
+        creatorSnapshot: db ? getOperatorSnapshot(db, input.operatorId, input.operator) : null,
+        snapshotAt,
+        snapshot: {
+          commission: {
+            id: commission.id,
+            roleName: commission.roleName,
+            era: commission.era,
+            damage: commission.damage,
+            missingParts: commission.missingParts,
+            colorNotes: commission.colorNotes,
+            reinforcement: commission.reinforcement,
+            owner: commission.owner,
+            dueDate: commission.dueDate,
+            status: commission.status,
+            client: commission.client,
+            clientId: commission.clientId,
+            steps: commission.steps ? [...commission.steps] : [],
+            records: commission.records ? JSON.parse(JSON.stringify(commission.records)) : [],
+            materials: commission.materials ? JSON.parse(JSON.stringify(commission.materials)) : [],
+            quotes: commission.quotes ? JSON.parse(JSON.stringify(commission.quotes)) : [],
+            currentQuoteId: commission.currentQuoteId,
+            acceptance: commission.acceptance ? JSON.parse(JSON.stringify(commission.acceptance)) : null,
+            coverImage: commission.coverImage ? { ...commission.coverImage } : null,
+            templateId: commission.templateId,
+            templateName: commission.templateName,
+            images: commission.images ? JSON.parse(JSON.stringify(commission.images)) : { before: [], during: [], after: [] }
+          },
+          client: client ? {
+            id: client.id,
+            name: client.name,
+            contact: client.contact,
+            phone: client.phone,
+            address: client.address,
+            remark: client.remark
+          } : null,
+          generatedAt: snapshotAt,
+          generatedBy: input.operator,
+          generatedById: input.operatorId
+        }
+      };
+      if (!commission.archives) commission.archives = [];
+      commission.archives.unshift(archive);
+      addOperationLog(commission, "archive_create", input.operator, input.operatorId, `生成归档包 V${nextVersion}`, db);
+      await saveDb(db);
+      return sendJson(res, 201, archive);
+    }
+    const archiveDetailMatch = url.pathname.match(/^\/api\/archives\/([^/]+)$/);
+    if (archiveDetailMatch && req.method === "GET") {
+      let archive = null;
+      let commission = null;
+      for (const c of db.commissions) {
+        const found = (c.archives || []).find(a => a.id === archiveDetailMatch[1]);
+        if (found) {
+          archive = found;
+          commission = c;
+          break;
+        }
+      }
+      if (!archive) return sendJson(res, 404, { error: "archive_not_found" });
+      return sendJson(res, 200, {
+        ...archive,
+        commissionName: commission ? commission.roleName : ""
+      });
+    }
+    const archiveExportMatch = url.pathname.match(/^\/api\/archives\/([^/]+)\/export$/);
+    if (archiveExportMatch && req.method === "GET") {
+      let archive = null;
+      let commission = null;
+      for (const c of db.commissions) {
+        const found = (c.archives || []).find(a => a.id === archiveExportMatch[1]);
+        if (found) {
+          archive = found;
+          commission = c;
+          break;
+        }
+      }
+      if (!archive) return sendJson(res, 404, { error: "archive_not_found" });
+      const html = generateArchiveHtml(archive);
+      const filename = `${archive.snapshot.commission.roleName}-归档包V${archive.version}.html`;
+      const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `attachment; filename*=UTF-8''${safeFilename}`
+      });
+      return res.end(html);
+    }
+    const archivePreviewMatch = url.pathname.match(/^\/archive\/([^/]+)$/);
+    if (archivePreviewMatch && req.method === "GET") {
+      let archive = null;
+      let commission = null;
+      for (const c of db.commissions) {
+        const found = (c.archives || []).find(a => a.id === archivePreviewMatch[1]);
+        if (found) {
+          archive = found;
+          commission = c;
+          break;
+        }
+      }
+      if (!archive) {
+        res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+        return res.end("<h1>归档包不存在</h1>");
+      }
+      const html = generateArchiveHtml(archive);
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      return res.end(html);
     }
     if (req.method === "GET" && url.pathname === "/api/step-templates") return sendJson(res, 200, db.stepTemplates);
     if (req.method === "POST" && url.pathname === "/api/step-templates") {

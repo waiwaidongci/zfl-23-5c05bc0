@@ -17,7 +17,7 @@
       "client": "洛川民俗馆",
       "roleName": "武生靠旗",
       "era": "民国早期",
-      "damage": "测试权限修改-修复师",
+      "damage": "修改后测试验证快照",
       "missingParts": "右侧靠旗尖",
       "colorNotes": "朱砂区域褪色",
       "reinforcement": "薄驴皮补片",
@@ -36,7 +36,7 @@
       ],
       "owner": "许岚",
       "dueDate": "2026-06-28",
-      "status": "补片",
+      "status": "交付",
       "records": [
         {
           "at": "2026-06-10T10:00:00.000Z",
@@ -47,6 +47,16 @@
           "at": "2026-06-12T14:30:00.000Z",
           "step": "清洁",
           "note": "完成低湿清洁"
+        },
+        {
+          "at": "2026-06-19T10:23:37.582Z",
+          "step": "交付",
+          "note": "推进到交付步骤测试归档功能"
+        },
+        {
+          "at": "2026-06-19T10:24:00.702Z",
+          "step": "交付",
+          "note": "交付验收完成"
         }
       ],
       "steps": [
@@ -279,7 +289,14 @@
         }
       ],
       "currentQuoteId": "Q-1781862251436-uu07",
-      "acceptance": null,
+      "acceptance": {
+        "result": "验收通过",
+        "deliveryDate": "2026-06-19",
+        "receiver": "张馆长",
+        "remainingIssues": "建议下次修复时重点检查靠旗连接处",
+        "maintenanceAdvice": "1. 存放时注意防潮，建议使用专业防潮箱\n2. 避免阳光直射，防止颜料褪色\n3. 定期检查接缝处，如有开胶及时修复\n4. 清洁时使用软毛刷，勿用水洗",
+        "acceptedAt": "2026-06-19T10:24:00.702Z"
+      },
       "operationLogs": [
         {
           "id": "LOG-1781837133432-1jv3",
@@ -374,6 +391,62 @@
           },
           "detail": "修改报价 V4",
           "at": "2026-06-19T09:48:17.339Z"
+        },
+        {
+          "id": "LOG-1781864617582-mni1",
+          "type": "step_update",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T10:23:37.582Z"
+          },
+          "detail": "步骤更新：交付 - 推进到交付步骤测试归档功能",
+          "at": "2026-06-19T10:23:37.582Z"
+        },
+        {
+          "id": "LOG-1781864640702-dpmq",
+          "type": "acceptance",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T10:24:00.702Z"
+          },
+          "detail": "交付验收：验收通过",
+          "at": "2026-06-19T10:24:00.702Z"
+        },
+        {
+          "id": "LOG-1781864662679-eaz6",
+          "type": "archive_create",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T10:24:22.679Z"
+          },
+          "detail": "生成归档包 V1",
+          "at": "2026-06-19T10:24:22.679Z"
+        },
+        {
+          "id": "LOG-1781864802998-t0a5",
+          "type": "field_update",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T10:26:42.998Z"
+          },
+          "detail": "更新字段：破损部位",
+          "at": "2026-06-19T10:26:42.998Z"
         }
       ],
       "fieldSnapshots": [
@@ -446,6 +519,82 @@
           },
           "reason": "编辑：破损部位",
           "at": "2026-06-19T09:23:15.817Z"
+        },
+        {
+          "id": "SNAP-1781864617582-kngf",
+          "fields": {
+            "roleName": "武生靠旗",
+            "era": "民国早期",
+            "damage": "测试权限修改-修复师",
+            "missingParts": "右侧靠旗尖",
+            "colorNotes": "朱砂区域褪色",
+            "reinforcement": "薄驴皮补片",
+            "owner": "许岚",
+            "dueDate": "2026-06-28",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 2,
+                "reservedQty": 0,
+                "consumedQty": 2,
+                "consumedAt": "2026-06-19T02:30:02.881Z",
+                "consumedBy": "系统迁移",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T10:23:37.582Z"
+          },
+          "reason": "步骤更新：补片 → 交付",
+          "at": "2026-06-19T10:23:37.582Z"
+        },
+        {
+          "id": "SNAP-1781864802998-5cr1",
+          "fields": {
+            "roleName": "武生靠旗",
+            "era": "民国早期",
+            "damage": "修改后测试验证快照",
+            "missingParts": "右侧靠旗尖",
+            "colorNotes": "朱砂区域褪色",
+            "reinforcement": "薄驴皮补片",
+            "owner": "许岚",
+            "dueDate": "2026-06-28",
+            "status": "交付",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 2,
+                "reservedQty": 0,
+                "consumedQty": 2,
+                "consumedAt": "2026-06-19T02:30:02.881Z",
+                "consumedBy": "系统迁移",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T10:26:42.998Z"
+          },
+          "reason": "编辑：破损部位",
+          "at": "2026-06-19T10:26:42.998Z"
         }
       ],
       "consumeStepName": "补片",
@@ -454,7 +603,331 @@
       "coverImage": {
         "imageId": "IMG-1781677920239-wdbdvk",
         "stage": "after"
-      }
+      },
+      "archives": [
+        {
+          "id": "ARC-1781864662678-1r7m",
+          "version": 1,
+          "name": "首次交付归档",
+          "commissionId": "SP-001",
+          "createdAt": "2026-06-19T10:24:22.678Z",
+          "createdBy": "许岚",
+          "createdById": "MB-001",
+          "creatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T10:24:22.678Z"
+          },
+          "snapshotAt": "2026-06-19T10:24:22.678Z",
+          "snapshot": {
+            "commission": {
+              "id": "SP-001",
+              "roleName": "武生靠旗",
+              "era": "民国早期",
+              "damage": "测试权限修改-修复师",
+              "missingParts": "右侧靠旗尖",
+              "colorNotes": "朱砂区域褪色",
+              "reinforcement": "薄驴皮补片",
+              "owner": "许岚",
+              "dueDate": "2026-06-28",
+              "status": "交付",
+              "client": "洛川民俗馆",
+              "clientId": "CL-001",
+              "steps": [
+                "接收",
+                "清洁",
+                "补片",
+                "补色",
+                "交付"
+              ],
+              "records": [
+                {
+                  "at": "2026-06-10T10:00:00.000Z",
+                  "step": "接收",
+                  "note": "登记尺寸和破损"
+                },
+                {
+                  "at": "2026-06-12T14:30:00.000Z",
+                  "step": "清洁",
+                  "note": "完成低湿清洁"
+                },
+                {
+                  "at": "2026-06-19T10:23:37.582Z",
+                  "step": "交付",
+                  "note": "推进到交付步骤测试归档功能"
+                },
+                {
+                  "at": "2026-06-19T10:24:00.702Z",
+                  "step": "交付",
+                  "note": "交付验收完成"
+                }
+              ],
+              "materials": [
+                {
+                  "materialId": "MAT-1",
+                  "name": "薄驴皮补片",
+                  "batch": "LP-2026-A01",
+                  "quantity": 2,
+                  "reservedQty": 0,
+                  "consumedQty": 2,
+                  "consumedAt": "2026-06-19T02:30:02.881Z",
+                  "consumedBy": "系统迁移",
+                  "consumedStep": "补片"
+                }
+              ],
+              "quotes": [
+                {
+                  "id": "Q-1781837133432-qmv1",
+                  "version": 1,
+                  "status": "superseded",
+                  "items": [
+                    {
+                      "id": "QI-1781837133432-0",
+                      "description": "腿部开裂修复",
+                      "quantity": 1,
+                      "unitPrice": 350,
+                      "amount": 350
+                    },
+                    {
+                      "id": "QI-1781837133432-1",
+                      "description": "靠旗缺角补片",
+                      "quantity": 1,
+                      "unitPrice": 450,
+                      "amount": 450
+                    },
+                    {
+                      "id": "QI-1781837133432-2",
+                      "description": "右侧靠旗尖配补",
+                      "quantity": 1,
+                      "unitPrice": 300,
+                      "amount": 300
+                    },
+                    {
+                      "id": "QI-1781837133432-3",
+                      "description": "朱砂区域褪色补色",
+                      "quantity": 1,
+                      "unitPrice": 112,
+                      "amount": 112
+                    },
+                    {
+                      "id": "QI-1781837133432-4",
+                      "description": "薄驴皮补片加固",
+                      "quantity": 1,
+                      "unitPrice": 120,
+                      "amount": 120
+                    }
+                  ],
+                  "laborCost": 1866,
+                  "materialCost": 826,
+                  "totalAmount": 4024,
+                  "estimatedDays": 10,
+                  "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约10天",
+                  "createdAt": "2026-06-19T02:45:33.432Z",
+                  "confirmedAt": "2026-06-19T02:47:25.172Z",
+                  "createdBy": "",
+                  "previousVersionId": ""
+                },
+                {
+                  "id": "Q-1781837331857-eok4",
+                  "version": 2,
+                  "status": "draft",
+                  "items": [
+                    {
+                      "id": "QI-1781837331857-0-3j",
+                      "description": "腿部开裂修复",
+                      "quantity": 1,
+                      "unitPrice": 350,
+                      "amount": 350
+                    },
+                    {
+                      "id": "QI-1781837331857-1-lp",
+                      "description": "靠旗缺角补片",
+                      "quantity": 1,
+                      "unitPrice": 450,
+                      "amount": 450
+                    },
+                    {
+                      "id": "QI-1781837331857-2-o9",
+                      "description": "右侧靠旗尖配补",
+                      "quantity": 1,
+                      "unitPrice": 300,
+                      "amount": 300
+                    },
+                    {
+                      "id": "QI-1781837331857-3-9v",
+                      "description": "朱砂区域褪色补色",
+                      "quantity": 1,
+                      "unitPrice": 112,
+                      "amount": 112
+                    },
+                    {
+                      "id": "QI-1781837331857-4-q5",
+                      "description": "薄驴皮补片加固",
+                      "quantity": 1,
+                      "unitPrice": 120,
+                      "amount": 120
+                    }
+                  ],
+                  "laborCost": 1866,
+                  "materialCost": 826,
+                  "totalAmount": 4024,
+                  "estimatedDays": 10,
+                  "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约10天",
+                  "createdAt": "2026-06-19T02:48:51.857Z",
+                  "confirmedAt": null,
+                  "createdBy": "",
+                  "previousVersionId": "Q-1781837133432-qmv1"
+                },
+                {
+                  "id": "Q-1781862224627-crvc",
+                  "version": 3,
+                  "status": "superseded",
+                  "items": [
+                    {
+                      "id": "QI-1781862224627-0",
+                      "description": "测试项目1",
+                      "quantity": 1,
+                      "unitPrice": 100,
+                      "amount": 100
+                    },
+                    {
+                      "id": "QI-1781862224627-1",
+                      "description": "测试项目2",
+                      "quantity": 2,
+                      "unitPrice": 50,
+                      "amount": 100
+                    }
+                  ],
+                  "laborCost": 200,
+                  "materialCost": 100,
+                  "totalAmount": 500,
+                  "estimatedDays": 5,
+                  "remark": "测试报价版本快照",
+                  "createdAt": "2026-06-19T09:43:44.627Z",
+                  "confirmedAt": "2026-06-19T09:43:57.309Z",
+                  "createdBy": "",
+                  "createdBySnapshot": {
+                    "id": "MB-001",
+                    "name": "许岚",
+                    "role": "修复师",
+                    "snapshotAt": "2026-06-19T09:43:44.627Z"
+                  },
+                  "confirmedBySnapshot": {
+                    "id": "MB-001",
+                    "name": "许岚",
+                    "role": "修复师",
+                    "snapshotAt": "2026-06-19T09:43:57.309Z"
+                  },
+                  "previousVersionId": ""
+                },
+                {
+                  "id": "Q-1781862251436-uu07",
+                  "version": 4,
+                  "status": "draft",
+                  "items": [
+                    {
+                      "id": "QI-1781862497333-0",
+                      "description": "有权限编辑项目",
+                      "quantity": 1,
+                      "unitPrice": 500,
+                      "amount": 500
+                    }
+                  ],
+                  "laborCost": 200,
+                  "materialCost": 100,
+                  "totalAmount": 800,
+                  "estimatedDays": 7,
+                  "remark": "测试有权限编辑",
+                  "createdAt": "2026-06-19T09:44:11.436Z",
+                  "confirmedAt": null,
+                  "createdBy": "",
+                  "createdBySnapshot": {
+                    "id": "MB-001",
+                    "name": "许岚",
+                    "role": "修复师",
+                    "snapshotAt": "2026-06-19T09:44:11.436Z"
+                  },
+                  "confirmedBySnapshot": null,
+                  "previousVersionId": "Q-1781862224627-crvc",
+                  "editedBySnapshot": {
+                    "id": "MB-001",
+                    "name": "许岚",
+                    "role": "修复师",
+                    "snapshotAt": "2026-06-19T09:48:17.334Z"
+                  }
+                }
+              ],
+              "currentQuoteId": "Q-1781862251436-uu07",
+              "acceptance": {
+                "result": "验收通过",
+                "deliveryDate": "2026-06-19",
+                "receiver": "张馆长",
+                "remainingIssues": "建议下次修复时重点检查靠旗连接处",
+                "maintenanceAdvice": "1. 存放时注意防潮，建议使用专业防潮箱\n2. 避免阳光直射，防止颜料褪色\n3. 定期检查接缝处，如有开胶及时修复\n4. 清洁时使用软毛刷，勿用水洗",
+                "acceptedAt": "2026-06-19T10:24:00.702Z"
+              },
+              "coverImage": {
+                "imageId": "IMG-1781677920239-wdbdvk",
+                "stage": "after"
+              },
+              "templateId": "",
+              "templateName": "",
+              "images": {
+                "before": [
+                  {
+                    "id": "IMG-1781677917196-h1j4so",
+                    "filename": "/uploads/SP-001/before/105e0091-988b-468e-b049-8830b3bd99fd.jpg",
+                    "originalName": "puppet.jpg",
+                    "caption": "皮影整体外观",
+                    "uploadedAt": "2026-06-17T06:31:57.196Z",
+                    "size": 2708
+                  },
+                  {
+                    "id": "IMG-1781677918209-qey9fw",
+                    "filename": "/uploads/SP-001/before/53e344ee-0e73-4f6b-ad37-6e03d292d5be.jpg",
+                    "originalName": "puppet.jpg",
+                    "caption": "腿部破损细节",
+                    "uploadedAt": "2026-06-17T06:31:58.209Z",
+                    "size": 2723
+                  }
+                ],
+                "during": [
+                  {
+                    "id": "IMG-1781677919230-uzuuwj",
+                    "filename": "/uploads/SP-001/during/116ee263-e7af-4232-8321-e2cd1736b517.jpg",
+                    "originalName": "repairing.jpg",
+                    "caption": "正在进行补片修复",
+                    "uploadedAt": "2026-06-17T06:31:59.230Z",
+                    "size": 2468
+                  }
+                ],
+                "after": [
+                  {
+                    "id": "IMG-1781677920239-wdbdvk",
+                    "filename": "/uploads/SP-001/after/0523b7a7-acb1-4723-a1db-6324f57031f6.jpg",
+                    "originalName": "finished.jpg",
+                    "caption": "修复完成，焕然一新",
+                    "uploadedAt": "2026-06-17T06:32:00.239Z",
+                    "size": 2593
+                  }
+                ]
+              }
+            },
+            "client": {
+              "id": "CL-001",
+              "name": "洛川民俗馆",
+              "contact": "张馆长",
+              "phone": "0911-3821234",
+              "address": "陕西省延安市洛川县凤栖街道",
+              "remark": "长期合作客户，主要修复民国时期皮影"
+            },
+            "generatedAt": "2026-06-19T10:24:22.678Z",
+            "generatedBy": "许岚",
+            "generatedById": "MB-001"
+          }
+        }
+      ]
     },
     {
       "id": "SP-002",
@@ -592,7 +1065,8 @@
         }
       ],
       "consumeStepName": "补片",
-      "coverImage": null
+      "coverImage": null,
+      "archives": []
     },
     {
       "id": "SP-003",
@@ -717,7 +1191,8 @@
       "consumeStepName": "补片",
       "templateId": "",
       "templateName": "",
-      "coverImage": null
+      "coverImage": null,
+      "archives": []
     },
     {
       "id": "SP-004",
@@ -834,7 +1309,8 @@
         }
       ],
       "consumeStepName": "补片",
-      "coverImage": null
+      "coverImage": null,
+      "archives": []
     },
     {
       "id": "SP-005",
@@ -932,7 +1408,8 @@
       "consumeStepName": "补片",
       "templateId": "",
       "templateName": "",
-      "coverImage": null
+      "coverImage": null,
+      "archives": []
     },
     {
       "id": "SP-006",
@@ -1025,7 +1502,8 @@
       "consumeStepName": "补片",
       "templateId": "",
       "templateName": "",
-      "coverImage": null
+      "coverImage": null,
+      "archives": []
     },
     {
       "id": "SP-007",
@@ -1113,7 +1591,8 @@
       "consumeStepName": "补片",
       "templateId": "",
       "templateName": "",
-      "coverImage": null
+      "coverImage": null,
+      "archives": []
     }
   ],
   "materials": [
