@@ -46,6 +46,13 @@ const STOCK_LEDGER_LABELS = {
   undo_consume: "撤销消耗"
 };
 
+function toLocalDateStr(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + d;
+}
+
 function createFieldSnapshot(commission, operator, operatorId, reason) {
   const snapshot = {};
   for (const field of snapshotTrackedFields) {
@@ -1067,6 +1074,38 @@ const page = `<!doctype html>
     .owner-stats .overdue { color:#c0392b; font-weight:700; }
     .owner-stats .due-soon { color:#e67e22; font-weight:700; }
     .owner-stats .on-track { color:var(--green); font-weight:700; }
+    .workload-member { margin-bottom:18px; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .workload-member-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--bg); border-bottom:1px solid var(--line); }
+    .workload-member-header h4 { margin:0; font-size:14px; display:flex; align-items:center; gap:8px; }
+    .workload-member-badges { display:flex; gap:8px; font-size:11px; }
+    .workload-badge { padding:2px 8px; border-radius:10px; font-weight:700; }
+    .workload-badge.overload { background:#fde8e8; color:#c0392b; }
+    .workload-badge.idle { background:#e8f0fe; color:#2980b9; }
+    .workload-badge.overdue { background:#fef3e2; color:#e67e22; }
+    .workload-timeline { padding:12px 14px; }
+    .workload-days-grid { display:grid; grid-template-columns:repeat(14,1fr); gap:3px; margin-bottom:10px; }
+    .workload-day-cell { aspect-ratio:1; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; position:relative; cursor:default; }
+    .workload-day-cell.load-0 { background:var(--line); color:var(--muted); }
+    .workload-day-cell.load-1 { background:var(--green); }
+    .workload-day-cell.load-2 { background:#e67e22; }
+    .workload-day-cell.load-3-plus { background:#c0392b; }
+    .workload-day-labels { display:grid; grid-template-columns:repeat(14,1fr); gap:3px; margin-bottom:8px; }
+    .workload-day-label { text-align:center; font-size:9px; color:var(--muted); white-space:nowrap; overflow:hidden; }
+    .workload-commissions { display:flex; flex-direction:column; gap:6px; }
+    .workload-commission-row { display:grid; grid-template-columns:1fr 80px 80px 60px; gap:8px; padding:6px 8px; background:var(--bg); border-radius:4px; font-size:12px; align-items:center; }
+    .workload-commission-row .wc-name { font-weight:600; }
+    .workload-commission-row .wc-step { color:var(--accent); }
+    .workload-commission-row .wc-overdue { color:#c0392b; font-weight:700; }
+    .workload-hint { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:6px; font-size:12px; margin-top:8px; }
+    .workload-hint.hint-overload { background:#fde8e8; color:#c0392b; }
+    .workload-hint.hint-idle { background:#e8f0fe; color:#2980b9; }
+    .workload-hint.hint-ok { background:#e8f8e8; color:#27ae60; }
+    .workload-summary-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+    .workload-summary-stats .stat strong { display:block; font-size:20px; }
+    .workload-summary-stats .stat span { font-size:12px; color:var(--muted); }
+    .workload-summary-stats .stat.overload strong { color:#c0392b; }
+    .workload-summary-stats .stat.idle strong { color:#2980b9; }
+    .workload-summary-stats .stat.ok strong { color:#27ae60; }
     .schedule-view-toggle { display:flex; gap:4px; }
     .schedule-view-toggle button { padding:6px 12px; font-size:12px; background:var(--bg); border:1px solid var(--line); border-radius:6px; cursor:pointer; }
     .schedule-view-toggle button.active { background:var(--accent); color:#fff; border-color:var(--accent); }
@@ -1432,7 +1471,7 @@ const page = `<!doctype html>
 
     .quote-diff-empty { text-align:center; padding:20px; color:var(--muted); font-size:13px; background:#fff; border-radius:8px; }
 
-    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} .quote-diff-amount-grid{grid-template-columns:1fr 1fr;} .quote-diff-remark-compare{grid-template-columns:1fr;} .quote-diff-item-row{grid-template-columns:1fr 50px 70px 70px;} }
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} .quote-diff-amount-grid{grid-template-columns:1fr 1fr;} .quote-diff-remark-compare{grid-template-columns:1fr;} .quote-diff-item-row{grid-template-columns:1fr 50px 70px 70px;} .workload-days-grid{grid-template-columns:repeat(7,1fr);} .workload-day-labels{grid-template-columns:repeat(7,1fr);} .workload-summary-stats{grid-template-columns:1fr;} .workload-commission-row{grid-template-columns:1fr 1fr; font-size:11px;} }
   </style>
 </head>
 <body>
@@ -1588,6 +1627,7 @@ const page = `<!doctype html>
       <div class="schedule-view-toggle">
         <button type="button" class="active" data-schedule-view="status">按状态</button>
         <button type="button" data-schedule-view="owner">按负责人</button>
+        <button type="button" data-schedule-view="workload">工作量</button>
       </div>
       <span class="filter-label" style="margin-left:10px;">负责人：</span>
       <select id="ownerFilter">
@@ -2315,9 +2355,12 @@ const page = `<!doctype html>
     });
 
     document.querySelectorAll("[data-schedule-view]").forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         scheduleView = btn.dataset.scheduleView;
         localStorage.setItem("scheduleView", scheduleView);
+        if (scheduleView === "workload" && !workloadData) {
+          await loadWorkload();
+        }
         renderSchedule();
       };
     });
@@ -2325,6 +2368,7 @@ const page = `<!doctype html>
     const refreshScheduleBtn = document.getElementById("refreshScheduleBtn");
     if (refreshScheduleBtn) {
       refreshScheduleBtn.onclick = async () => {
+        workloadData = null;
         await loadSchedule();
         await loadAll();
       };
@@ -3183,6 +3227,7 @@ const page = `<!doctype html>
             '<button type="button" data-schedule-save="' + item.id + '">保存更新</button>' +
             '<button type="button" class="secondary" data-schedule-cancel="' + item.id + '">取消</button>' +
           '</div>' +
+          '<div class="workload-hint" id="workload-hint-' + item.id + '" style="display:none;"></div>' +
         '</div>' +
       '</div>';
     }
@@ -3298,6 +3343,117 @@ const page = `<!doctype html>
       }).join("");
     }
 
+    let workloadData = null;
+
+    async function loadWorkload() {
+      try {
+        workloadData = await api("/api/workload");
+      } catch (e) {
+        console.error("加载工作量数据失败:", e);
+      }
+    }
+
+    function renderWorkloadSummary(workload) {
+      const members = workload.members || [];
+      let totalOverloadMembers = 0;
+      let totalIdleMembers = 0;
+      let totalOkMembers = 0;
+      for (const m of members) {
+        if (m.overloadedDays > 3) totalOverloadMembers++;
+        else if (m.idleDays > 10) totalIdleMembers++;
+        else totalOkMembers++;
+      }
+      return '<div class="workload-summary-stats">' +
+        '<div class="stat overload"><strong>' + totalOverloadMembers + '</strong><span>超载成员</span></div>' +
+        '<div class="stat idle"><strong>' + totalIdleMembers + '</strong><span>空闲成员</span></div>' +
+        '<div class="stat ok"><strong>' + totalOkMembers + '</strong><span>负载正常</span></div>' +
+      '</div>';
+    }
+
+    function renderWorkloadView(workload) {
+      const members = workload.members || [];
+      if (!members.length) {
+        return '<div class="kanban-empty" style="padding:60px 20px;">暂无工作量数据</div>';
+      }
+
+      const rangeStart = new Date(workload.rangeStart);
+      const dayLabels = [];
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(rangeStart);
+        d.setDate(rangeStart.getDate() + i);
+        dayLabels.push((d.getMonth() + 1) + "/" + d.getDate());
+      }
+
+      const dayLabelsHtml = '<div class="workload-day-labels">' +
+        dayLabels.map(l => '<div class="workload-day-label">' + l + '</div>').join("") +
+      '</div>';
+
+      return members.sort((a, b) => {
+        if (a.overloadedDays !== b.overloadedDays) return b.overloadedDays - a.overloadedDays;
+        return a.idleDays - b.idleDays;
+      }).map(member => {
+        const daysGrid = [];
+        for (let i = 0; i < 14; i++) {
+          const d = new Date(rangeStart);
+          d.setDate(rangeStart.getDate() + i);
+          const dateKey = toLocalDateStr(d);
+          const dayData = member.days[dateKey];
+          const load = dayData ? dayData.load : 0;
+          let loadClass = "load-0";
+          if (load === 1) loadClass = "load-1";
+          else if (load === 2) loadClass = "load-2";
+          else if (load >= 3) loadClass = "load-3-plus";
+          const title = dateKey + " - " + (load > 0 ? load + " 项任务" : "空闲");
+          daysGrid.push('<div class="workload-day-cell ' + loadClass + '" title="' + title + '">' + (load || "") + '</div>');
+        }
+
+        const badges = [];
+        if (member.overloadedDays > 0) badges.push('<span class="workload-badge overload">超载 ' + member.overloadedDays + ' 天</span>');
+        if (member.idleDays > 0) badges.push('<span class="workload-badge idle">空闲 ' + member.idleDays + ' 天</span>');
+        if (member.overdueCount > 0) badges.push('<span class="workload-badge overdue">逾期 ' + member.overdueCount + ' 项</span>');
+
+        const commRows = member.commissions.map(c => {
+          const dueDate = new Date(c.dueDate);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          dueDate.setHours(0, 0, 0, 0);
+          const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+          const dueClass = c.isOverdue ? "wc-overdue" : "";
+          const dueText = c.isOverdue ? "逾期" + Math.abs(daysLeft) + "天" : "还剩" + daysLeft + "天";
+          return '<div class="workload-commission-row" data-detail="' + c.id + '" style="cursor:pointer;">' +
+            '<span class="wc-name">' + c.roleName + '</span>' +
+            '<span class="wc-step">' + c.step + '</span>' +
+            '<span class="' + dueClass + '">' + dueText + '</span>' +
+            '<span style="color:var(--muted);">工期' + c.estimatedDays + '天</span>' +
+          '</div>';
+        }).join("");
+
+        let hint = "";
+        if (member.overloadedDays > 3) {
+          hint = '<div class="workload-hint hint-overload">⚠️ 该成员未来两周严重超载，建议重新分配部分委托</div>';
+        } else if (member.overloadedDays > 0) {
+          hint = '<div class="workload-hint hint-overload">⚠️ 该成员有 ' + member.overloadedDays + ' 天超载，注意合理安排</div>';
+        } else if (member.idleDays > 10) {
+          hint = '<div class="workload-hint hint-idle">📋 该成员未来两周大部分时间空闲，可分配更多委托</div>';
+        } else {
+          hint = '<div class="workload-hint hint-ok">✅ 负载正常</div>';
+        }
+
+        return '<div class="workload-member">' +
+          '<div class="workload-member-header">' +
+            '<h4>👤 ' + member.name + ' <span style="font-weight:400;color:var(--muted);font-size:12px;">(' + member.commissions.length + ' 项委托)</span></h4>' +
+            '<div class="workload-member-badges">' + badges.join("") + '</div>' +
+          '</div>' +
+          '<div class="workload-timeline">' +
+            dayLabelsHtml +
+            '<div class="workload-days-grid">' + daysGrid.join("") + '</div>' +
+            '<div class="workload-commissions">' + commRows + '</div>' +
+            hint +
+          '</div>' +
+        '</div>';
+      }).join("");
+    }
+
     function renderScheduleStats(data, originalData) {
       const stats = data.stats;
       const origStats = originalData ? originalData.stats : null;
@@ -3318,6 +3474,25 @@ const page = `<!doctype html>
 
       const statsEl = document.getElementById("scheduleStats");
       const viewEl = document.getElementById("scheduleView");
+
+      if (scheduleView === "workload") {
+        if (statsEl && workloadData) statsEl.innerHTML = renderWorkloadSummary(workloadData);
+        else if (statsEl) statsEl.innerHTML = "";
+        if (viewEl) {
+          if (workloadData) {
+            viewEl.innerHTML = renderWorkloadView(workloadData);
+            viewEl.querySelectorAll("[data-detail]").forEach(el => {
+              el.onclick = () => openDetailModal(el.dataset.detail);
+            });
+          } else {
+            viewEl.innerHTML = '<div class="kanban-empty" style="padding:60px 20px;">正在加载工作量数据...</div>';
+          }
+        }
+        document.querySelectorAll("[data-schedule-view]").forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.scheduleView === scheduleView);
+        });
+        return;
+      }
 
       renderScheduleFilterSelects();
       const filteredData = applyScheduleFilters(scheduleData, scheduleFilter);
@@ -3342,9 +3517,51 @@ const page = `<!doctype html>
     async function loadSchedule() {
       try {
         scheduleData = await api("/api/schedule");
+        if (scheduleView === "workload") await loadWorkload();
         renderSchedule();
       } catch (e) {
         console.error("加载排期数据失败:", e);
+      }
+    }
+
+    let workloadPreviewTimer = null;
+
+    async function previewWorkloadHint(commissionId, newOwner, newDueDate) {
+      const hintEl = document.getElementById("workload-hint-" + commissionId);
+      if (!hintEl) return;
+      if (!newOwner || !newDueDate) {
+        hintEl.style.display = "none";
+        return;
+      }
+      try {
+        const params = new URLSearchParams();
+        params.set("previewOwner", newOwner);
+        params.set("previewDueDate", newDueDate);
+        params.set("previewExcludeId", commissionId);
+        const data = await api("/api/workload?" + params.toString());
+        const targetMember = (data.members || []).find(m => m.name === newOwner);
+        if (!targetMember) {
+          hintEl.style.display = "none";
+          return;
+        }
+        let msg = "";
+        if (targetMember.overloadedDays > 3) {
+          msg = "⚠️ " + newOwner + " 调整后将严重超载（" + targetMember.overloadedDays + " 天超载），建议分配给其他成员";
+          hintEl.className = "workload-hint hint-overload";
+        } else if (targetMember.overloadedDays > 0) {
+          msg = "⚠️ " + newOwner + " 调整后有 " + targetMember.overloadedDays + " 天超载";
+          hintEl.className = "workload-hint hint-overload";
+        } else if (targetMember.overdueCount > 0) {
+          msg = "⚠️ " + newOwner + " 已有 " + targetMember.overdueCount + " 项逾期委托";
+          hintEl.className = "workload-hint hint-overload";
+        } else {
+          msg = "✅ " + newOwner + " 负载正常（" + targetMember.commissions.length + " 项委托，" + targetMember.idleDays + " 天空闲）";
+          hintEl.className = "workload-hint hint-ok";
+        }
+        hintEl.textContent = msg;
+        hintEl.style.display = "flex";
+      } catch (e) {
+        hintEl.style.display = "none";
       }
     }
 
@@ -3388,6 +3605,7 @@ const page = `<!doctype html>
               method:'PUT', 
               body: JSON.stringify({ status: step, note: note || "步骤更新", owner, dueDate, operator: op.operator, operatorId: op.operatorId }) 
             });
+            workloadData = null;
             await Promise.all([loadSchedule(), loadAll()]);
           } catch (e) {
             alert(e.message);
@@ -3403,6 +3621,29 @@ const page = `<!doctype html>
           localStorage.setItem("expandedScheduleCards", JSON.stringify(expandedScheduleCards));
           const card = document.querySelector('[data-schedule-id="' + id + '"]');
           if (card) card.classList.remove("expanded");
+        };
+      });
+
+      document.querySelectorAll("[data-schedule-owner], [data-schedule-duedate]").forEach(inp => {
+        inp.oninput = () => {
+          clearTimeout(workloadPreviewTimer);
+          workloadPreviewTimer = setTimeout(() => {
+            const id = (inp.dataset.scheduleOwner || inp.dataset.scheduleDuedate);
+            const ownerInp = document.querySelector('[data-schedule-owner="' + id + '"]');
+            const dueInp = document.querySelector('[data-schedule-duedate="' + id + '"]');
+            if (ownerInp && dueInp) {
+              previewWorkloadHint(id, ownerInp.value.trim(), dueInp.value);
+            }
+          }, 500);
+        };
+        inp.onchange = () => {
+          clearTimeout(workloadPreviewTimer);
+          const id = (inp.dataset.scheduleOwner || inp.dataset.scheduleDuedate);
+          const ownerInp = document.querySelector('[data-schedule-owner="' + id + '"]');
+          const dueInp = document.querySelector('[data-schedule-duedate="' + id + '"]');
+          if (ownerInp && dueInp) {
+            previewWorkloadHint(id, ownerInp.value.trim(), dueInp.value);
+          }
         };
       });
     }
@@ -3876,6 +4117,13 @@ const page = `<!doctype html>
     function formatDate(isoStr) {
       const d = new Date(isoStr);
       return d.toLocaleDateString("zh-CN", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+
+    function toLocalDateStr(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + d;
     }
 
     function formatFileSize(bytes) {
@@ -8494,6 +8742,130 @@ const server = http.createServer(async (req, res) => {
       }
 
       return sendJson(res, 200, grouped);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/workload") {
+      const previewOwner = url.searchParams.get("previewOwner") || "";
+      const previewDueDate = url.searchParams.get("previewDueDate") || "";
+      const previewExcludeId = url.searchParams.get("previewExcludeId") || "";
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const rangeEnd = new Date(today);
+      rangeEnd.setDate(today.getDate() + 14);
+
+      const DAILY_CAPACITY = 1;
+      const members = {};
+
+      for (const c of db.commissions) {
+        if (!c.dueDate || c.acceptance !== null) continue;
+
+        let effectiveOwner = c.owner;
+        let effectiveDueDate = c.dueDate;
+
+        if (previewExcludeId && c.id === previewExcludeId) {
+          if (previewOwner) effectiveOwner = previewOwner;
+          if (previewDueDate) effectiveDueDate = previewDueDate;
+        }
+
+        if (!effectiveOwner) continue;
+
+        const steps = c.steps && c.steps.length ? c.steps : defaultSteps;
+        const currentIdx = steps.indexOf(c.status);
+        if (currentIdx === -1) continue;
+        const isLastStep = currentIdx === steps.length - 1;
+        if (isLastStep) continue;
+
+        const remainingSteps = steps.length - currentIdx;
+        const currentQuote = c.currentQuoteId && Array.isArray(c.quotes)
+          ? c.quotes.find(q => q.id === c.currentQuoteId)
+          : (Array.isArray(c.quotes) && c.quotes.length ? c.quotes[c.quotes.length - 1] : null);
+        const totalEstimatedDays = currentQuote && currentQuote.estimatedDays ? currentQuote.estimatedDays : remainingSteps * 3;
+
+        const completedDays = remainingSteps > 0 ? Math.round(totalEstimatedDays * (currentIdx / steps.length)) : 0;
+        const remainingDays = Math.max(1, totalEstimatedDays - completedDays);
+
+        const dueDate = new Date(effectiveDueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        const isOverdue = dueDate < today;
+
+        let startDate = new Date(today);
+        if (c.records && c.records.length) {
+          const lastRecordDate = new Date(c.records[c.records.length - 1].at);
+          lastRecordDate.setHours(0, 0, 0, 0);
+          if (lastRecordDate > today) startDate = new Date(lastRecordDate);
+        }
+
+        const owner = effectiveOwner;
+        if (!members[owner]) {
+          members[owner] = {
+            name: owner,
+            days: {},
+            commissions: [],
+            overloadedDays: 0,
+            idleDays: 0,
+            overdueCount: 0
+          };
+        }
+
+        if (isOverdue) members[owner].overdueCount++;
+
+        for (let d = 0; d < remainingDays; d++) {
+          const dateObj = new Date(startDate);
+          dateObj.setDate(startDate.getDate() + d);
+          if (dateObj > rangeEnd) break;
+          if (dateObj < today) continue;
+          const dateKey = toLocalDateStr(dateObj);
+          if (!members[owner].days[dateKey]) {
+            members[owner].days[dateKey] = { load: 0, commissions: [] };
+          }
+          members[owner].days[dateKey].load++;
+          members[owner].days[dateKey].commissions.push({
+            id: c.id,
+            roleName: c.roleName,
+            step: c.status,
+            dueDate: effectiveDueDate,
+            estimatedDays: totalEstimatedDays,
+            isOverdue
+          });
+        }
+
+        members[owner].commissions.push({
+          id: c.id,
+          roleName: c.roleName,
+          step: c.status,
+          steps,
+          currentIdx,
+          dueDate: effectiveDueDate,
+          estimatedDays: totalEstimatedDays,
+          remainingDays,
+          isOverdue,
+          client: c.client || ""
+        });
+      }
+
+      for (const member of Object.values(members)) {
+        for (let d = 0; d < 14; d++) {
+          const dateObj = new Date(today);
+          dateObj.setDate(today.getDate() + d);
+          const dateKey = toLocalDateStr(dateObj);
+          const dayData = member.days[dateKey];
+          if (!dayData || dayData.load === 0) {
+            member.idleDays++;
+          } else if (dayData.load > DAILY_CAPACITY) {
+            member.overloadedDays++;
+          }
+        }
+      }
+
+      const workload = {
+        rangeStart: toLocalDateStr(today),
+        rangeEnd: toLocalDateStr(rangeEnd),
+        dailyCapacity: DAILY_CAPACITY,
+        members: Object.values(members)
+      };
+
+      return sendJson(res, 200, workload);
     }
 
     const scheduleUpdateMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/schedule$/);
