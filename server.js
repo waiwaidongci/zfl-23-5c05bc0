@@ -2506,7 +2506,7 @@ const page = `<!doctype html>
     let currentOperatorRole = "";
 
     async function loadCurrentOperatorPermissions() {
-      const op = getCurrentOperator();
+      const op = getOperator();
       if (!op.operatorId) {
         currentOperatorPermissions = [];
         currentOperatorRole = "";
@@ -3149,7 +3149,7 @@ const page = `<!doctype html>
           if (newName === null) return;
           const validRoles = Object.keys(ROLE_PERMISSIONS);
           const roleHint = "角色可选：" + validRoles.join("、");
-          let newRole = prompt(roleHint + "\n角色：", m.role);
+          let newRole = prompt(roleHint + "\\n角色：", m.role);
           if (newRole === null) newRole = m.role;
           if (newRole && !validRoles.includes(newRole)) {
             alert("角色必须是以下之一：" + validRoles.join("、"));
@@ -9129,6 +9129,22 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "创建委托",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: "new_commission"
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       let clientId = input.clientId || ""; 
       let clientName = input.client || "";
       if (clientId) {
@@ -9996,6 +10012,22 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "排期更新",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: scheduleUpdateMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
       const changedFields = [];
       if (input.status !== undefined && input.status !== commission.status) {
