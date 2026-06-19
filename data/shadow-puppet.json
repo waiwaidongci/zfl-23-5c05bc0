@@ -151,7 +151,7 @@
         {
           "id": "Q-1781837331857-eok4",
           "version": 2,
-          "status": "confirmed",
+          "status": "draft",
           "items": [
             {
               "id": "QI-1781837331857-0-3j",
@@ -163,9 +163,9 @@
             {
               "id": "QI-1781837331857-1-lp",
               "description": "靠旗缺角补片",
-              "quantity": 2,
+              "quantity": 1,
               "unitPrice": 450,
-              "amount": 900
+              "amount": 450
             },
             {
               "id": "QI-1781837331857-2-o9",
@@ -178,8 +178,8 @@
               "id": "QI-1781837331857-3-9v",
               "description": "朱砂区域褪色补色",
               "quantity": 1,
-              "unitPrice": 150,
-              "amount": 150
+              "unitPrice": 112,
+              "amount": 112
             },
             {
               "id": "QI-1781837331857-4-q5",
@@ -187,23 +187,16 @@
               "quantity": 1,
               "unitPrice": 120,
               "amount": 120
-            },
-            {
-              "id": "QI-new-1",
-              "description": "整体清洁除尘保养",
-              "quantity": 1,
-              "unitPrice": 200,
-              "amount": 200
             }
           ],
-          "laborCost": 2066,
-          "materialCost": 976,
-          "totalAmount": 5062,
-          "estimatedDays": 12,
-          "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约12天，含清洁保养服务",
+          "laborCost": 1866,
+          "materialCost": 826,
+          "totalAmount": 4024,
+          "estimatedDays": 10,
+          "remark": "破损修复、缺失零件配补、补色重绘、加固处理、含人工及材料，工期约10天",
           "createdAt": "2026-06-19T02:48:51.857Z",
-          "confirmedAt": "2026-06-19T03:02:46.997Z",
-          "createdBy": "许岚",
+          "confirmedAt": null,
+          "createdBy": "",
           "previousVersionId": "Q-1781837133432-qmv1"
         }
       ],
@@ -231,24 +224,8 @@
           "type": "quote_revise",
           "operator": "许岚",
           "operatorId": "MB-001",
-          "detail": "重新报价 V2（从修复信息重新生成）",
+          "detail": "重新报价 V2",
           "at": "2026-06-19T02:48:51.858Z"
-        },
-        {
-          "id": "LOG-1781837981811-2ok6",
-          "type": "quote_edit",
-          "operator": "许岚",
-          "operatorId": "",
-          "detail": "修改报价 V2",
-          "at": "2026-06-19T02:59:41.811Z"
-        },
-        {
-          "id": "LOG-1781838167002-tj23",
-          "type": "quote_confirm",
-          "operator": "许岚",
-          "operatorId": "MB-001",
-          "detail": "确认报价 V2",
-          "at": "2026-06-19T03:02:47.002Z"
         }
       ],
       "fieldSnapshots": [

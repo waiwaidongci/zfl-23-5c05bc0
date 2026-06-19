@@ -4256,6 +4256,101 @@ const page = `<!doctype html>
     let quoteHistory = [];
     let quoteDiffData = null;
     let quoteDiffVisible = false;
+    let quoteDiffBase = null;
+    let quoteDiffIsLive = false;
+
+    function calculateLocalDiff(baseQuote, targetQuote) {
+      if (!baseQuote || !targetQuote) return null;
+
+      function itemKey(item) {
+        return (item.description || "").trim();
+      }
+
+      const aKeys = new Map((baseQuote.items || []).map(i => [itemKey(i), i]));
+      const bKeys = new Map((targetQuote.items || []).map(i => [itemKey(i), i]));
+      const addedItems = [];
+      const removedItems = [];
+      const modifiedItems = [];
+
+      for (const [key, bItem] of bKeys) {
+        if (!aKeys.has(key)) {
+          addedItems.push(bItem);
+        } else {
+          const aItem = aKeys.get(key);
+          if ((aItem.quantity || 0) !== (bItem.quantity || 0) ||
+              (aItem.unitPrice || 0) !== (bItem.unitPrice || 0) ||
+              (aItem.amount || 0) !== (bItem.amount || 0)) {
+            modifiedItems.push({ oldItem: aItem, newItem: bItem });
+          }
+        }
+      }
+      for (const [key, aItem] of aKeys) {
+        if (!bKeys.has(key)) {
+          removedItems.push(aItem);
+        }
+      }
+
+      const aItemsTotal = (baseQuote.items || []).reduce((s, i) => s + (i.amount || 0), 0);
+      const bItemsTotal = (targetQuote.items || []).reduce((s, i) => s + (i.amount || 0), 0);
+      const aLabor = baseQuote.laborCost || 0;
+      const bLabor = targetQuote.laborCost || 0;
+      const aMaterial = baseQuote.materialCost || 0;
+      const bMaterial = targetQuote.materialCost || 0;
+      const aTotal = baseQuote.totalAmount || 0;
+      const bTotal = targetQuote.totalAmount || 0;
+      const aDays = baseQuote.estimatedDays || 0;
+      const bDays = targetQuote.estimatedDays || 0;
+
+      return {
+        baseVersion: baseQuote.version || '?',
+        targetVersion: targetQuote.version ? (targetQuote.version + (quoteDiffIsLive ? ' (草稿)' : '')) : '草稿',
+        baseQuoteId: baseQuote.id || '',
+        targetQuoteId: targetQuote.id || '',
+        amount: {
+          itemsTotal: { oldValue: aItemsTotal, newValue: bItemsTotal, difference: bItemsTotal - aItemsTotal },
+          laborCost: { oldValue: aLabor, newValue: bLabor, difference: bLabor - aLabor },
+          materialCost: { oldValue: aMaterial, newValue: bMaterial, difference: bMaterial - aMaterial },
+          totalAmount: { oldValue: aTotal, newValue: bTotal, difference: bTotal - aTotal },
+          estimatedDays: { oldValue: aDays, newValue: bDays, difference: bDays - aDays }
+        },
+        items: { added: addedItems, removed: removedItems, modified: modifiedItems },
+        remark: {
+          oldValue: baseQuote.remark || '',
+          newValue: targetQuote.remark || '',
+          changed: (baseQuote.remark || '') !== (targetQuote.remark || '')
+        }
+      };
+    }
+
+    function refreshLiveDiff() {
+      if (!quoteDiffBase || !isQuoteEditing) return;
+
+      const laborInput = document.getElementById("quoteLaborCost");
+      const materialInput = document.getElementById("quoteMaterialCost");
+      const daysInput = document.getElementById("quoteEstimatedDays");
+      const remarkInput = document.getElementById("quoteRemark");
+
+      const itemsTotal = currentQuoteItems.reduce((s, i) => s + (i.amount || 0), 0);
+      const labor = Number(laborInput?.value) || 0;
+      const material = Number(materialInput?.value) || 0;
+      const days = Number(daysInput?.value) || 0;
+      const remark = remarkInput?.value || '';
+      const total = itemsTotal + labor + material;
+
+      const tempQuote = {
+        version: quoteDiffBase.version ? (quoteDiffBase.version + 1) : 1,
+        items: currentQuoteItems,
+        laborCost: labor,
+        materialCost: material,
+        totalAmount: total,
+        estimatedDays: days,
+        remark: remark
+      };
+
+      quoteDiffData = calculateLocalDiff(quoteDiffBase, tempQuote);
+      quoteDiffIsLive = true;
+      renderQuoteDiff();
+    }
 
     function formatDelta(value, isDays) {
       const num = Number(value) || 0;
@@ -4473,6 +4568,7 @@ const page = `<!doctype html>
           inp.oninput = () => {
             const idx = Number(inp.dataset.itemDesc);
             currentQuoteItems[idx].description = inp.value;
+            refreshLiveDiff();
           };
         });
         listEl.querySelectorAll("[data-item-qty]").forEach(inp => {
@@ -4483,6 +4579,7 @@ const page = `<!doctype html>
             currentQuoteItems[idx].amount = qty * (currentQuoteItems[idx].unitPrice || 0);
             renderQuoteItems();
             calculateQuoteTotals();
+            refreshLiveDiff();
           };
         });
         listEl.querySelectorAll("[data-item-price]").forEach(inp => {
@@ -4493,6 +4590,7 @@ const page = `<!doctype html>
             currentQuoteItems[idx].amount = price * (currentQuoteItems[idx].quantity || 0);
             renderQuoteItems();
             calculateQuoteTotals();
+            refreshLiveDiff();
           };
         });
         listEl.querySelectorAll("[data-item-del]").forEach(btn => {
@@ -4501,6 +4599,7 @@ const page = `<!doctype html>
             currentQuoteItems.splice(idx, 1);
             renderQuoteItems();
             calculateQuoteTotals();
+            refreshLiveDiff();
           };
         });
       }
@@ -4644,8 +4743,11 @@ const page = `<!doctype html>
         isQuoteEditing = false;
         quoteDiffData = null;
         quoteDiffVisible = false;
+        quoteDiffIsLive = false;
+        quoteDiffBase = null;
         renderQuoteDetail();
         if (currentQuoteData && currentQuoteData.previousVersionId) {
+          quoteDiffBase = quoteHistory.find(q => q.id === currentQuoteData.previousVersionId) || null;
           await loadQuoteDiff(currentQuoteData.previousVersionId, currentQuoteData.id);
         }
       } catch (e) {
@@ -5077,18 +5179,41 @@ const page = `<!doctype html>
 
     async function reviseQuote() {
       if (!currentQuoteData) return;
-      if (!confirm("将基于当前报价创建新版本，旧版本将保留。确定重新报价吗？")) return;
+
+      const mode = prompt(
+        "请选择重新报价方式：\n\n" +
+        "1 - 复制当前报价（保留原有项目和价格）\n" +
+        "2 - 基于修复信息重新生成（智能生成新草稿）\n\n" +
+        "请输入数字 1 或 2：",
+        "1"
+      );
+      if (mode === null) return;
 
       const op = getOperator();
       if (!op.operator) return alert("请先在页面顶部选择当前操作者");
+
       try {
+        let requestBody = { operator: op.operator, operatorId: op.operatorId };
+
+        if (mode.trim() === "2") {
+          const commission = commissions.find(c => c.id === currentQuoteCommissionId);
+          if (!commission) return alert("未找到委托信息");
+          const smart = generateSmartQuote(commission);
+          requestBody.items = smart.items;
+          requestBody.laborCost = smart.laborCost;
+          requestBody.materialCost = smart.materialCost;
+          requestBody.estimatedDays = smart.estimatedDays;
+          requestBody.remark = smart.remark;
+        }
+
         const newQuote = await api("/api/commissions/" + currentQuoteCommissionId + "/quotes/" + currentQuoteData.id + "/revise", {
           method: "POST",
-          body: JSON.stringify({ operator: op.operator, operatorId: op.operatorId })
+          body: JSON.stringify(requestBody)
         });
         currentQuoteData = newQuote;
         currentQuoteItems = JSON.parse(JSON.stringify(newQuote.items || []));
         isQuoteEditing = true;
+        quoteDiffIsLive = true;
         await loadQuoteData();
         await loadAll();
       } catch (e) {
@@ -5106,11 +5231,16 @@ const page = `<!doctype html>
       });
       renderQuoteItems();
       calculateQuoteTotals();
+      refreshLiveDiff();
     }
 
     function startEditQuote() {
       isQuoteEditing = true;
+      quoteDiffIsLive = true;
       renderQuoteDetail();
+      if (quoteDiffBase && quoteDiffVisible) {
+        refreshLiveDiff();
+      }
     }
 
     function cancelEditQuote() {
@@ -5118,7 +5248,11 @@ const page = `<!doctype html>
         currentQuoteItems = JSON.parse(JSON.stringify(currentQuoteData.items || []));
       }
       isQuoteEditing = false;
+      quoteDiffIsLive = false;
       renderQuoteDetail();
+      if (quoteDiffBase && currentQuoteData && currentQuoteData.previousVersionId) {
+        loadQuoteDiff(currentQuoteData.previousVersionId, currentQuoteData.id);
+      }
     }
 
     document.getElementById("quoteModalClose").onclick = closeQuoteModal;
@@ -5153,10 +5287,13 @@ const page = `<!doctype html>
     const createQuoteBtn = document.getElementById("createQuoteBtn");
     if (createQuoteBtn) createQuoteBtn.onclick = createFirstQuote;
 
-    ["quoteLaborCost", "quoteMaterialCost"].forEach(id => {
+    ["quoteLaborCost", "quoteMaterialCost", "quoteEstimatedDays", "quoteRemark"].forEach(id => {
       const el = document.getElementById(id);
       if (el) {
-        el.oninput = calculateQuoteTotals;
+        el.oninput = () => {
+          calculateQuoteTotals();
+          refreshLiveDiff();
+        };
       }
     });
 
@@ -7208,16 +7345,44 @@ const server = http.createServer(async (req, res) => {
         oldQuote.status = "superseded";
       }
 
+      const reviseInput = await body(req);
+      const reviseOpCheck = requireOperator(reviseInput);
+      if (reviseOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: reviseOpCheck.message });
+
+      let newItems, newLabor, newMaterial, newTotal, newDays, newRemark;
+      if (reviseInput.items && Array.isArray(reviseInput.items)) {
+        newItems = reviseInput.items.map((item, idx) => ({
+          id: `QI-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 4)}`,
+          description: item.description || "",
+          quantity: Number(item.quantity) || 0,
+          unitPrice: Number(item.unitPrice) || 0,
+          amount: Number(item.amount) || 0
+        }));
+        newLabor = Number(reviseInput.laborCost) || 0;
+        newMaterial = Number(reviseInput.materialCost) || 0;
+        newDays = Number(reviseInput.estimatedDays) || 0;
+        newRemark = reviseInput.remark || "";
+        const itemsSum = newItems.reduce((s, i) => s + i.amount, 0);
+        newTotal = itemsSum + newLabor + newMaterial;
+      } else {
+        newItems = oldQuote.items.map(item => ({ ...item, id: `QI-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` }));
+        newLabor = oldQuote.laborCost;
+        newMaterial = oldQuote.materialCost;
+        newTotal = oldQuote.totalAmount;
+        newDays = oldQuote.estimatedDays;
+        newRemark = oldQuote.remark;
+      }
+
       const newQuote = {
         id: `Q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         version: (commission.quotes?.length || 0) + 1,
         status: "draft",
-        items: oldQuote.items.map(item => ({ ...item, id: `QI-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` })),
-        laborCost: oldQuote.laborCost,
-        materialCost: oldQuote.materialCost,
-        totalAmount: oldQuote.totalAmount,
-        estimatedDays: oldQuote.estimatedDays,
-        remark: oldQuote.remark,
+        items: newItems,
+        laborCost: newLabor,
+        materialCost: newMaterial,
+        totalAmount: newTotal,
+        estimatedDays: newDays,
+        remark: newRemark,
         createdAt: new Date().toISOString(),
         confirmedAt: null,
         createdBy: "",
@@ -7227,9 +7392,6 @@ const server = http.createServer(async (req, res) => {
       commission.quotes.push(newQuote);
       commission.currentQuoteId = newQuote.id;
 
-      const reviseInput = await body(req);
-      const reviseOpCheck = requireOperator(reviseInput);
-      if (reviseOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: reviseOpCheck.message });
       addOperationLog(commission, "quote_revise", reviseInput.operator || "", reviseInput.operatorId || "", "重新报价 V" + newQuote.version);
       await saveDb(db);
       return sendJson(res, 201, newQuote);
