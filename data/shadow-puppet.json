@@ -57,24 +57,7 @@
         "交付"
       ],
       "images": {
-        "before": [
-          {
-            "id": "IMG-1781677917196-h1j4so",
-            "filename": "/uploads/SP-001/before/105e0091-988b-468e-b049-8830b3bd99fd.jpg",
-            "originalName": "puppet.jpg",
-            "caption": "皮影整体外观",
-            "uploadedAt": "2026-06-17T06:31:57.196Z",
-            "size": 2708
-          },
-          {
-            "id": "IMG-1781677918209-qey9fw",
-            "filename": "/uploads/SP-001/before/53e344ee-0e73-4f6b-ad37-6e03d292d5be.jpg",
-            "originalName": "puppet.jpg",
-            "caption": "腿部破损细节",
-            "uploadedAt": "2026-06-17T06:31:58.209Z",
-            "size": 2723
-          }
-        ],
+        "before": [],
         "during": [
           {
             "id": "IMG-1781677919230-uzuuwj",
@@ -264,7 +247,11 @@
       ],
       "consumeStepName": "补片",
       "templateId": "",
-      "templateName": ""
+      "templateName": "",
+      "coverImage": {
+        "imageId": "IMG-1781677920239-wdbdvk",
+        "stage": "after"
+      }
     },
     {
       "id": "SP-002",
@@ -401,7 +388,8 @@
           "at": "2026-06-05T09:00:00.000Z"
         }
       ],
-      "consumeStepName": "补片"
+      "consumeStepName": "补片",
+      "coverImage": null
     },
     {
       "id": "SP-003",
@@ -525,7 +513,8 @@
       ],
       "consumeStepName": "补片",
       "templateId": "",
-      "templateName": ""
+      "templateName": "",
+      "coverImage": null
     },
     {
       "id": "SP-004",
@@ -641,7 +630,8 @@
           "at": "2026-06-12T10:00:00.000Z"
         }
       ],
-      "consumeStepName": "补片"
+      "consumeStepName": "补片",
+      "coverImage": null
     },
     {
       "id": "SP-005",
@@ -738,7 +728,8 @@
       ],
       "consumeStepName": "补片",
       "templateId": "",
-      "templateName": ""
+      "templateName": "",
+      "coverImage": null
     },
     {
       "id": "SP-006",
@@ -830,7 +821,8 @@
       ],
       "consumeStepName": "补片",
       "templateId": "",
-      "templateName": ""
+      "templateName": "",
+      "coverImage": null
     },
     {
       "id": "SP-007",
@@ -917,7 +909,8 @@
       ],
       "consumeStepName": "补片",
       "templateId": "",
-      "templateName": ""
+      "templateName": "",
+      "coverImage": null
     }
   ],
   "materials": [

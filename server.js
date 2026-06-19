@@ -578,7 +578,8 @@ const seed = {
         before: [],
         during: [],
         after: []
-      }
+      },
+      coverImage: null
     }
   ],
   materials: [
@@ -729,6 +730,10 @@ async function loadDb() {
       if (!Array.isArray(c.images.before)) { c.images.before = []; migrated = true; }
       if (!Array.isArray(c.images.during)) { c.images.during = []; migrated = true; }
       if (!Array.isArray(c.images.after)) { c.images.after = []; migrated = true; }
+    }
+    if (!c.coverImage) {
+      c.coverImage = null;
+      migrated = true;
     }
     if (!Array.isArray(c.quotes)) {
       c.quotes = [];
@@ -1016,6 +1021,33 @@ const page = `<!doctype html>
     .image-actions { position:absolute; top:6px; right:6px; display:flex; gap:4px; }
     .image-actions button { background:rgba(0,0,0,0.7); color:#fff; border:0; width:28px; height:28px; border-radius:4px; cursor:pointer; font-size:14px; padding:0; }
     .image-actions button:hover { background:var(--accent); }
+    .image-card.is-cover { border-color:var(--accent); box-shadow:0 0 0 2px rgba(52,152,219,0.25); }
+    .cover-badge { position:absolute; top:6px; left:6px; background:var(--accent); color:#fff; font-size:10px; padding:2px 8px; border-radius:4px; z-index:2; font-weight:600; }
+    .card.card-with-cover { display:flex; gap:0; overflow:hidden; }
+    .card-cover { width:120px; min-height:100%; flex-shrink:0; background:#eee; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+    .card-cover img { width:100%; height:100%; object-fit:cover; }
+    .card-with-cover .card-body { flex:1; padding:16px; min-width:0; }
+    .cover-stage-tag { display:inline-block; font-size:10px; background:var(--accent); color:#fff; padding:1px 6px; border-radius:3px; margin-bottom:4px; }
+    .detail-img-card.is-cover { border-color:var(--accent); box-shadow:0 0 0 2px rgba(52,152,219,0.25); }
+    .detail-img-card .cover-badge { position:absolute; top:4px; left:4px; background:var(--accent); color:#fff; font-size:9px; padding:1px 6px; border-radius:3px; z-index:2; font-weight:600; }
+    .detail-img-card-actions { position:absolute; top:4px; right:4px; z-index:2; }
+    .detail-img-card-actions .detail-img-action { background:rgba(0,0,0,0.6); color:#fff; border:0; width:24px; height:24px; border-radius:4px; cursor:pointer; font-size:13px; padding:0; }
+    .detail-img-card-actions .detail-img-action:hover { background:var(--accent); }
+    .detail-img-card { position:relative; }
+    .compare-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .compare-header h4 { margin:0; }
+    .compare-legend { display:flex; gap:12px; font-size:12px; }
+    .compare-legend-item { display:flex; align-items:center; gap:4px; }
+    .compare-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .compare-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:16px; }
+    .compare-cell { background:var(--bg); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .compare-cell-empty { opacity:0.5; }
+    .compare-cell-label { font-size:11px; font-weight:700; padding:4px 8px; border-left:3px solid; }
+    .compare-cell-img { width:100%; max-height:200px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f5f5f5; }
+    .compare-cell-img img { width:100%; height:200px; object-fit:cover; cursor:pointer; }
+    .compare-cell-info { padding:6px 8px; }
+    .compare-cell-caption { font-size:12px; margin-bottom:2px; }
+    .compare-cell-meta { font-size:10px; color:var(--muted); }
     .empty-state { text-align:center; padding:40px 20px; color:var(--muted); }
     .empty-state .icon { font-size:48px; margin-bottom:12px; opacity:0.5; }
     .images-btn { margin-top:8px; background:var(--green); color:#fff; border:0; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; }
@@ -1353,6 +1385,15 @@ const page = `<!doctype html>
     .oplog-detail { color:var(--ink); }
 
     .detail-modal { max-width: 1100px; }
+    .detail-cover-area { padding: 0 24px; margin-bottom: -1px; position: relative; z-index: 1; }
+    .detail-cover-img { position: relative; width: 100%; height: 200px; border-radius: 10px; overflow: hidden; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+    .detail-cover-img img { width: 100%; height: 100%; object-fit: cover; }
+    .detail-cover-badge { position: absolute; top: 12px; left: 12px; background: var(--accent); color: #fff; font-size: 12px; padding: 4px 10px; border-radius: 6px; z-index: 2; font-weight: 600; }
+    .detail-cover-stage { position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; padding: 3px 8px; border-radius: 4px; z-index: 2; }
+    .detail-cover-actions { position: absolute; bottom: 12px; right: 12px; display: flex; gap: 6px; z-index: 2; }
+    .detail-cover-btn { background: rgba(0,0,0,0.7); color: #fff; border: 0; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
+    .detail-cover-btn:hover { background: var(--accent); }
+    .detail-cover-empty { color: var(--muted); font-size: 14px; }
     .detail-nav { display:flex; gap:2px; padding:0 24px; border-bottom:1px solid var(--line); overflow-x:auto; }
     .detail-nav-btn { padding:10px 16px; background:var(--bg); border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; cursor:pointer; font-size:13px; white-space:nowrap; }
     .detail-nav-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
@@ -1474,7 +1515,48 @@ const page = `<!doctype html>
 
     .quote-diff-empty { text-align:center; padding:20px; color:var(--muted); font-size:13px; background:#fff; border-radius:8px; }
 
-    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} .quote-diff-amount-grid{grid-template-columns:1fr 1fr;} .quote-diff-remark-compare{grid-template-columns:1fr;} .quote-diff-item-row{grid-template-columns:1fr 50px 70px 70px;} .workload-days-grid{grid-template-columns:repeat(7,1fr);} .workload-day-labels{grid-template-columns:repeat(7,1fr);} .workload-summary-stats{grid-template-columns:1fr;} .workload-commission-row{grid-template-columns:1fr 1fr; font-size:11px;} }
+    .compare-select-row { display:flex; gap:12px; margin-bottom:16px; align-items:flex-end; }
+    .compare-select-item { flex:1; }
+    .compare-select-item label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; font-weight:600; }
+    .compare-select-item select { width:100%; padding:6px 8px; font-size:13px; }
+    .compare-main-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+    .compare-main-cell { background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden; transition:box-shadow 0.2s; }
+    .compare-main-cell:hover { box-shadow:0 2px 12px rgba(0,0,0,0.08); }
+    .compare-main-cell-header { padding:8px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); }
+    .compare-main-cell-stage { font-size:13px; font-weight:700; display:flex; align-items:center; gap:6px; }
+    .compare-main-cell-stage .stage-dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+    .compare-main-cell-nav { display:flex; gap:4px; }
+    .compare-main-cell-nav button { background:var(--bg); border:1px solid var(--line); border-radius:4px; width:24px; height:24px; cursor:pointer; font-size:12px; padding:0; display:flex; align-items:center; justify-content:center; }
+    .compare-main-cell-nav button:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+    .compare-main-cell-img { width:100%; max-height:260px; overflow:hidden; display:flex; align-items:center; justify-content:center; background:#f5f5f5; cursor:pointer; position:relative; }
+    .compare-main-cell-img img { width:100%; height:260px; object-fit:cover; }
+    .compare-main-cell-img .no-img { color:var(--muted); font-size:14px; padding:30px; text-align:center; }
+    .compare-main-cell-info { padding:10px 12px; }
+    .compare-main-cell-caption { font-size:13px; margin-bottom:4px; }
+    .compare-main-cell-meta { font-size:11px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; }
+    .compare-main-cell-cover-tag { font-size:10px; background:var(--accent); color:#fff; padding:1px 6px; border-radius:3px; }
+
+    .delete-cover-dialog { max-width:560px; }
+    .delete-cover-warning { background:var(--orange-soft); border-left:3px solid var(--orange); padding:12px 14px; border-radius:6px; margin-bottom:16px; font-size:14px; line-height:1.5; }
+    .delete-cover-warning strong { color:var(--orange); }
+    .delete-cover-options { display:grid; gap:12px; margin-bottom:16px; }
+    .delete-cover-option { background:var(--bg); border:2px solid var(--line); border-radius:8px; padding:12px; cursor:pointer; transition:all 0.15s; }
+    .delete-cover-option:hover { border-color:var(--accent); }
+    .delete-cover-option.selected { border-color:var(--accent); background:#fff; box-shadow:0 0 0 1px var(--accent); }
+    .delete-cover-option-title { font-weight:700; font-size:14px; margin-bottom:4px; }
+    .delete-cover-option-desc { font-size:12px; color:var(--muted); }
+    .delete-cover-reselect-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:8px; margin-top:10px; }
+    .delete-cover-reselect-item { border:2px solid var(--line); border-radius:6px; overflow:hidden; cursor:pointer; transition:all 0.15s; position:relative; }
+    .delete-cover-reselect-item:hover { border-color:var(--accent); }
+    .delete-cover-reselect-item.selected { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+    .delete-cover-reselect-item img { width:100%; height:60px; object-fit:cover; }
+    .delete-cover-reselect-item .reselect-label { font-size:10px; padding:2px 4px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .delete-cover-reselect-item .reselect-stage { position:absolute; top:2px; left:2px; font-size:9px; background:rgba(0,0,0,0.6); color:#fff; padding:1px 4px; border-radius:2px; }
+    .delete-cover-footer { display:flex; justify-content:flex-end; gap:8px; padding-top:12px; border-top:1px solid var(--line); }
+
+    .compare-stage-tab { position:relative; }
+
+    @media (max-width:900px){ .two-col{grid-template-columns:1fr;} header{padding:18px 16px;} .tabs{padding:12px 16px 0;} .tab-content{padding:16px;} .stats{grid-template-columns:1fr 1fr;} .image-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));} .kanban{grid-template-columns:1fr;} .schedule-stats{grid-template-columns:1fr 1fr;} .io-actions{padding:12px 16px 0;} .import-stats{grid-template-columns:1fr 1fr;} .damage-info{grid-template-columns:1fr;} .quote-items-header, .quote-item-row{grid-template-columns:1fr 60px 80px 80px 30px; font-size:12px;} .quote-history-meta{flex-direction:column; gap:2px;} .quote-diff-amount-grid{grid-template-columns:1fr 1fr;} .quote-diff-remark-compare{grid-template-columns:1fr;} .quote-diff-item-row{grid-template-columns:1fr 50px 70px 70px;} .workload-days-grid{grid-template-columns:repeat(7,1fr);} .workload-day-labels{grid-template-columns:repeat(7,1fr);} .workload-summary-stats{grid-template-columns:1fr;} .workload-commission-row{grid-template-columns:1fr 1fr; font-size:11px;} .compare-main-row{grid-template-columns:1fr;} .compare-select-row{flex-direction:column;} .card-cover{width:80px;} .delete-cover-reselect-grid{grid-template-columns:repeat(auto-fill,minmax(60px,1fr));} }
   </style>
 </head>
 <body>
@@ -1754,6 +1836,7 @@ const page = `<!doctype html>
           <div class="stage-tab active" data-stage="before">修复前 <span class="count" id="count-before">0</span></div>
           <div class="stage-tab" data-stage="during">修复中 <span class="count" id="count-during">0</span></div>
           <div class="stage-tab" data-stage="after">修复后 <span class="count" id="count-after">0</span></div>
+          <div class="stage-tab compare-stage-tab" data-stage="compare">🔄 对比</div>
         </div>
         <div class="stage-content active" id="stage-before">
           <div class="image-upload-area" data-upload="before">
@@ -1779,6 +1862,27 @@ const page = `<!doctype html>
           </div>
           <div class="image-grid" id="grid-after"></div>
         </div>
+        <div class="stage-content" id="stage-compare">
+          <div id="modalCompareContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="deleteCoverModal">
+    <div class="modal delete-cover-dialog">
+      <div class="modal-header">
+        <h3>删除封面图片</h3>
+        <button class="modal-close" id="deleteCoverModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="delete-cover-warning">⚠️ 此图片是当前委托的<strong>封面图</strong>，删除后需要处理封面设置。</div>
+        <div class="delete-cover-options" id="deleteCoverOptions"></div>
+        <div id="deleteCoverReselectArea" style="display:none;"></div>
+      </div>
+      <div class="delete-cover-footer">
+        <button type="button" class="secondary" id="deleteCoverCancelBtn">取消</button>
+        <button type="button" id="deleteCoverConfirmBtn">确认删除</button>
       </div>
     </div>
   </div>
@@ -2159,6 +2263,16 @@ const page = `<!doctype html>
       <div class="modal-header">
         <h3 id="detailTitle">委托详情</h3>
         <button class="modal-close" id="detailModalClose">&times;</button>
+      </div>
+      <div class="detail-cover-area" id="detailCoverArea" style="display:none;">
+        <div class="detail-cover-img" id="detailCoverImg">
+          <span class="detail-cover-badge">⭐ 封面</span>
+          <span class="detail-cover-stage" id="detailCoverStage"></span>
+          <div class="detail-cover-actions">
+            <button class="detail-cover-btn" id="detailCoverChangeBtn" title="更换封面">🔄 更换</button>
+            <button class="detail-cover-btn" id="detailCoverRemoveBtn" title="清除封面">🚫 清除</button>
+          </div>
+        </div>
       </div>
       <div class="detail-nav" id="detailNav">
         <div class="detail-nav-btn active" data-detail-section="info">📋 基础信息</div>
@@ -2568,6 +2682,20 @@ const page = `<!doctype html>
           after: c.images.after?.length || 0
         } : { before:0, during:0, after:0 };
         const totalImgs = imgCounts.before + imgCounts.during + imgCounts.after;
+        let coverUrl = "";
+        const stageLabels = { before: "修复前", during: "修复中", after: "修复后" };
+        if (c.coverImage && c.coverImage.imageId) {
+          const ci = c.coverImage;
+          const imgs = c.images?.[ci.stage] || [];
+          const found = imgs.find(i => i.id === ci.imageId);
+          if (found) coverUrl = found.filename;
+        }
+        if (!coverUrl) {
+          for (const s of ["after", "during", "before"]) {
+            const arr = c.images?.[s] || [];
+            if (arr.length > 0) { coverUrl = arr[0].filename; break; }
+          }
+        }
         const currentQuote = c.currentQuoteId ? (c.quotes || []).find(q => q.id === c.currentQuoteId) : null;
         let quoteBadge = '';
         if (currentQuote) {
@@ -2597,7 +2725,10 @@ const page = `<!doctype html>
         quickButtons += '<button class="small" data-detail="'+c.id+'" style="white-space:nowrap;">📄 详情</button>';
         quickButtons += '</div>';
 
-        return '<article class="'+cardClass+'" style="cursor:pointer;" data-detail="'+c.id+'"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:0;color:var(--accent);">'+c.roleName+tplBadge+'</h3><span class="pill">'+c.status+'</span></div><div class="meta" style="margin-top:4px;">'+(c.client||'')+' · '+(c.era||'')+' · '+(c.owner||'')+'</div><div style="font-size:13px;margin-top:4px;">'+(c.damage||'—')+'</div>'+(matChips?'<div class="mat-chips" style="margin-top:4px;">'+matChips+'</div>':'')+'<div style="display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted);"><span>📷 '+totalImgs+'</span>'+quoteBadge+'<span>📅 '+(c.dueDate||'—')+dueBadge+'</span></div>'+acceptanceLine+quickButtons+'</article>';
+        const coverThumb = coverUrl ? '<div class="card-cover"><img src="'+coverUrl+'" alt="封面" loading="lazy"></div>' : '';
+        const coverStageTag = (c.coverImage && c.coverImage.stage && coverUrl) ? '<span class="cover-stage-tag">'+(stageLabels[c.coverImage.stage]||'')+'</span>' : '';
+
+        return '<article class="'+cardClass+' card-with-cover" style="cursor:pointer;" data-detail="'+c.id+'">'+coverThumb+'<div class="card-body">'+coverStageTag+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><h3 style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:0;color:var(--accent);">'+c.roleName+tplBadge+'</h3><span class="pill">'+c.status+'</span></div><div class="meta" style="margin-top:4px;">'+(c.client||'')+' · '+(c.era||'')+' · '+(c.owner||'')+'</div><div style="font-size:13px;margin-top:4px;">'+(c.damage||'—')+'</div>'+(matChips?'<div class="mat-chips" style="margin-top:4px;">'+matChips+'</div>':'')+'<div style="display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted);"><span>📷 '+totalImgs+'</span>'+quoteBadge+'<span>📅 '+(c.dueDate||'—')+dueBadge+'</span></div>'+acceptanceLine+quickButtons+'</div></article>';
       }).join("");
       document.querySelectorAll("[data-detail]").forEach(btn => btn.onclick = (e) => {
         e.stopPropagation();
@@ -4123,6 +4254,7 @@ const page = `<!doctype html>
     let currentImageCommissionId = null;
     let currentImageStage = "before";
     let currentImages = { before: [], during: [], after: [] };
+    let currentCoverImage = null;
     let captionSaveTimers = {};
     const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
@@ -4164,6 +4296,8 @@ const page = `<!doctype html>
       try {
         const data = await api("/api/commissions/" + commissionId + "/images");
         currentImages = data || { before: [], during: [], after: [] };
+        const commission = commissions.find(c => c.id === commissionId);
+        currentCoverImage = commission ? (commission.coverImage || null) : null;
         updateStageCounts();
         renderStage(currentImageStage);
       } catch (e) {
@@ -4184,22 +4318,24 @@ const page = `<!doctype html>
         grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="icon">🖼️</div><div>暂无'+ (stage==="before"?"修复前":stage==="during"?"修复中":"修复后") +'图片</div><div class="meta" style="margin-top:8px;">点击上方区域上传图片</div></div>';
         return;
       }
-      grid.innerHTML = images.map(img => '\
-        <div class="image-card" data-image-id="' + img.id + '">\
-          <div class="image-actions">\
-            <button title="查看大图" data-view="' + img.id + '">🔍</button>\
-            <button title="删除图片" data-del="' + img.id + '">🗑️</button>\
-          </div>\
-          <div class="image-thumb">\
-            <img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">\
-          </div>\
-          <div class="image-card-body">\
-            <div class="filename" title="' + img.originalName + '">' + img.originalName + '</div>\
-            <textarea placeholder="添加图片说明..." data-caption="' + img.id + '">' + (img.caption || "") + '</textarea>\
-            <div class="date">' + formatDate(img.uploadedAt) + ' · ' + formatFileSize(img.size || 0) + '</div>\
-          </div>\
-        </div>\
-      ').join("");
+      grid.innerHTML = images.map(img => {
+        const isCover = currentCoverImage && currentCoverImage.imageId === img.id;
+        return '<div class="image-card' + (isCover ? ' is-cover' : '') + '" data-image-id="' + img.id + '">' +
+          (isCover ? '<span class="cover-badge">⭐ 封面</span>' : '') +
+          '<div class="image-actions">' +
+          '<button title="设为封面" data-set-cover="' + img.id + '">' + (isCover ? '⭐' : '☆') + '</button>' +
+          '<button title="查看大图" data-view="' + img.id + '">🔍</button>' +
+          '<button title="删除图片" data-del="' + img.id + '">🗑️</button>' +
+          '</div>' +
+          '<div class="image-thumb">' +
+          '<img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">' +
+          '</div>' +
+          '<div class="image-card-body">' +
+          '<div class="filename" title="' + img.originalName + '">' + img.originalName + '</div>' +
+          '<textarea placeholder="添加图片说明..." data-caption="' + img.id + '">' + (img.caption || "") + '</textarea>' +
+          '<div class="date">' + formatDate(img.uploadedAt) + ' · ' + formatFileSize(img.size || 0) + '</div>' +
+          '</div></div>';
+      }).join("");
 
       grid.querySelectorAll("[data-caption]").forEach(ta => {
         ta.oninput = () => {
@@ -4211,9 +4347,35 @@ const page = `<!doctype html>
         };
       });
 
+      grid.querySelectorAll("[data-set-cover]").forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const imgId = btn.dataset.setCover;
+          try {
+            await api("/api/commissions/" + currentImageCommissionId + "/cover", {
+              method: "PUT",
+              body: JSON.stringify({ imageId: imgId })
+            });
+            await loadAll();
+            await loadImages(currentImageCommissionId);
+          } catch (e) {
+            alert("设置封面失败：" + e.message);
+          }
+        };
+      });
+
       grid.querySelectorAll("[data-del]").forEach(btn => {
         btn.onclick = async () => {
           const imgId = btn.dataset.del;
+          const isCoverDel = currentCoverImage && currentCoverImage.imageId === imgId;
+          let delStage = null;
+          for (const s of ["before", "during", "after"]) {
+            if ((currentImages[s] || []).find(i => i.id === imgId)) { delStage = s; break; }
+          }
+          if (isCoverDel) {
+            showDeleteCoverDialog(currentImageCommissionId, imgId, delStage || "before");
+            return;
+          }
           if (!confirm("确定要删除这张图片吗？此操作不可恢复。")) return;
           try {
             await api("/api/commissions/" + currentImageCommissionId + "/images/" + imgId, { method: "DELETE" });
@@ -4307,9 +4469,90 @@ const page = `<!doctype html>
         document.querySelectorAll(".stage-content").forEach(c => c.classList.remove("active"));
         tab.classList.add("active");
         document.getElementById("stage-" + stage).classList.add("active");
-        renderStage(stage);
+        if (stage === "compare") {
+          renderModalCompare();
+        } else {
+          renderStage(stage);
+        }
       };
     });
+
+    function renderModalCompare() {
+      const el = document.getElementById("modalCompareContent");
+      if (!el) return;
+      const commission = commissions.find(c => c.id === currentImageCommissionId);
+      if (!commission) { el.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><div>未找到委托信息</div></div>'; return; }
+      const images = currentImages || { before: [], during: [], after: [] };
+      const coverImage = commission.coverImage || null;
+      const beforeImgs = images.before || [];
+      const duringImgs = images.during || [];
+      const afterImgs = images.after || [];
+      if (!beforeImgs.length && !duringImgs.length && !afterImgs.length) {
+        el.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><div>暂无图片可对比，请先上传图片</div></div>';
+        return;
+      }
+      const stageConfig = [
+        { key: "before", label: "修复前", color: "var(--red)", imgs: beforeImgs },
+        { key: "during", label: "修复中", color: "var(--orange)", imgs: duringImgs },
+        { key: "after", label: "修复后", color: "var(--green)", imgs: afterImgs }
+      ];
+      const selIdx = { before: 0, during: 0, after: 0 };
+
+      function renderCells() {
+        let html = '<div class="compare-header"><h4>修复对比</h4><div class="compare-legend"><span class="compare-legend-item"><span class="compare-dot" style="background:var(--red);"></span>修复前</span><span class="compare-legend-item"><span class="compare-dot" style="background:var(--orange);"></span>修复中</span><span class="compare-legend-item"><span class="compare-dot" style="background:var(--green);"></span>修复后</span></div></div>';
+        html += '<div class="compare-main-row">';
+        for (const sc of stageConfig) {
+          const idx = selIdx[sc.key];
+          const img = sc.imgs[idx];
+          const isCover = coverImage && img && coverImage.imageId === img.id;
+          html += '<div class="compare-main-cell">';
+          html += '<div class="compare-main-cell-header"><div class="compare-main-cell-stage"><span class="stage-dot" style="background:' + sc.color + ';"></span>' + sc.label + '</div>';
+          if (sc.imgs.length > 1) {
+            html += '<div class="compare-main-cell-nav">';
+            html += '<button data-mc-prev="' + sc.key + '" ' + (idx <= 0 ? 'disabled' : '') + '>◀</button>';
+            html += '<span style="font-size:11px;color:var(--muted);min-width:30px;text-align:center;">' + (idx + 1) + '/' + sc.imgs.length + '</span>';
+            html += '<button data-mc-next="' + sc.key + '" ' + (idx >= sc.imgs.length - 1 ? 'disabled' : '') + '>▶</button>';
+            html += '</div>';
+          }
+          html += '</div>';
+          if (img) {
+            html += '<div class="compare-main-cell-img" data-mc-view="' + img.filename + '"><img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">' + (isCover ? '<span class="compare-main-cell-cover-tag" style="position:absolute;top:8px;right:8px;">⭐ 封面</span>' : '') + '</div>';
+            html += '<div class="compare-main-cell-info">';
+            html += '<div class="compare-main-cell-caption">' + (img.caption || img.originalName || '—') + '</div>';
+            html += '<div class="compare-main-cell-meta"><span>' + formatDate(img.uploadedAt) + '</span><span>' + sc.label + '</span></div>';
+            html += '</div>';
+          } else {
+            html += '<div class="compare-main-cell-img"><div class="no-img">暂无' + sc.label + '图片</div></div>';
+            html += '<div class="compare-main-cell-info"><div class="compare-main-cell-caption" style="color:var(--muted);">—</div></div>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+        return html;
+      }
+
+      function renderFull() {
+        el.innerHTML = renderCells();
+        el.querySelectorAll("[data-mc-prev]").forEach(btn => {
+          btn.onclick = () => {
+            const key = btn.dataset.mcPrev;
+            if (selIdx[key] > 0) { selIdx[key]--; renderFull(); }
+          };
+        });
+        el.querySelectorAll("[data-mc-next]").forEach(btn => {
+          btn.onclick = () => {
+            const key = btn.dataset.mcNext;
+            const maxIdx = (images[key] || []).length - 1;
+            if (selIdx[key] < maxIdx) { selIdx[key]++; renderFull(); }
+          };
+        });
+        el.querySelectorAll("[data-mc-view]").forEach(imgEl => {
+          imgEl.onclick = () => window.open(imgEl.dataset.mcView, "_blank");
+        });
+      }
+
+      renderFull();
+    }
 
     document.querySelectorAll("[data-upload]").forEach(area => {
       const stage = area.dataset.upload;
@@ -6437,6 +6680,7 @@ const page = `<!doctype html>
     }
 
     function renderDetailAll(c) {
+      renderDetailCover(c);
       renderDetailInfo(c);
       renderDetailTimeline(c);
       renderDetailImages(c);
@@ -6444,6 +6688,79 @@ const page = `<!doctype html>
       renderDetailAcceptance(c);
       renderDetailOpLogs(c);
       renderDetailVersions(c);
+    }
+
+    function renderDetailCover(c) {
+      const coverArea = document.getElementById("detailCoverArea");
+      const coverImg = document.getElementById("detailCoverImg");
+      const coverStage = document.getElementById("detailCoverStage");
+      if (!coverArea || !coverImg) return;
+
+      const stageLabels = { before: "修复前", during: "修复中", after: "修复后" };
+      const images = c.images || { before: [], during: [], after: [] };
+      const coverImage = c.coverImage || null;
+
+      let coverUrl = "";
+      let coverStageLabel = "";
+      if (coverImage && coverImage.imageId) {
+        const imgs = images[coverImage.stage] || [];
+        const found = imgs.find(i => i.id === coverImage.imageId);
+        if (found) {
+          coverUrl = found.filename;
+          coverStageLabel = stageLabels[coverImage.stage] || "";
+        }
+      }
+      if (!coverUrl) {
+        for (const s of ["after", "during", "before"]) {
+          const arr = images[s] || [];
+          if (arr.length > 0) {
+            coverUrl = arr[0].filename;
+            coverStageLabel = stageLabels[s] || "";
+            break;
+          }
+        }
+      }
+
+      if (coverUrl) {
+        coverArea.style.display = "block";
+        const isUserCover = !!(coverImage && coverImage.imageId);
+        coverImg.innerHTML = '<img src="' + coverUrl + '" alt="封面" loading="lazy">' +
+          (isUserCover ? '<span class="detail-cover-badge">⭐ 封面</span>' : '<span class="detail-cover-badge" style="background:rgba(0,0,0,0.6);">🖼️ 默认</span>') +
+          (isUserCover ? '<span id="detailCoverStage" class="detail-cover-stage">' + coverStageLabel + '</span>' : '') +
+          '<div class="detail-cover-actions">' +
+          '<button class="detail-cover-btn" id="detailCoverChangeBtn" title="' + (isUserCover ? '更换封面' : '设置封面') + '">🔄 ' + (isUserCover ? '更换' : '设置封面') + '</button>' +
+          (isUserCover ? '<button class="detail-cover-btn" id="detailCoverRemoveBtn" title="清除封面">🚫 清除</button>' : '') +
+          '</div>';
+        coverImg.onclick = () => window.open(coverUrl, "_blank");
+
+        const changeBtn = document.getElementById("detailCoverChangeBtn");
+        const removeBtn = document.getElementById("detailCoverRemoveBtn");
+        if (changeBtn) {
+          changeBtn.onclick = (e) => {
+            e.stopPropagation();
+            switchDetailSection("images");
+          };
+        }
+        if (removeBtn) {
+          removeBtn.onclick = async (e) => {
+            e.stopPropagation();
+            if (!confirm("确定要清除封面吗？")) return;
+            try {
+              await api("/api/commissions/" + c.id + "/cover", {
+                method: "PUT",
+                body: JSON.stringify({ imageId: "" })
+              });
+              await loadAll();
+              const updated = commissions.find(x => x.id === c.id);
+              if (updated) renderDetailAll(updated);
+            } catch (err) {
+              alert("清除封面失败：" + err.message);
+            }
+          };
+        }
+      } else {
+        coverArea.style.display = "none";
+      }
     }
 
     function renderDetailInfo(c) {
@@ -6625,12 +6942,13 @@ const page = `<!doctype html>
       const el = document.getElementById("detail-images");
       if (!el) return;
       const images = c.images || { before: [], during: [], after: [] };
+      const coverImage = c.coverImage || null;
       const stages = [
         { key: "before", label: "修复前" },
         { key: "during", label: "修复中" },
         { key: "after", label: "修复后" }
       ];
-      let html = '<div class="detail-section-header"><h4>影像档案</h4><button class="small" data-detail-open-images="' + c.id + '">打开影像管理</button></div>';
+      let html = '<div class="detail-section-header"><h4>影像档案</h4><div style="display:flex;gap:6px;"><button class="small" data-detail-toggle-compare style="background:var(--purple);">🔄 修复对比</button><button class="small" data-detail-open-images="' + c.id + '">打开影像管理</button></div></div>';
       let totalImgs = 0;
       for (const stage of stages) {
         const imgs = images[stage.key] || [];
@@ -6642,9 +6960,13 @@ const page = `<!doctype html>
         if (imgs.length) {
           html += '<div class="detail-img-grid">';
           for (const img of imgs) {
-            html += '<div class="detail-img-card" data-detail-view-img="' + img.filename + '">' +
+            const isCover = coverImage && coverImage.imageId === img.id;
+            html += '<div class="detail-img-card' + (isCover ? ' is-cover' : '') + '" data-detail-view-img="' + img.filename + '">' +
+              (isCover ? '<span class="cover-badge">⭐ 封面</span>' : '') +
+              '<div class="detail-img-card-actions"><button class="detail-img-action" title="设为封面" data-set-cover="' + img.id + '">' + (isCover ? '⭐' : '☆') + '</button><button class="detail-img-action" title="删除图片" data-detail-del="' + img.id + '" data-detail-del-stage="' + stage.key + '">🗑️</button></div>' +
               '<img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">' +
-              '<div class="caption">' + (img.caption || img.originalName) + '</div></div>';
+              '<div class="caption">' + (img.caption || img.originalName) + '</div>' +
+              '<div class="meta" style="font-size:10px;padding:0 6px 4px;">' + formatDate(img.uploadedAt) + '</div></div>';
           }
           html += '</div>';
         }
@@ -6653,12 +6975,67 @@ const page = `<!doctype html>
         html = '<div class="detail-section-header"><h4>影像档案</h4><button class="small" data-detail-open-images="' + c.id + '">打开影像管理</button></div>' +
           '<div class="empty-state"><div class="icon">🖼️</div><div>暂无影像档案</div><div class="meta" style="margin-top:8px;">点击上方区域上传图片，或"打开影像管理"进行管理</div></div>';
       }
+      html += '<div id="compareView" style="display:none;margin-top:16px;"></div>';
       el.innerHTML = html;
+
       el.querySelector("[data-detail-open-images]")?.addEventListener("click", function () {
         openImagesModal(this.dataset.detailOpenImages);
       });
       el.querySelectorAll("[data-detail-view-img]").forEach(card => {
-        card.onclick = () => window.open(card.dataset.detailViewImg, "_blank");
+        card.onclick = (e) => {
+          if (e.target.closest("[data-set-cover]")) return;
+          if (e.target.closest("[data-detail-del]")) return;
+          window.open(card.dataset.detailViewImg, "_blank");
+        };
+      });
+      el.querySelectorAll("[data-set-cover]").forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const imgId = btn.dataset.setCover;
+          try {
+            await api("/api/commissions/" + c.id + "/cover", {
+              method: "PUT",
+              body: JSON.stringify({ imageId: imgId })
+            });
+            await loadAll();
+            const updated = commissions.find(x => x.id === c.id);
+            if (updated) renderDetailAll(updated);
+          } catch (e) {
+            alert("设置封面失败：" + e.message);
+          }
+        };
+      });
+      el.querySelectorAll("[data-detail-del]").forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const imgId = btn.dataset.detailDel;
+          const delStage = btn.dataset.detailDelStage;
+          const isCoverDel = coverImage && coverImage.imageId === imgId;
+          if (isCoverDel) {
+            showDeleteCoverDialog(c.id, imgId, delStage);
+          } else {
+            if (!confirm("确定要删除这张图片吗？此操作不可恢复。")) return;
+            try {
+              await api("/api/commissions/" + c.id + "/images/" + imgId, { method: "DELETE" });
+              await loadAll();
+              const updated = commissions.find(x => x.id === c.id);
+              if (updated) renderDetailAll(updated);
+            } catch (err) {
+              alert("删除失败：" + err.message);
+            }
+          }
+        };
+      });
+      el.querySelector("[data-detail-toggle-compare]")?.addEventListener("click", function () {
+        const cv = document.getElementById("compareView");
+        if (cv.style.display === "none") {
+          renderCompareView(c, cv);
+          cv.style.display = "block";
+          this.textContent = "🔄 收起对比";
+        } else {
+          cv.style.display = "none";
+          this.textContent = "🔄 修复对比";
+        }
       });
       el.querySelectorAll("[data-detail-upload-stage]").forEach(area => {
         const stage = area.dataset.detailUploadStage;
@@ -6678,6 +7055,230 @@ const page = `<!doctype html>
           };
         }
       });
+    }
+
+    function renderCompareView(c, container) {
+      const images = c.images || { before: [], during: [], after: [] };
+      const beforeImgs = images.before || [];
+      const afterImgs = images.after || [];
+      const duringImgs = images.during || [];
+      const coverImage = c.coverImage || null;
+      if (!beforeImgs.length && !afterImgs.length && !duringImgs.length) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">🔄</div><div>暂无图片可对比</div></div>';
+        return;
+      }
+      const stageConfig = [
+        { key: "before", label: "修复前", color: "var(--red)", imgs: beforeImgs },
+        { key: "during", label: "修复中", color: "var(--orange)", imgs: duringImgs },
+        { key: "after", label: "修复后", color: "var(--green)", imgs: afterImgs }
+      ];
+      const selIdx = { before: 0, during: 0, after: 0 };
+
+      function renderCompareCells() {
+        let html = '<div class="compare-main-row">';
+        for (const sc of stageConfig) {
+          const idx = selIdx[sc.key];
+          const img = sc.imgs[idx];
+          const isCover = coverImage && img && coverImage.imageId === img.id;
+          html += '<div class="compare-main-cell">';
+          html += '<div class="compare-main-cell-header"><div class="compare-main-cell-stage"><span class="stage-dot" style="background:' + sc.color + ';"></span>' + sc.label + '</div>';
+          if (sc.imgs.length > 1) {
+            html += '<div class="compare-main-cell-nav">';
+            html += '<button data-compare-prev="' + sc.key + '" ' + (idx <= 0 ? 'disabled' : '') + '>◀</button>';
+            html += '<span style="font-size:11px;color:var(--muted);min-width:30px;text-align:center;">' + (idx + 1) + '/' + sc.imgs.length + '</span>';
+            html += '<button data-compare-next="' + sc.key + '" ' + (idx >= sc.imgs.length - 1 ? 'disabled' : '') + '>▶</button>';
+            html += '</div>';
+          }
+          html += '</div>';
+          if (img) {
+            html += '<div class="compare-main-cell-img" data-compare-view="' + img.filename + '"><img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">' + (isCover ? '<span class="compare-main-cell-cover-tag" style="position:absolute;top:8px;right:8px;">⭐ 封面</span>' : '') + '</div>';
+            html += '<div class="compare-main-cell-info">';
+            html += '<div class="compare-main-cell-caption">' + (img.caption || img.originalName || '—') + '</div>';
+            html += '<div class="compare-main-cell-meta"><span>' + formatDate(img.uploadedAt) + '</span><span>' + sc.label + '</span></div>';
+            html += '</div>';
+          } else {
+            html += '<div class="compare-main-cell-img"><div class="no-img">暂无' + sc.label + '图片</div></div>';
+            html += '<div class="compare-main-cell-info"><div class="compare-main-cell-caption" style="color:var(--muted);">—</div></div>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+        return html;
+      }
+
+      function renderFull() {
+        let html = '<div class="compare-header"><h4>修复对比</h4><div class="compare-legend"><span class="compare-legend-item"><span class="compare-dot" style="background:var(--red);"></span>修复前</span><span class="compare-legend-item"><span class="compare-dot" style="background:var(--orange);"></span>修复中</span><span class="compare-legend-item"><span class="compare-dot" style="background:var(--green);"></span>修复后</span></div></div>';
+        html += renderCompareCells();
+        container.innerHTML = html;
+        bindCompareEvents();
+      }
+
+      function bindCompareEvents() {
+        container.querySelectorAll("[data-compare-prev]").forEach(btn => {
+          btn.onclick = () => {
+            const key = btn.dataset.comparePrev;
+            if (selIdx[key] > 0) { selIdx[key]--; renderFull(); }
+          };
+        });
+        container.querySelectorAll("[data-compare-next]").forEach(btn => {
+          btn.onclick = () => {
+            const key = btn.dataset.compareNext;
+            const maxIdx = (images[key] || []).length - 1;
+            if (selIdx[key] < maxIdx) { selIdx[key]++; renderFull(); }
+          };
+        });
+        container.querySelectorAll("[data-compare-view]").forEach(el => {
+          el.onclick = () => window.open(el.dataset.compareView, "_blank");
+        });
+      }
+
+      renderFull();
+    }
+
+    function showDeleteCoverDialog(commissionId, imageId, delStage) {
+      const modal = document.getElementById("deleteCoverModal");
+      const optionsEl = document.getElementById("deleteCoverOptions");
+      const reselectArea = document.getElementById("deleteCoverReselectArea");
+      const confirmBtn = document.getElementById("deleteCoverConfirmBtn");
+      const cancelBtn = document.getElementById("deleteCoverCancelBtn");
+      const closeBtn = document.getElementById("deleteCoverModalClose");
+
+      const commission = commissions.find(c => c.id === commissionId);
+      if (!commission) return;
+
+      const stageLabels = { before: "修复前", during: "修复中", after: "修复后" };
+      let selectedOption = "auto";
+      let reselectedImageId = null;
+
+      const remainingImages = [];
+      for (const stage of ["before", "during", "after"]) {
+        const imgs = commission.images?.[stage] || [];
+        for (const img of imgs) {
+          if (img.id !== imageId) {
+            remainingImages.push({ ...img, stage, stageLabel: stageLabels[stage] });
+          }
+        }
+      }
+
+      const sameStageImages = remainingImages.filter(i => i.stage === delStage);
+      const hasAutoFallback = sameStageImages.length > 0;
+
+      let optionsHtml = '';
+      optionsHtml += '<div class="delete-cover-option selected" data-dc-option="auto">';
+      optionsHtml += '<div class="delete-cover-option-title">🔄 自动回退到同阶段最新图片</div>';
+      if (hasAutoFallback) {
+        optionsHtml += '<div class="delete-cover-option-desc">将自动选择"' + stageLabels[delStage] + '"阶段最新上传的图片作为新封面</div>';
+      } else {
+        optionsHtml += '<div class="delete-cover-option-desc" style="color:var(--red);">同阶段没有其他图片，无法自动回退</div>';
+      }
+      optionsHtml += '</div>';
+
+      if (remainingImages.length > 0) {
+        optionsHtml += '<div class="delete-cover-option" data-dc-option="reselect">';
+        optionsHtml += '<div class="delete-cover-option-title">👆 手动选择新封面</div>';
+        optionsHtml += '<div class="delete-cover-option-desc">从所有剩余图片中选择一张作为新封面</div>';
+        optionsHtml += '</div>';
+      }
+
+      optionsHtml += '<div class="delete-cover-option" data-dc-option="nocover">';
+      optionsHtml += '<div class="delete-cover-option-title">🚫 删除后暂不设置封面</div>';
+      optionsHtml += '<div class="delete-cover-option-desc">删除后封面留空，之后可手动设置</div>';
+      optionsHtml += '</div>';
+
+      optionsEl.innerHTML = optionsHtml;
+      reselectArea.style.display = "none";
+      reselectArea.innerHTML = "";
+
+      function updateOptionSelection() {
+        optionsEl.querySelectorAll(".delete-cover-option").forEach(opt => {
+          opt.classList.toggle("selected", opt.dataset.dcOption === selectedOption);
+        });
+        if (selectedOption === "reselect") {
+          renderReselectGrid();
+          reselectArea.style.display = "block";
+        } else {
+          reselectArea.style.display = "none";
+        }
+        confirmBtn.disabled = (selectedOption === "reselect" && !reselectedImageId);
+        if (selectedOption === "auto" && !hasAutoFallback) {
+          confirmBtn.disabled = true;
+        }
+      }
+
+      function renderReselectGrid() {
+        let html = '<div style="font-size:13px;font-weight:600;margin-bottom:8px;">选择新封面：</div>';
+        html += '<div class="delete-cover-reselect-grid">';
+        for (const img of remainingImages) {
+          const isSelected = reselectedImageId === img.id;
+          html += '<div class="delete-cover-reselect-item' + (isSelected ? ' selected' : '') + '" data-dc-reselect="' + img.id + '">';
+          html += '<span class="reselect-stage">' + img.stageLabel + '</span>';
+          html += '<img src="' + img.filename + '" alt="' + img.originalName + '" loading="lazy">';
+          html += '<div class="reselect-label">' + (img.caption || img.originalName) + '</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+        reselectArea.innerHTML = html;
+        reselectArea.querySelectorAll("[data-dc-reselect]").forEach(item => {
+          item.onclick = () => {
+            reselectedImageId = item.dataset.dcReselect;
+            renderReselectGrid();
+            confirmBtn.disabled = false;
+          };
+        });
+      }
+
+      optionsEl.querySelectorAll(".delete-cover-option").forEach(opt => {
+        opt.onclick = () => {
+          selectedOption = opt.dataset.dcOption;
+          if (selectedOption === "reselect") reselectedImageId = null;
+          updateOptionSelection();
+        };
+      });
+
+      confirmBtn.disabled = !hasAutoFallback;
+      modal.classList.add("active");
+
+      function cleanup() {
+        modal.classList.remove("active");
+        confirmBtn.onclick = null;
+        cancelBtn.onclick = null;
+        closeBtn.onclick = null;
+        modal.onclick = null;
+      }
+
+      cancelBtn.onclick = cleanup;
+      closeBtn.onclick = cleanup;
+      modal.onclick = (e) => { if (e.target.id === "deleteCoverModal") cleanup(); };
+
+      confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "删除中...";
+        try {
+          const delRes = await api("/api/commissions/" + commissionId + "/images/" + imageId, { method: "DELETE" });
+          if (selectedOption === "reselect" && reselectedImageId) {
+            await api("/api/commissions/" + commissionId + "/cover", {
+              method: "PUT",
+              body: JSON.stringify({ imageId: reselectedImageId })
+            });
+          } else if (selectedOption === "nocover") {
+            await api("/api/commissions/" + commissionId + "/cover", {
+              method: "PUT",
+              body: JSON.stringify({ imageId: "" })
+            });
+          }
+          await loadAll();
+          const updatedCommission = commissions.find(x => x.id === commissionId);
+          if (updatedCommission) renderDetailAll(updatedCommission);
+          if (currentImageCommissionId === commissionId) {
+            await loadImages(commissionId);
+          }
+          cleanup();
+        } catch (err) {
+          alert("操作失败：" + err.message);
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = "确认删除";
+        }
+      };
     }
 
     async function uploadDetailFiles(commissionId, stage, files) {
@@ -8132,7 +8733,8 @@ const server = http.createServer(async (req, res) => {
                 templateId: templateId || existing.templateId,
                 templateName: templateName || existing.templateName,
                 records: c.records && Array.isArray(c.records) ? c.records : existing.records,
-                images: c.images || existing.images
+                images: c.images || existing.images,
+                coverImage: c.coverImage !== undefined ? c.coverImage : existing.coverImage
               };
               try {
                 reserveCommissionMaterials(dbCopy, commission, importOp, importOpId);
@@ -8176,6 +8778,7 @@ const server = http.createServer(async (req, res) => {
             templateName: templateName || "",
             records,
             images: c.images || { before: [], during: [], after: [] },
+            coverImage: c.coverImage || null,
             quotes: [],
             currentQuoteId: "",
             acceptance: null,
@@ -8261,7 +8864,7 @@ const server = http.createServer(async (req, res) => {
           }
         }
       }
-      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, consumeStepName, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] }, quotes: [], currentQuoteId: "", fieldSnapshots: [], operationLogs: [] };
+      const commission = { id: `SP-${Date.now()}`, clientId, client: clientName, roleName: input.roleName, era: input.era, damage: input.damage, missingParts: input.missingParts || "", colorNotes: input.colorNotes || "", reinforcement: input.reinforcement || "", materials: selectedMaterials, consumeStepName, owner: input.owner, dueDate: input.dueDate, status: firstStep, steps: commissionSteps, templateId: input.templateId || "", templateName: input.templateId ? (db.stepTemplates.find(t => t.id === input.templateId)?.name || "") : "", records: [{ at: new Date().toISOString(), step: firstStep, note: "登记委托" }], images: { before: [], during: [], after: [] }, coverImage: null, quotes: [], currentQuoteId: "", fieldSnapshots: [], operationLogs: [] };
       try {
         reserveCommissionMaterials(db, commission, input.operator, input.operatorId);
       } catch (e) {
@@ -8658,6 +9261,7 @@ const server = http.createServer(async (req, res) => {
       if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
       
       const imageId = imageMatch[2];
+      let deletedStage = null;
       
       for (const stage of ["before", "during", "after"]) {
         const idx = commission.images[stage].findIndex(i => i.id === imageId);
@@ -8670,11 +9274,45 @@ const server = http.createServer(async (req, res) => {
             console.error("删除文件失败:", e);
           }
           commission.images[stage].splice(idx, 1);
+          deletedStage = stage;
+          if (commission.coverImage && commission.coverImage.imageId === imageId) {
+            const remaining = commission.images[stage];
+            if (remaining.length > 0) {
+              const latest = remaining[remaining.length - 1];
+              commission.coverImage = { imageId: latest.id, stage };
+            } else {
+              commission.coverImage = null;
+            }
+          }
           await saveDb(db);
-          return sendJson(res, 200, { ok: true });
+          return sendJson(res, 200, { ok: true, coverImage: commission.coverImage });
         }
       }
       return sendJson(res, 404, { error: "image_not_found" });
+    }
+    
+    const coverMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/cover$/);
+    if (coverMatch && req.method === "PUT") {
+      const commission = db.commissions.find(c => c.id === coverMatch[1]);
+      if (!commission) return sendJson(res, 404, { error: "commission_not_found" });
+      
+      const input = await body(req);
+      if (!input.imageId) {
+        commission.coverImage = null;
+        await saveDb(db);
+        return sendJson(res, 200, { coverImage: null });
+      }
+      
+      let found = null;
+      for (const stage of ["before", "during", "after"]) {
+        const img = commission.images[stage].find(i => i.id === input.imageId);
+        if (img) { found = { imageId: img.id, stage }; break; }
+      }
+      if (!found) return sendJson(res, 404, { error: "image_not_found" });
+      
+      commission.coverImage = found;
+      await saveDb(db);
+      return sendJson(res, 200, { coverImage: commission.coverImage });
     }
     
     if (req.method === "GET" && url.pathname === "/api/schedule") {
