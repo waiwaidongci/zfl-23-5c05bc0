@@ -5,8 +5,11 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "dev": "node --watch server.js",
+    "start:test": "DB_FILE=shadow-puppet.test.json UPLOADS_DIR=test-uploads node server.js",
     "test": "node --test test/**/*.test.js",
     "test:watch": "node --test --watch test/**/*.test.js",
-    "test:stock": "node --test test/stock-inventory.test.js"
+    "test:stock": "node --test test/stock-inventory.test.js",
+    "healthcheck": "node scripts/healthcheck.js"
   }
 }

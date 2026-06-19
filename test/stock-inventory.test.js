@@ -1,7 +1,7 @@
 import { test, beforeEach, after, afterEach, describe } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
-import { writeFile, unlink } from "node:fs/promises";
+import { writeFile, unlink, rm, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -20,6 +20,7 @@ import {
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEST_DB_FILE = "shadow-puppet.test.json";
 const TEST_DB_PATH = join(__dirname, "..", "data", TEST_DB_FILE);
+const TEST_UPLOADS_DIR = join(__dirname, "..", "test-uploads-tmp");
 
 async function createTestDbFile() {
   const testDb = {
@@ -75,8 +76,11 @@ async function createTestDbFile() {
       stockWarningDays: 7
     }
   };
+  await mkdir(join(__dirname, "..", "data"), { recursive: true });
   await writeFile(TEST_DB_PATH, JSON.stringify(testDb, null, 2));
   process.env.DB_FILE = TEST_DB_FILE;
+  process.env.UPLOADS_DIR = TEST_UPLOADS_DIR;
+  await mkdir(TEST_UPLOADS_DIR, { recursive: true });
 }
 
 async function cleanupTestDbFile() {
@@ -85,7 +89,13 @@ async function cleanupTestDbFile() {
   } catch (e) {
     if (e.code !== "ENOENT") throw e;
   }
+  try {
+    await rm(TEST_UPLOADS_DIR, { recursive: true, force: true });
+  } catch (e) {
+    if (e.code !== "ENOENT") throw e;
+  }
   delete process.env.DB_FILE;
+  delete process.env.UPLOADS_DIR;
 }
 
 function createTestDb() {

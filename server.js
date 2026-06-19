@@ -1,7 +1,7 @@
 import http from "node:http";
 import { mkdir, readFile, writeFile, unlink, readdir, stat, rename } from "node:fs/promises";
 import { existsSync, createReadStream } from "node:fs";
-import { dirname, join, extname, basename } from "node:path";
+import { dirname, join, extname, basename, isAbsolute } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 import {
@@ -61,7 +61,9 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, "data");
-const uploadsDir = join(__dirname, "uploads");
+const uploadsDir = process.env.UPLOADS_DIR
+  ? (isAbsolute(process.env.UPLOADS_DIR) ? process.env.UPLOADS_DIR : join(__dirname, process.env.UPLOADS_DIR))
+  : join(__dirname, "uploads");
 
 const port = Number(process.env.PORT || 3023);
 
@@ -8918,7 +8920,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === "GET" && url.pathname.startsWith("/uploads/")) {
-      const filePath = join(__dirname, url.pathname);
+      const relativePath = url.pathname.slice("/uploads/".length);
+      const filePath = join(uploadsDir, relativePath);
       if (!filePath.startsWith(uploadsDir)) return sendJson(res, 403, { error: "forbidden" });
       try {
         const stats = await stat(filePath);

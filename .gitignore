@@ -19,3 +19,11 @@ Thumbs.db
 
 .vscode/
 .idea/
+
+# Test and development temporary files
+data/shadow-puppet.test.json
+data/shadow-puppet.ci.json
+test-uploads/
+test-uploads-tmp/
+ci-uploads/
+server.pid
