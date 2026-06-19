@@ -2,7 +2,7 @@ import http from "node:http";
 import { mkdir, readFile, writeFile, unlink, readdir, stat, rename } from "node:fs/promises";
 import { existsSync, createReadStream } from "node:fs";
 import { dirname, join, extname, basename } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { randomUUID } from "node:crypto";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -11063,7 +11063,8 @@ async function startServer() {
   server.listen(port, () => console.log(`Shadow puppet restoration app listening on http://localhost:${port}`));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const isMainModule = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
+if (isMainModule) {
   startServer();
 }
 
