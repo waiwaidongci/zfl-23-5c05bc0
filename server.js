@@ -1082,6 +1082,7 @@ const page = `<!doctype html>
     .workload-badge.overload { background:#fde8e8; color:#c0392b; }
     .workload-badge.idle { background:#e8f0fe; color:#2980b9; }
     .workload-badge.overdue { background:#fef3e2; color:#e67e22; }
+    .workload-badge.due-soon { background:#fff7d6; color:#b7791f; }
     .workload-timeline { padding:12px 14px; }
     .workload-days-grid { display:grid; grid-template-columns:repeat(14,1fr); gap:3px; margin-bottom:10px; }
     .workload-day-cell { aspect-ratio:1; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:#fff; position:relative; cursor:default; }
@@ -1096,15 +1097,17 @@ const page = `<!doctype html>
     .workload-commission-row .wc-name { font-weight:600; }
     .workload-commission-row .wc-step { color:var(--accent); }
     .workload-commission-row .wc-overdue { color:#c0392b; font-weight:700; }
+    .workload-commission-row .wc-due-soon { color:#b7791f; font-weight:700; }
     .workload-hint { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:6px; font-size:12px; margin-top:8px; }
     .workload-hint.hint-overload { background:#fde8e8; color:#c0392b; }
     .workload-hint.hint-idle { background:#e8f0fe; color:#2980b9; }
     .workload-hint.hint-ok { background:#e8f8e8; color:#27ae60; }
-    .workload-summary-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+    .workload-summary-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px; }
     .workload-summary-stats .stat strong { display:block; font-size:20px; }
     .workload-summary-stats .stat span { font-size:12px; color:var(--muted); }
     .workload-summary-stats .stat.overload strong { color:#c0392b; }
     .workload-summary-stats .stat.idle strong { color:#2980b9; }
+    .workload-summary-stats .stat.due-soon strong { color:#b7791f; }
     .workload-summary-stats .stat.ok strong { color:#27ae60; }
     .schedule-view-toggle { display:flex; gap:4px; }
     .schedule-view-toggle button { padding:6px 12px; font-size:12px; background:var(--bg); border:1px solid var(--line); border-radius:6px; cursor:pointer; }
@@ -3357,15 +3360,18 @@ const page = `<!doctype html>
       const members = workload.members || [];
       let totalOverloadMembers = 0;
       let totalIdleMembers = 0;
+      let totalDueSoonItems = 0;
       let totalOkMembers = 0;
       for (const m of members) {
         if (m.overloadedDays > 3) totalOverloadMembers++;
         else if (m.idleDays > 10) totalIdleMembers++;
         else totalOkMembers++;
+        totalDueSoonItems += m.dueSoonCount || 0;
       }
       return '<div class="workload-summary-stats">' +
         '<div class="stat overload"><strong>' + totalOverloadMembers + '</strong><span>超载成员</span></div>' +
         '<div class="stat idle"><strong>' + totalIdleMembers + '</strong><span>空闲成员</span></div>' +
+        '<div class="stat due-soon"><strong>' + totalDueSoonItems + '</strong><span>即将逾期</span></div>' +
         '<div class="stat ok"><strong>' + totalOkMembers + '</strong><span>负载正常</span></div>' +
       '</div>';
     }
@@ -3411,6 +3417,7 @@ const page = `<!doctype html>
         if (member.overloadedDays > 0) badges.push('<span class="workload-badge overload">超载 ' + member.overloadedDays + ' 天</span>');
         if (member.idleDays > 0) badges.push('<span class="workload-badge idle">空闲 ' + member.idleDays + ' 天</span>');
         if (member.overdueCount > 0) badges.push('<span class="workload-badge overdue">逾期 ' + member.overdueCount + ' 项</span>');
+        if (member.dueSoonCount > 0) badges.push('<span class="workload-badge due-soon">即将逾期 ' + member.dueSoonCount + ' 项</span>');
 
         const commRows = member.commissions.map(c => {
           const dueDate = new Date(c.dueDate);
@@ -3418,8 +3425,8 @@ const page = `<!doctype html>
           today.setHours(0, 0, 0, 0);
           dueDate.setHours(0, 0, 0, 0);
           const daysLeft = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-          const dueClass = c.isOverdue ? "wc-overdue" : "";
-          const dueText = c.isOverdue ? "逾期" + Math.abs(daysLeft) + "天" : "还剩" + daysLeft + "天";
+          const dueClass = c.isOverdue ? "wc-overdue" : (c.isDueSoon ? "wc-due-soon" : "");
+          const dueText = c.isOverdue ? "逾期" + Math.abs(daysLeft) + "天" : (c.isDueSoon ? (daysLeft === 0 ? "今天到期" : "即将逾期" + daysLeft + "天") : "还剩" + daysLeft + "天");
           return '<div class="workload-commission-row" data-detail="' + c.id + '" style="cursor:pointer;">' +
             '<span class="wc-name">' + c.roleName + '</span>' +
             '<span class="wc-step">' + c.step + '</span>' +
@@ -3435,6 +3442,8 @@ const page = `<!doctype html>
           hint = '<div class="workload-hint hint-overload">⚠️ 该成员有 ' + member.overloadedDays + ' 天超载，注意合理安排</div>';
         } else if (member.idleDays > 10) {
           hint = '<div class="workload-hint hint-idle">📋 该成员未来两周大部分时间空闲，可分配更多委托</div>';
+        } else if (member.dueSoonCount > 0) {
+          hint = '<div class="workload-hint hint-overload">⚠️ 该成员有 ' + member.dueSoonCount + ' 项委托即将逾期，请优先确认截止安排</div>';
         } else {
           hint = '<div class="workload-hint hint-ok">✅ 负载正常</div>';
         }
@@ -3553,6 +3562,9 @@ const page = `<!doctype html>
           hintEl.className = "workload-hint hint-overload";
         } else if (targetMember.overdueCount > 0) {
           msg = "⚠️ " + newOwner + " 已有 " + targetMember.overdueCount + " 项逾期委托";
+          hintEl.className = "workload-hint hint-overload";
+        } else if (targetMember.dueSoonCount > 0) {
+          msg = "⚠️ " + newOwner + " 调整后有 " + targetMember.dueSoonCount + " 项委托即将逾期";
           hintEl.className = "workload-hint hint-overload";
         } else {
           msg = "✅ " + newOwner + " 负载正常（" + targetMember.commissions.length + " 项委托，" + targetMember.idleDays + " 天空闲）";
@@ -8753,6 +8765,8 @@ const server = http.createServer(async (req, res) => {
       today.setHours(0, 0, 0, 0);
       const rangeEnd = new Date(today);
       rangeEnd.setDate(today.getDate() + 14);
+      const dueSoonEnd = new Date(today);
+      dueSoonEnd.setDate(today.getDate() + 3);
 
       const DAILY_CAPACITY = 1;
       const members = {};
@@ -8804,15 +8818,22 @@ const server = http.createServer(async (req, res) => {
             commissions: [],
             overloadedDays: 0,
             idleDays: 0,
-            overdueCount: 0
+            overdueCount: 0,
+            dueSoonCount: 0
           };
         }
 
         if (isOverdue) members[owner].overdueCount++;
+        const isDueSoon = !isOverdue && dueDate <= dueSoonEnd;
+        if (isDueSoon) members[owner].dueSoonCount++;
+
+        const scheduledStart = new Date(dueDate);
+        scheduledStart.setDate(dueDate.getDate() - remainingDays + 1);
+        if (scheduledStart < startDate) scheduledStart.setTime(startDate.getTime());
 
         for (let d = 0; d < remainingDays; d++) {
-          const dateObj = new Date(startDate);
-          dateObj.setDate(startDate.getDate() + d);
+          const dateObj = new Date(scheduledStart);
+          dateObj.setDate(scheduledStart.getDate() + d);
           if (dateObj > rangeEnd) break;
           if (dateObj < today) continue;
           const dateKey = toLocalDateStr(dateObj);
@@ -8826,7 +8847,8 @@ const server = http.createServer(async (req, res) => {
             step: c.status,
             dueDate: effectiveDueDate,
             estimatedDays: totalEstimatedDays,
-            isOverdue
+            isOverdue,
+            isDueSoon
           });
         }
 
@@ -8840,6 +8862,7 @@ const server = http.createServer(async (req, res) => {
           estimatedDays: totalEstimatedDays,
           remainingDays,
           isOverdue,
+          isDueSoon,
           client: c.client || ""
         });
       }
