@@ -198,9 +198,87 @@
           "confirmedAt": null,
           "createdBy": "",
           "previousVersionId": "Q-1781837133432-qmv1"
+        },
+        {
+          "id": "Q-1781862224627-crvc",
+          "version": 3,
+          "status": "superseded",
+          "items": [
+            {
+              "id": "QI-1781862224627-0",
+              "description": "测试项目1",
+              "quantity": 1,
+              "unitPrice": 100,
+              "amount": 100
+            },
+            {
+              "id": "QI-1781862224627-1",
+              "description": "测试项目2",
+              "quantity": 2,
+              "unitPrice": 50,
+              "amount": 100
+            }
+          ],
+          "laborCost": 200,
+          "materialCost": 100,
+          "totalAmount": 500,
+          "estimatedDays": 5,
+          "remark": "测试报价版本快照",
+          "createdAt": "2026-06-19T09:43:44.627Z",
+          "confirmedAt": "2026-06-19T09:43:57.309Z",
+          "createdBy": "",
+          "createdBySnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:43:44.627Z"
+          },
+          "confirmedBySnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:43:57.309Z"
+          },
+          "previousVersionId": ""
+        },
+        {
+          "id": "Q-1781862251436-uu07",
+          "version": 4,
+          "status": "draft",
+          "items": [
+            {
+              "id": "QI-1781862497333-0",
+              "description": "有权限编辑项目",
+              "quantity": 1,
+              "unitPrice": 500,
+              "amount": 500
+            }
+          ],
+          "laborCost": 200,
+          "materialCost": 100,
+          "totalAmount": 800,
+          "estimatedDays": 7,
+          "remark": "测试有权限编辑",
+          "createdAt": "2026-06-19T09:44:11.436Z",
+          "confirmedAt": null,
+          "createdBy": "",
+          "createdBySnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:44:11.436Z"
+          },
+          "confirmedBySnapshot": null,
+          "previousVersionId": "Q-1781862224627-crvc",
+          "editedBySnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:48:17.334Z"
+          }
         }
       ],
-      "currentQuoteId": "Q-1781837331857-eok4",
+      "currentQuoteId": "Q-1781862251436-uu07",
       "acceptance": null,
       "operationLogs": [
         {
@@ -240,6 +318,62 @@
           },
           "detail": "更新字段：破损部位",
           "at": "2026-06-19T09:23:15.817Z"
+        },
+        {
+          "id": "LOG-1781862224627-5f04",
+          "type": "quote_create",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:43:44.627Z"
+          },
+          "detail": "创建报价 V3",
+          "at": "2026-06-19T09:43:44.627Z"
+        },
+        {
+          "id": "LOG-1781862237309-8fbo",
+          "type": "quote_confirm",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:43:57.309Z"
+          },
+          "detail": "确认报价 V3",
+          "at": "2026-06-19T09:43:57.309Z"
+        },
+        {
+          "id": "LOG-1781862251436-87cb",
+          "type": "quote_revise",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:44:11.436Z"
+          },
+          "detail": "重新报价 V4",
+          "at": "2026-06-19T09:44:11.436Z"
+        },
+        {
+          "id": "LOG-1781862497339-buv2",
+          "type": "quote_edit",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:48:17.339Z"
+          },
+          "detail": "修改报价 V4",
+          "at": "2026-06-19T09:48:17.339Z"
         }
       ],
       "fieldSnapshots": [
@@ -1333,6 +1467,18 @@
   ],
   "_stockMigratedV2": "2026-06-19T02:30:02.881Z",
   "deniedOperations": [
+    {
+      "id": "DENY-1781862469124-gp63",
+      "operatorId": "MB-003",
+      "operator": "李学徒",
+      "permission": "commission_edit",
+      "permissionLabel": "委托编辑",
+      "operation": "编辑报价",
+      "reason": "角色「学徒」没有「委托编辑」权限，如需操作请联系主修复师",
+      "targetType": "commission",
+      "targetId": "SP-001",
+      "at": "2026-06-19T09:47:49.124Z"
+    },
     {
       "id": "DENY-1781860979029-q533",
       "operatorId": "MB-003",

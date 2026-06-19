@@ -10065,6 +10065,21 @@ const server = http.createServer(async (req, res) => {
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
 
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "创建报价",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: quotesListMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       const items = Array.isArray(input.items) ? input.items.map((item, idx) => ({
         id: `QI-${Date.now()}-${idx}`,
         description: item.description || "",
@@ -10090,6 +10105,8 @@ const server = http.createServer(async (req, res) => {
         createdAt: new Date().toISOString(),
         confirmedAt: null,
         createdBy: input.createdBy || "",
+        createdBySnapshot: getOperatorSnapshot(db, input.operatorId, input.operator),
+        confirmedBySnapshot: null,
         previousVersionId: input.previousVersionId || ""
       };
 
@@ -10124,6 +10141,21 @@ const server = http.createServer(async (req, res) => {
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
 
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "编辑报价",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: quoteDetailMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       if (Array.isArray(input.items)) {
         quote.items = input.items.map((item, idx) => ({
           id: item.id || `QI-${Date.now()}-${idx}`,
@@ -10143,6 +10175,8 @@ const server = http.createServer(async (req, res) => {
       } else {
         quote.totalAmount = quote.items.reduce((sum, item) => sum + item.amount, 0) + quote.laborCost + quote.materialCost;
       }
+
+      quote.editedBySnapshot = getOperatorSnapshot(db, input.operatorId, input.operator);
 
       addOperationLog(commission, "quote_edit", input.operator, input.operatorId, "修改报价 V" + quote.version, db);
       await saveDb(db);
@@ -10180,6 +10214,7 @@ const server = http.createServer(async (req, res) => {
 
       quote.status = "confirmed";
       quote.confirmedAt = new Date().toISOString();
+      quote.confirmedBySnapshot = getOperatorSnapshot(db, confirmInput.operatorId, confirmInput.operator);
 
       commission.currentQuoteId = quote.id;
 
@@ -10202,6 +10237,21 @@ const server = http.createServer(async (req, res) => {
       const reviseInput = await body(req);
       const reviseOpCheck = requireOperator(reviseInput);
       if (reviseOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: reviseOpCheck.message });
+
+      const permCheck = checkPermission(db, reviseInput.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: reviseInput.operatorId,
+          operator: reviseInput.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "重新报价",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: quoteReviseMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
 
       let newItems, newLabor, newMaterial, newTotal, newDays, newRemark;
       if (reviseInput.items && Array.isArray(reviseInput.items)) {
@@ -10240,6 +10290,8 @@ const server = http.createServer(async (req, res) => {
         createdAt: new Date().toISOString(),
         confirmedAt: null,
         createdBy: "",
+        createdBySnapshot: getOperatorSnapshot(db, reviseInput.operatorId, reviseInput.operator),
+        confirmedBySnapshot: null,
         previousVersionId: oldQuote.id
       };
 
