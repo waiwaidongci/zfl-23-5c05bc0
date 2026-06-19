@@ -4596,10 +4596,11 @@ const page = `<!doctype html>
         return true;
       });
 
-      const clients = importPreviewData.clients || { items: [] };
-      const materials = importPreviewData.materials || { items: [] };
-      const members = importPreviewData.members || { items: [] };
-      const templates = importPreviewData.templates || { items: [] };
+      const importableMatchKeys = buildImportableMatchKeys(commissionItemsToImport);
+      const clients = filterEntityForImportSummary(importPreviewData.clients, importableMatchKeys.clients);
+      const materials = filterEntityForImportSummary(importPreviewData.materials, importableMatchKeys.materials);
+      const members = filterEntityForImportSummary(importPreviewData.members, importableMatchKeys.members);
+      const templates = filterEntityForImportSummary(importPreviewData.templates, importableMatchKeys.templates);
 
       const summarize = (items, matches) => {
         let created = 0, reused = 0;
@@ -4645,6 +4646,45 @@ const page = `<!doctype html>
           renderSummarySection("成员", buildEntitySummary(members.items, memberMatches, (it) => it.imported.name || "-"), members.items.length) +
           renderSummarySection("步骤模板", buildEntitySummary(templates.items, templateMatches, (it) => it.imported.name || (it.imported.steps || []).join("→")), templates.items.length) +
         '</div>';
+    }
+
+    function buildImportableMatchKeys(commissionItemsToImport) {
+      const keys = {
+        clients: new Set(),
+        materials: new Set(),
+        members: new Set(),
+        templates: new Set()
+      };
+      commissionItemsToImport.forEach(item => {
+        const c = item.data || {};
+        const clientKey = (c.clientId || "").trim() || (c.client || "").trim();
+        if (clientKey) keys.clients.add(clientKey);
+        const owner = (c.owner || "").trim();
+        if (owner) keys.members.add(owner);
+        const tplId = (c.templateId || "").trim();
+        const tplName = (c.templateName || "").trim();
+        const steps = Array.isArray(c.steps) ? c.steps : [];
+        const tplKey = tplId || tplName || (steps.length ? steps.join("|") : "");
+        if (tplKey) keys.templates.add(tplKey);
+        if (Array.isArray(c.materials)) {
+          c.materials.forEach(m => {
+            if (!m || typeof m !== "object") return;
+            const materialKey = (m.materialId || "").trim() || ((m.name || "").trim() + "||" + (m.batch || "").trim());
+            if (materialKey && materialKey !== "||") keys.materials.add(materialKey);
+          });
+        }
+      });
+      return keys;
+    }
+
+    function filterEntityForImportSummary(entity, keySet) {
+      if (!entity) return { total: 0, categories: { new: [], matched: [], conflict: [], unmatched: [] }, items: [] };
+      const items = (entity.items || []).filter(item => keySet.has(item.matchKey));
+      return {
+        total: items.length,
+        categories: entity.categories || { new: [], matched: [], conflict: [], unmatched: [] },
+        items
+      };
     }
 
     function buildEntitySummary(items, matches, nameFn) {
@@ -7414,12 +7454,17 @@ const server = http.createServer(async (req, res) => {
       commissions.categories.missingFields = [...new Set(commissions.categories.missingFields)];
       commissions.categories.invalidSteps = [...new Set(commissions.categories.invalidSteps)];
 
+      const importableData = commissions.items
+        .filter(item => !item.categories.includes("missingFields") && !item.categories.includes("invalidSteps"))
+        .map(item => importedData[item.index])
+        .filter(item => item && typeof item === "object" && !Array.isArray(item));
+
       const preview = {
         commissions,
-        clients: analyzeImportClients(importedData, db.clients),
-        materials: analyzeImportMaterials(importedData, db.materials),
-        members: analyzeImportMembers(importedData, db.members),
-        templates: analyzeImportTemplates(importedData, db.stepTemplates),
+        clients: analyzeImportClients(importableData, db.clients),
+        materials: analyzeImportMaterials(importableData, db.materials),
+        members: analyzeImportMembers(importableData, db.members),
+        templates: analyzeImportTemplates(importableData, db.stepTemplates),
         existing: {
           clients: db.clients.map(c => ({ id: c.id, name: c.name, contact: c.contact, phone: c.phone, address: c.address })),
           materials: db.materials.map(m => ({ id: m.id, name: m.name, batch: m.batch, category: m.category, stock: m.stock, unit: m.unit })),
