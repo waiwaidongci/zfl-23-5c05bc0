@@ -17,7 +17,7 @@
       "client": "洛川民俗馆",
       "roleName": "武生靠旗",
       "era": "民国早期",
-      "damage": "腿部开裂，靠旗缺角",
+      "damage": "测试权限修改-修复师",
       "missingParts": "右侧靠旗尖",
       "colorNotes": "朱砂区域褪色",
       "reinforcement": "薄驴皮补片",
@@ -226,6 +226,20 @@
           "operatorId": "MB-001",
           "detail": "重新报价 V2",
           "at": "2026-06-19T02:48:51.858Z"
+        },
+        {
+          "id": "LOG-1781860995817-2daf",
+          "type": "field_update",
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:23:15.817Z"
+          },
+          "detail": "更新字段：破损部位",
+          "at": "2026-06-19T09:23:15.817Z"
         }
       ],
       "fieldSnapshots": [
@@ -260,6 +274,44 @@
           "operatorId": "",
           "reason": "初始数据快照",
           "at": "2026-06-10T10:00:00.000Z"
+        },
+        {
+          "id": "SNAP-1781860995817-bo9r",
+          "fields": {
+            "roleName": "武生靠旗",
+            "era": "民国早期",
+            "damage": "测试权限修改-修复师",
+            "missingParts": "右侧靠旗尖",
+            "colorNotes": "朱砂区域褪色",
+            "reinforcement": "薄驴皮补片",
+            "owner": "许岚",
+            "dueDate": "2026-06-28",
+            "status": "补片",
+            "client": "洛川民俗馆",
+            "materials": [
+              {
+                "materialId": "MAT-1",
+                "name": "薄驴皮补片",
+                "batch": "LP-2026-A01",
+                "quantity": 2,
+                "reservedQty": 0,
+                "consumedQty": 2,
+                "consumedAt": "2026-06-19T02:30:02.881Z",
+                "consumedBy": "系统迁移",
+                "consumedStep": "补片"
+              }
+            ]
+          },
+          "operator": "许岚",
+          "operatorId": "MB-001",
+          "operatorSnapshot": {
+            "id": "MB-001",
+            "name": "许岚",
+            "role": "修复师",
+            "snapshotAt": "2026-06-19T09:23:15.817Z"
+          },
+          "reason": "编辑：破损部位",
+          "at": "2026-06-19T09:23:15.817Z"
         }
       ],
       "consumeStepName": "补片",
@@ -1279,5 +1331,19 @@
       "at": "2026-06-19T05:02:37.370Z"
     }
   ],
-  "_stockMigratedV2": "2026-06-19T02:30:02.881Z"
+  "_stockMigratedV2": "2026-06-19T02:30:02.881Z",
+  "deniedOperations": [
+    {
+      "id": "DENY-1781860979029-q533",
+      "operatorId": "MB-003",
+      "operator": "李学徒",
+      "permission": "commission_edit",
+      "permissionLabel": "委托编辑",
+      "operation": "编辑委托",
+      "reason": "角色「学徒」没有「委托编辑」权限，如需操作请联系主修复师",
+      "targetType": "commission",
+      "targetId": "SP-001",
+      "at": "2026-06-19T09:22:59.029Z"
+    }
+  ]
 }

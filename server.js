@@ -46,6 +46,51 @@ const STOCK_LEDGER_LABELS = {
   undo_consume: "撤销消耗"
 };
 
+const PERMISSIONS = {
+  COMMISSION_EDIT: "commission_edit",
+  QUOTE_CONFIRM: "quote_confirm",
+  ACCEPTANCE_REVOKE: "acceptance_revoke",
+  TEMPLATE_DELETE: "template_delete",
+  IMPORT_OVERWRITE: "import_overwrite",
+  MATERIAL_OUTBOUND: "material_outbound"
+};
+
+const PERMISSION_LABELS = {
+  commission_edit: "委托编辑",
+  quote_confirm: "报价确认",
+  acceptance_revoke: "验收撤销",
+  template_delete: "模板删除",
+  import_overwrite: "导入覆盖",
+  material_outbound: "材料出库"
+};
+
+const ROLE_PERMISSIONS = {
+  "主修复师": [
+    PERMISSIONS.COMMISSION_EDIT,
+    PERMISSIONS.QUOTE_CONFIRM,
+    PERMISSIONS.ACCEPTANCE_REVOKE,
+    PERMISSIONS.TEMPLATE_DELETE,
+    PERMISSIONS.IMPORT_OVERWRITE,
+    PERMISSIONS.MATERIAL_OUTBOUND
+  ],
+  "修复师": [
+    PERMISSIONS.COMMISSION_EDIT,
+    PERMISSIONS.QUOTE_CONFIRM,
+    PERMISSIONS.MATERIAL_OUTBOUND
+  ],
+  "补色师": [
+    PERMISSIONS.COMMISSION_EDIT
+  ],
+  "学徒": []
+};
+
+const ROLE_HIERARCHY = {
+  "主修复师": 4,
+  "修复师": 3,
+  "补色师": 2,
+  "学徒": 1
+};
+
 function toLocalDateStr(date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -53,7 +98,7 @@ function toLocalDateStr(date) {
   return y + "-" + m + "-" + d;
 }
 
-function createFieldSnapshot(commission, operator, operatorId, reason) {
+function createFieldSnapshot(commission, operator, operatorId, reason, db) {
   const snapshot = {};
   for (const field of snapshotTrackedFields) {
     snapshot[field] = commission[field] !== undefined ? commission[field] : "";
@@ -64,12 +109,13 @@ function createFieldSnapshot(commission, operator, operatorId, reason) {
     fields: snapshot,
     operator: operator || "未知",
     operatorId: operatorId || "",
+    operatorSnapshot: db ? getOperatorSnapshot(db, operatorId, operator) : { id: operatorId || "", name: operator || "未知", role: "", snapshotAt: new Date().toISOString() },
     reason: reason || "",
     at: new Date().toISOString()
   };
 }
 
-function createStockLedgerEntry({ materialId, materialName, batch, type, quantity, stockBefore, stockAfter, reservedBefore, reservedAfter, commissionId, commissionName, step, operator, operatorId, note }) {
+function createStockLedgerEntry({ materialId, materialName, batch, type, quantity, stockBefore, stockAfter, reservedBefore, reservedAfter, commissionId, commissionName, step, operator, operatorId, note, db }) {
   return {
     id: `LEDGER-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     materialId: materialId || "",
@@ -86,6 +132,7 @@ function createStockLedgerEntry({ materialId, materialName, batch, type, quantit
     step: step || "",
     operator: operator || "未知",
     operatorId: operatorId || "",
+    operatorSnapshot: db ? getOperatorSnapshot(db, operatorId, operator) : { id: operatorId || "", name: operator || "未知", role: "", snapshotAt: new Date().toISOString() },
     note: note || "",
     at: new Date().toISOString()
   };
@@ -142,7 +189,8 @@ function reserveCommissionMaterials(db, commission, operator, operatorId) {
         reservedBefore, reservedAfter: reservedBefore,
         commissionId: commission.id, commissionName: commission.roleName,
         step: commission.status, operator, operatorId,
-        note: `委托创建时已超过消耗节点，直接出库消耗`
+        note: `委托创建时已超过消耗节点，直接出库消耗`,
+        db
       }));
     } else {
       const available = stockBefore - reservedBefore;
@@ -157,7 +205,8 @@ function reserveCommissionMaterials(db, commission, operator, operatorId) {
         reservedBefore, reservedAfter: mat.reserved,
         commissionId: commission.id, commissionName: commission.roleName,
         step: commission.status, operator, operatorId,
-        note: `委托创建占用`
+        note: `委托创建占用`,
+        db
       }));
     }
   }
@@ -186,7 +235,8 @@ function releaseCommissionMaterials(db, commission, operator, operatorId, reason
         reservedBefore, reservedAfter: reservedBefore,
         commissionId: commission.id, commissionName: commission.roleName,
         step: commission.status, operator, operatorId,
-        note: (reason || "释放委托") + "，退回已消耗库存"
+        note: (reason || "释放委托") + "，退回已消耗库存",
+        db
       }));
     }
 
@@ -202,7 +252,8 @@ function releaseCommissionMaterials(db, commission, operator, operatorId, reason
         reservedBefore, reservedAfter: mat.reserved,
         commissionId: commission.id, commissionName: commission.roleName,
         step: commission.status, operator, operatorId,
-        note: reason || `释放占用`
+        note: reason || `释放占用`,
+        db
       }));
     }
   }
@@ -257,7 +308,8 @@ function adjustCommissionMaterials(db, commission, oldMaterials, operator, opera
           reservedBefore, reservedAfter: reservedBefore,
           commissionId: commission.id, commissionName: commission.roleName,
           step: commission.status, operator, operatorId,
-          note: `调整材料数量-追加消耗（已过消耗节点）`
+          note: `调整材料数量-追加消耗（已过消耗节点）`,
+          db
         }));
       } else if (diff < 0) {
         const returnQty = Math.abs(diff);
@@ -272,7 +324,8 @@ function adjustCommissionMaterials(db, commission, oldMaterials, operator, opera
             reservedBefore, reservedAfter: reservedBefore,
             commissionId: commission.id, commissionName: commission.roleName,
             step: commission.status, operator, operatorId,
-            note: `调整材料数量-退回库存`
+            note: `调整材料数量-退回库存`,
+            db
           }));
         }
         if (newM) {
@@ -292,7 +345,8 @@ function adjustCommissionMaterials(db, commission, oldMaterials, operator, opera
           reservedBefore, reservedAfter: mat.reserved,
           commissionId: commission.id, commissionName: commission.roleName,
           step: commission.status, operator, operatorId,
-          note: `调整材料数量-增加占用`
+          note: `调整材料数量-增加占用`,
+          db
         }));
       } else if (diff < 0) {
         const releaseQty = Math.min(Math.abs(diff), reservedBefore, oldReserved || 0);
@@ -306,7 +360,8 @@ function adjustCommissionMaterials(db, commission, oldMaterials, operator, opera
             reservedBefore, reservedAfter: mat.reserved,
             commissionId: commission.id, commissionName: commission.roleName,
             step: commission.status, operator, operatorId,
-            note: `调整材料数量-减少占用`
+            note: `调整材料数量-减少占用`,
+            db
           }));
         }
       }
@@ -354,7 +409,8 @@ function consumeCommissionMaterialsAtStep(db, commission, oldStatus, newStatus, 
         reservedBefore, reservedAfter: mat.reserved,
         commissionId: commission.id, commissionName: commission.roleName,
         step: newStatus, operator, operatorId,
-        note: `步骤推进至【${consumeStepName}】，实际出库消耗`
+        note: `步骤推进至【${consumeStepName}】，实际出库消耗`,
+        db
       }));
     }
   }
@@ -383,7 +439,8 @@ function undoCommissionMaterialsConsume(db, commission, operator, operatorId, re
       reservedBefore, reservedAfter: mat.reserved,
       commissionId: commission.id, commissionName: commission.roleName,
       step: commission.status, operator, operatorId,
-      note: reason || `撤销消耗，恢复占用`
+      note: reason || `撤销消耗，恢复占用`,
+      db
     }));
   }
 }
@@ -1687,12 +1744,10 @@ const page = `<!doctype html>
         <label>姓名</label><input name="name" required>
         <label>角色</label>
         <select name="role">
-          <option value="修复师">修复师</option>
-          <option value="补色师">补色师</option>
-          <option value="装裱师">装裱师</option>
           <option value="学徒">学徒</option>
-          <option value="管理员">管理员</option>
-          <option value="其他">其他</option>
+          <option value="补色师">补色师</option>
+          <option value="修复师">修复师</option>
+          <option value="主修复师">主修复师</option>
         </select>
         <label>电话</label><input name="phone" placeholder="联系电话">
         <label>备注</label><textarea name="remark"></textarea>
@@ -1817,7 +1872,7 @@ const page = `<!doctype html>
             </div>
             <div style="display:flex;gap:8px;">
               <button id="saveTplBtn">保存修改</button>
-              <button class="secondary" id="deleteTplBtn">删除模板</button>
+              <button class="secondary" id="deleteTplBtn" data-permission="template_delete">删除模板</button>
             </div>
           </div>
         </div>
@@ -2174,7 +2229,7 @@ const page = `<!doctype html>
         </div>
         <div id="quoteDraftActions" style="display:none;">
           <button type="button" id="quoteEditBtn">编辑报价</button>
-          <button type="button" class="secondary" id="quoteConfirmBtn">确认报价</button>
+          <button type="button" class="secondary" id="quoteConfirmBtn" data-permission="quote_confirm">确认报价</button>
         </div>
         <div id="quoteConfirmedActions" style="display:none;">
           <button type="button" id="quoteReviseBtn">重新报价</button>
@@ -2252,7 +2307,7 @@ const page = `<!doctype html>
           <button type="button" id="acceptanceSaveBtn">确认验收</button>
         </div>
         <div id="acceptanceViewActions" style="display:none;">
-          <button type="button" class="secondary" id="acceptanceDeleteBtn">撤销验收</button>
+          <button type="button" class="secondary" id="acceptanceDeleteBtn" data-permission="acceptance_revoke">撤销验收</button>
         </div>
       </div>
     </div>
@@ -2441,14 +2496,120 @@ const page = `<!doctype html>
       if (savedOp && !sel.value && members.some(m => m.id === savedOp)) sel.value = savedOp;
     }
 
-    document.getElementById("operatorSelect").onchange = function() {
+    document.getElementById("operatorSelect").onchange = async function() {
       localStorage.setItem("currentOperatorId", this.value);
+      await loadCurrentOperatorPermissions();
+      updateAllButtonPermissions();
+    };
+
+    let currentOperatorPermissions = [];
+    let currentOperatorRole = "";
+
+    async function loadCurrentOperatorPermissions() {
+      const op = getCurrentOperator();
+      if (!op.operatorId) {
+        currentOperatorPermissions = [];
+        currentOperatorRole = "";
+        return;
+      }
+      try {
+        const data = await api("/api/members/" + op.operatorId + "/permissions");
+        currentOperatorPermissions = data.permissions || [];
+        currentOperatorRole = data.role || "";
+      } catch (e) {
+        currentOperatorPermissions = [];
+        currentOperatorRole = "";
+      }
+    }
+
+    function hasPermission(permission) {
+      return currentOperatorPermissions.includes(permission);
+    }
+
+    function updateAllButtonPermissions() {
+      document.querySelectorAll("[data-permission]").forEach(btn => {
+        const perm = btn.dataset.permission;
+        if (!perm) return;
+        
+        if (!hasPermission(perm)) {
+          btn.disabled = true;
+          btn.style.opacity = "0.5";
+          btn.style.cursor = "not-allowed";
+          if (!btn.dataset.titleOriginal) {
+            btn.dataset.titleOriginal = btn.title || "";
+          }
+          const roleText = currentOperatorRole ? \`当前角色「\${currentOperatorRole}」\` : "当前操作者";
+          btn.title = \`\${roleText}没有此操作权限，请联系主修复师\`;
+        } else {
+          btn.disabled = false;
+          btn.style.opacity = "";
+          btn.style.cursor = "";
+          if (btn.dataset.titleOriginal !== undefined) {
+            btn.title = btn.dataset.titleOriginal;
+          }
+        }
+      });
+
+      document.querySelectorAll("[data-permission-input]").forEach(input => {
+        const perm = input.dataset.permissionInput;
+        if (!perm) return;
+        
+        if (!hasPermission(perm)) {
+          input.disabled = true;
+          input.style.opacity = "0.5";
+          input.style.cursor = "not-allowed";
+          const label = input.closest("label");
+          if (label) {
+            label.style.opacity = "0.5";
+            label.style.cursor = "not-allowed";
+          }
+        } else {
+          input.disabled = false;
+          input.style.opacity = "";
+          input.style.cursor = "";
+          const label = input.closest("label");
+          if (label) {
+            label.style.opacity = "";
+            label.style.cursor = "";
+          }
+        }
+      });
+    }
+
+    const PERMISSIONS = {
+      COMMISSION_EDIT: "commission_edit",
+      QUOTE_CONFIRM: "quote_confirm",
+      ACCEPTANCE_REVOKE: "acceptance_revoke",
+      TEMPLATE_DELETE: "template_delete",
+      IMPORT_OVERWRITE: "import_overwrite",
+      MATERIAL_OUTBOUND: "material_outbound"
+    };
+
+    const PERMISSION_LABELS = {
+      commission_edit: "委托编辑",
+      quote_confirm: "报价确认",
+      acceptance_revoke: "验收撤销",
+      template_delete: "模板删除",
+      import_overwrite: "导入覆盖",
+      material_outbound: "材料出库"
+    };
+
+    const ROLE_PERMISSIONS = {
+      "主修复师": ["commission_edit", "quote_confirm", "acceptance_revoke", "template_delete", "import_overwrite", "material_outbound"],
+      "修复师": ["commission_edit", "quote_confirm", "material_outbound"],
+      "补色师": ["commission_edit"],
+      "学徒": []
     };
 
     async function api(path, options) {
       const res = await fetch(path, options && options.body ? { ...options, headers:{ "Content-Type":"application/json" } } : options);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "请求失败");
+      if (!res.ok) {
+        if (data.error === "permission_denied") {
+          throw new Error("⛔ 权限不足：" + (data.message || "此操作需要更高权限，请联系主修复师"));
+        }
+        throw new Error(data.message || data.error || "请求失败");
+      }
       return data;
     }
 
@@ -2959,6 +3120,12 @@ const page = `<!doctype html>
         return;
       }
       list.innerHTML = members.map(m => {
+        const rolePerms = ROLE_PERMISSIONS[m.role] || [];
+        const permBadges = rolePerms.length > 0 
+          ? '<div class="meta" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">权限：' + 
+            rolePerms.map(p => '<span class="pill" style="font-size:10px;padding:1px 6px;">' + (PERMISSION_LABELS[p] || p) + '</span>').join("") +
+            '</div>' 
+          : '<div class="meta" style="margin-top:6px;color:var(--muted);">暂无权限</div>';
         return '<div class="card member-card">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;">' +
           '<h3 style="margin:0;font-size:16px;">'+m.name+'</h3>' +
@@ -2967,7 +3134,8 @@ const page = `<!doctype html>
           (m.phone ? '<div class="meta">电话：'+m.phone+'</div>' : '') +
           (m.remark ? '<div class="meta">备注：'+m.remark+'</div>' : '') +
           '<div class="meta">负责委托：<strong>'+commissions.filter(c => c.owner === m.name).length+'</strong> 条</div>' +
-          '<div style="display:flex;gap:6px;margin-top:4px;">' +
+          permBadges +
+          '<div style="display:flex;gap:6px;margin-top:8px;">' +
           '<button class="small" data-edit-member="'+m.id+'">编辑</button>' +
           '<button class="small secondary" data-delete-member="'+m.id+'">删除</button>' +
           '</div>' +
@@ -2979,9 +3147,18 @@ const page = `<!doctype html>
           if (!m) return;
           const newName = prompt("姓名：", m.name);
           if (newName === null) return;
-          const newRole = prompt("角色：", m.role);
+          const validRoles = Object.keys(ROLE_PERMISSIONS);
+          const roleHint = "角色可选：" + validRoles.join("、");
+          let newRole = prompt(roleHint + "\n角色：", m.role);
+          if (newRole === null) newRole = m.role;
+          if (newRole && !validRoles.includes(newRole)) {
+            alert("角色必须是以下之一：" + validRoles.join("、"));
+            return;
+          }
           const newPhone = prompt("电话：", m.phone);
+          if (newPhone === null) return;
           const newRemark = prompt("备注：", m.remark);
+          if (newRemark === null) return;
           if (newName && newName.trim()) {
             api("/api/members/" + m.id, {
               method: "PUT",
@@ -3071,7 +3248,7 @@ const page = `<!doctype html>
           '<div class="stock-actions">' +
           '<input type="number" id="stock_'+m.id+'" placeholder="数量" value="1" min="1">' +
           '<button class="small" data-stock-add="'+m.id+'">入库</button>' +
-          '<button class="small secondary" data-stock-sub="'+m.id+'">出库</button>' +
+          '<button class="small secondary" data-stock-sub="'+m.id+'" data-permission="material_outbound">出库</button>' +
           '<button class="small secondary" data-ledger-mat="'+m.id+'">查看流水</button>' +
           '</div>' +
           '<div class="material-card-actions">' +
@@ -3922,6 +4099,7 @@ const page = `<!doctype html>
         materials = await api("/api/materials");
         stepTemplates = await api("/api/step-templates");
         members = await api("/api/members");
+        await loadCurrentOperatorPermissions();
       } catch (e) {
         console.error("loadAll failed, retrying sequentially:", e.message);
         commissions = commissions || [];
@@ -3934,6 +4112,7 @@ const page = `<!doctype html>
         await loadSchedule();
       }
       render();
+      updateAllButtonPermissions();
     }
 
     document.querySelector("#form").onsubmit = async event => {
@@ -4823,7 +5002,7 @@ const page = `<!doctype html>
           (canOverwrite ? 
             '<div class="import-item-actions">' +
               '<label>' +
-                '<input type="checkbox" data-import-overwrite="' + item.index + '" ' + overwriteChecked + '>' +
+                '<input type="checkbox" data-import-overwrite="' + item.index + '" data-permission-input="import_overwrite" ' + overwriteChecked + '>' +
                 ' 覆盖现有委托' +
               '</label>' +
             '</div>'
@@ -6807,7 +6986,7 @@ const page = `<!doctype html>
         return '<span style="background:'+bg+';color:'+col+';padding:2px 8px;border-radius:999px;font-size:11px;white-space:nowrap;">'+s+'</span>';
       }).join('<span style="color:var(--muted);font-size:10px;">→</span>') + '</div>';
 
-      el.innerHTML = '<div class="detail-section-header"><h4>基础信息</h4><button class="small" id="detailEditInfoBtn">✏️ 编辑</button></div>' +
+      el.innerHTML = '<div class="detail-section-header"><h4>基础信息</h4><button class="small" id="detailEditInfoBtn" data-permission="commission_edit">✏️ 编辑</button></div>' +
         stepsBar +
         '<div class="detail-info-grid">' +
         '<div class="detail-info-item"><span class="label">角色名称</span><span class="value">' + (c.roleName || '—') + tplBadge + '</span></div>' +
@@ -6835,7 +7014,7 @@ const page = `<!doctype html>
         '<label style="margin:10px 0 3px;font-size:12px;color:var(--muted);">破损部位</label><textarea id="editDamage" rows="2">' + (c.damage || '') + '</textarea>' +
         '<label style="margin:10px 0 3px;font-size:12px;color:var(--muted);">补色记录</label><textarea id="editColorNotes" rows="2">' + (c.colorNotes || '') + '</textarea>' +
         '<label style="margin:10px 0 3px;font-size:12px;color:var(--muted);">加固材料</label><input id="editReinforcement" value="' + (c.reinforcement || '') + '">' +
-        '<div style="display:flex;gap:8px;margin-top:12px;"><button id="saveDetailInfoBtn">保存修改</button><button class="secondary" id="cancelDetailEditBtn">取消</button></div>' +
+        '<div style="display:flex;gap:8px;margin-top:12px;"><button id="saveDetailInfoBtn" data-permission="commission_edit">保存修改</button><button class="secondary" id="cancelDetailEditBtn">取消</button></div>' +
         '</div>';
 
       document.getElementById("detailEditInfoBtn").onclick = () => {
@@ -7576,13 +7755,85 @@ function requireOperator(input) {
   return { error: false };
 }
 
-function addOperationLog(commission, type, operator, operatorId, detail) {
+function getMemberById(db, memberId) {
+  if (!memberId || !db.members) return null;
+  return db.members.find(m => m.id === memberId);
+}
+
+function getMemberRole(db, memberId) {
+  const member = getMemberById(db, memberId);
+  return member ? member.role : "";
+}
+
+function hasPermission(db, memberId, permission) {
+  const member = getMemberById(db, memberId);
+  if (!member) return false;
+  
+  const role = member.role || "";
+  const allowedPermissions = ROLE_PERMISSIONS[role] || [];
+  return allowedPermissions.includes(permission);
+}
+
+function checkPermission(db, memberId, permission) {
+  const member = getMemberById(db, memberId);
+  if (!member) {
+    return {
+      allowed: false,
+      reason: "操作者不存在或已被删除，请重新选择当前操作者"
+    };
+  }
+  
+  const role = member.role || "";
+  const allowed = hasPermission(db, memberId, permission);
+  
+  if (!allowed) {
+    return {
+      allowed: false,
+      reason: `角色「${role}」没有「${PERMISSION_LABELS[permission]}」权限，如需操作请联系主修复师`
+    };
+  }
+  
+  return { allowed: true };
+}
+
+function addDeniedOperationLog(db, { operatorId, operator, permission, operation, reason, targetType, targetId }) {
+  if (!db.deniedOperations) db.deniedOperations = [];
+  
+  const entry = {
+    id: `DENY-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    operatorId: operatorId || "",
+    operator: operator || "未知",
+    permission: permission || "",
+    permissionLabel: PERMISSION_LABELS[permission] || permission || "",
+    operation: operation || "",
+    reason: reason || "",
+    targetType: targetType || "",
+    targetId: targetId || "",
+    at: new Date().toISOString()
+  };
+  
+  db.deniedOperations.unshift(entry);
+  return entry;
+}
+
+function getOperatorSnapshot(db, operatorId, operatorName) {
+  const member = getMemberById(db, operatorId);
+  return {
+    id: operatorId || "",
+    name: operatorName || (member ? member.name : ""),
+    role: member ? member.role : "",
+    snapshotAt: new Date().toISOString()
+  };
+}
+
+function addOperationLog(commission, type, operator, operatorId, detail, db) {
   if (!commission.operationLogs) commission.operationLogs = [];
   commission.operationLogs.push({
     id: `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     type,
     operator: operator || "未知",
     operatorId: operatorId || "",
+    operatorSnapshot: db ? getOperatorSnapshot(db, operatorId, operator) : { id: operatorId || "", name: operator || "未知", role: "", snapshotAt: new Date().toISOString() },
     detail: detail || "",
     at: new Date().toISOString()
   });
@@ -8097,6 +8348,21 @@ const server = http.createServer(async (req, res) => {
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
 
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "编辑委托",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: commissionDetailMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
       const before = {};
       for (const field of snapshotTrackedFields) {
@@ -8145,9 +8411,9 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (changedFields.length > 0) {
-        const snapshot = createFieldSnapshot(commission, input.operator, input.operatorId, "编辑：" + changedFields.join("、"));
+        const snapshot = createFieldSnapshot(commission, input.operator, input.operatorId, "编辑：" + changedFields.join("、"), db);
         commission.fieldSnapshots.push(snapshot);
-        addOperationLog(commission, "field_update", input.operator, input.operatorId, "更新字段：" + changedFields.join("、"));
+        addOperationLog(commission, "field_update", input.operator, input.operatorId, "更新字段：" + changedFields.join("、"), db);
       }
 
       await saveDb(db);
@@ -8170,6 +8436,21 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "恢复字段快照",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: snapshotRestoreMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
 
       const before = {};
       for (const field of snapshotTrackedFields) {
@@ -8207,9 +8488,9 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (restoredFields.length > 0) {
-        const newSnapshot = createFieldSnapshot(commission, input.operator, input.operatorId, "恢复版本：" + (snapshot.reason || "历史快照"));
+        const newSnapshot = createFieldSnapshot(commission, input.operator, input.operatorId, "恢复版本：" + (snapshot.reason || "历史快照"), db);
         commission.fieldSnapshots.push(newSnapshot);
-        addOperationLog(commission, "version_restore", input.operator, input.operatorId, "恢复版本（" + (snapshot.reason || "历史快照") + "），恢复字段：" + restoredFields.join("、"));
+        addOperationLog(commission, "version_restore", input.operator, input.operatorId, "恢复版本（" + (snapshot.reason || "历史快照") + "），恢复字段：" + restoredFields.join("、"), db);
       }
 
       await saveDb(db);
@@ -8347,6 +8628,28 @@ const server = http.createServer(async (req, res) => {
       
       if (!Array.isArray(itemsToImport) || itemsToImport.length === 0) {
         return sendJson(res, 400, { error: "没有可导入的数据" });
+      }
+
+      const firstItemWithOp = itemsToImport.find(item => item.operatorId);
+      const checkOperatorId = firstItemWithOp?.operatorId || "";
+      const checkOperator = firstItemWithOp?.operator || "";
+      
+      const hasOverwriteItems = itemsToImport.some(item => item.forceOverwrite);
+      if (hasOverwriteItems) {
+        const permCheck = checkPermission(db, checkOperatorId, PERMISSIONS.IMPORT_OVERWRITE);
+        if (!permCheck.allowed) {
+          addDeniedOperationLog(db, {
+            operatorId: checkOperatorId,
+            operator: checkOperator,
+            permission: PERMISSIONS.IMPORT_OVERWRITE,
+            operation: "导入覆盖",
+            reason: permCheck.reason,
+            targetType: "commission",
+            targetId: "bulk_import"
+          });
+          await saveDb(db);
+          return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+        }
       }
 
       const allSteps = new Set();
@@ -8742,6 +9045,10 @@ const server = http.createServer(async (req, res) => {
                 throw new Error(`委托【${commission.roleName}】导入失败：${e.message}`);
               }
               dbCopy.commissions[existingIdx] = commission;
+              
+              commission.fieldSnapshots.push(createFieldSnapshot(commission, importOp, importOpId, "导入覆盖", dbCopy));
+              addOperationLog(commission, "import_overwrite", importOp, importOpId, "导入覆盖委托", dbCopy);
+              
               summary.commissions.updated++;
               summary.commissions.items.push({ id: commission.id, name: commission.roleName, action: "updated" });
               continue;
@@ -8792,8 +9099,8 @@ const server = http.createServer(async (req, res) => {
             throw new Error(`委托【${commission.roleName}】导入失败：${e.message}`);
           }
 
-          commission.fieldSnapshots.push(createFieldSnapshot(commission, importOp, importOpId, "导入委托"));
-          addOperationLog(commission, "import", importOp, importOpId, "批量导入创建委托");
+          commission.fieldSnapshots.push(createFieldSnapshot(commission, importOp, importOpId, "导入委托", dbCopy));
+          addOperationLog(commission, "import", importOp, importOpId, "批量导入创建委托", dbCopy);
           dbCopy.commissions.unshift(commission);
           summary.commissions.created++;
           summary.commissions.items.push({ id: commission.id, name: commission.roleName, action: "created" });
@@ -8870,8 +9177,8 @@ const server = http.createServer(async (req, res) => {
       } catch (e) {
         return sendJson(res, 400, { error: e.message });
       }
-      commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "创建委托"));
-      addOperationLog(commission, "create", input.operator, input.operatorId, "创建委托");
+      commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "创建委托", db));
+      addOperationLog(commission, "create", input.operator, input.operatorId, "创建委托", db);
       db.commissions.unshift(commission);
       await saveDb(db);
       return sendJson(res, 201, commission);
@@ -8883,6 +9190,22 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "更新步骤",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: match[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       if (!commission.fieldSnapshots) commission.fieldSnapshots = [];
       const oldStatus = commission.status;
       const newStatus = input.step;
@@ -8905,9 +9228,9 @@ const server = http.createServer(async (req, res) => {
       commission.status = newStatus;
       commission.records.push({ at: new Date().toISOString(), step: newStatus, note: input.note || "" });
       if (oldStatus !== newStatus) {
-        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "步骤更新：" + oldStatus + " → " + newStatus));
+        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "步骤更新：" + oldStatus + " → " + newStatus, db));
       }
-      addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + newStatus + (input.note ? " - " + input.note : ""));
+      addOperationLog(commission, "step_update", input.operator, input.operatorId, "步骤更新：" + newStatus + (input.note ? " - " + input.note : ""), db);
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
@@ -8923,6 +9246,22 @@ const server = http.createServer(async (req, res) => {
       const input = await body(req);
       const opCheck = requireOperator(input);
       if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.COMMISSION_EDIT);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.COMMISSION_EDIT,
+          operation: "填写验收",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: acceptanceMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       const acceptance = {
         result: input.result || "",
         deliveryDate: input.deliveryDate || "",
@@ -8933,7 +9272,7 @@ const server = http.createServer(async (req, res) => {
       };
       commission.acceptance = acceptance;
       commission.records.push({ at: new Date().toISOString(), step: lastStep, note: "交付验收完成" });
-      addOperationLog(commission, "acceptance", input.operator, input.operatorId, "交付验收：" + input.result);
+      addOperationLog(commission, "acceptance", input.operator, input.operatorId, "交付验收：" + input.result, db);
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
@@ -8943,11 +9282,27 @@ const server = http.createServer(async (req, res) => {
       if (!commission.acceptance) {
         return sendJson(res, 400, { error: "no_acceptance", message: "该委托暂无验收记录" });
       }
-      commission.acceptance = null;
       const revokeInput = await body(req);
       const revokeOpCheck = requireOperator(revokeInput);
       if (revokeOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: revokeOpCheck.message });
-      addOperationLog(commission, "acceptance_revoke", revokeInput.operator || "", revokeInput.operatorId || "", "撤销验收");
+
+      const permCheck = checkPermission(db, revokeInput.operatorId, PERMISSIONS.ACCEPTANCE_REVOKE);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: revokeInput.operatorId,
+          operator: revokeInput.operator,
+          permission: PERMISSIONS.ACCEPTANCE_REVOKE,
+          operation: "撤销验收",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: acceptanceMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
+      commission.acceptance = null;
+      addOperationLog(commission, "acceptance_revoke", revokeInput.operator || "", revokeInput.operatorId || "", "撤销验收", db);
       await saveDb(db);
       return sendJson(res, 200, { ok: true });
     }
@@ -8979,6 +9334,27 @@ const server = http.createServer(async (req, res) => {
       if (db.stepTemplates[idx].id === "TPL-DEFAULT") {
         return sendJson(res, 400, { error: "默认模板不能删除" });
       }
+      
+      const input = await body(req);
+      const opCheck = requireOperator(input);
+      if (opCheck.error) return sendJson(res, 400, { error: "operator_required", message: opCheck.message });
+
+      const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.TEMPLATE_DELETE);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: input.operatorId,
+          operator: input.operator,
+          permission: PERMISSIONS.TEMPLATE_DELETE,
+          operation: "删除模板",
+          reason: permCheck.reason,
+          targetType: "template",
+          targetId: tplMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
+      const deletedTemplate = db.stepTemplates[idx];
       db.stepTemplates.splice(idx, 1);
       await saveDb(db);
       return sendJson(res, 200, { ok: true });
@@ -9017,7 +9393,8 @@ const server = http.createServer(async (req, res) => {
           stockBefore: 0, stockAfter: initStock,
           reservedBefore: 0, reservedAfter: 0,
           operator: op, operatorId: opId,
-          note: `新增材料，初始库存 ${initStock}${material.unit}`
+          note: `新增材料，初始库存 ${initStock}${material.unit}`,
+          db
         }));
       }
       await saveDb(db);
@@ -9035,9 +9412,27 @@ const server = http.createServer(async (req, res) => {
       if (input.stock !== undefined) {
         const newStock = Math.max(0, Number(input.stock) || 0);
         const diff = newStock - stockBefore;
-        material.stock = newStock;
         const op = input.operator || "系统";
         const opId = input.operatorId || "";
+        
+        if (diff < 0) {
+          const permCheck = checkPermission(db, opId, PERMISSIONS.MATERIAL_OUTBOUND);
+          if (!permCheck.allowed) {
+            addDeniedOperationLog(db, {
+              operatorId: opId,
+              operator: op,
+              permission: PERMISSIONS.MATERIAL_OUTBOUND,
+              operation: "材料出库（编辑调整）",
+              reason: permCheck.reason,
+              targetType: "material",
+              targetId: materialMatch[1]
+            });
+            await saveDb(db);
+            return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+          }
+        }
+        
+        material.stock = newStock;
         if (diff !== 0) {
           addStockLedger(db, createStockLedgerEntry({
             materialId: material.id, materialName: material.name, batch: material.batch,
@@ -9046,7 +9441,8 @@ const server = http.createServer(async (req, res) => {
             stockBefore, stockAfter: newStock,
             reservedBefore: Number(material.reserved) || 0, reservedAfter: Number(material.reserved) || 0,
             operator: op, operatorId: opId,
-            note: `编辑材料调整库存：${stockBefore} → ${newStock}（${diff > 0 ? "+" : ""}${diff}）`
+            note: `编辑材料调整库存：${stockBefore} → ${newStock}（${diff > 0 ? "+" : ""}${diff}）`,
+            db
           }));
         }
       }
@@ -9076,12 +9472,29 @@ const server = http.createServer(async (req, res) => {
       const change = Number(input.change) || 0;
       const stockBefore = Number(material.stock) || 0;
       const reservedBefore = Number(material.reserved) || 0;
+      
       if (change < 0) {
+        const permCheck = checkPermission(db, input.operatorId, PERMISSIONS.MATERIAL_OUTBOUND);
+        if (!permCheck.allowed) {
+          addDeniedOperationLog(db, {
+            operatorId: input.operatorId,
+            operator: input.operator,
+            permission: PERMISSIONS.MATERIAL_OUTBOUND,
+            operation: "材料出库",
+            reason: permCheck.reason,
+            targetType: "material",
+            targetId: stockMatch[1]
+          });
+          await saveDb(db);
+          return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+        }
+        
         const available = stockBefore - reservedBefore;
         if (available + change < 0) {
           return sendJson(res, 400, { error: `可用量不足，当前可用 ${available}${material.unit}（总库存 ${stockBefore}${material.unit}，已占用 ${reservedBefore}${material.unit}）` });
         }
       }
+      
       material.stock = Math.max(0, stockBefore + change);
       const op = input.operator || "系统";
       const opId = input.operatorId || "";
@@ -9092,7 +9505,8 @@ const server = http.createServer(async (req, res) => {
         stockBefore, stockAfter: material.stock,
         reservedBefore, reservedAfter: reservedBefore,
         operator: op, operatorId: opId,
-        note: input.note || (change > 0 ? "手动入库" : "手动出库") + `：${change > 0 ? "+" : ""}${change}${material.unit}`
+        note: input.note || (change > 0 ? "手动入库" : "手动出库") + `：${change > 0 ? "+" : ""}${change}${material.unit}`,
+        db
       }));
       await saveDb(db);
       return sendJson(res, 200, { ...material, available: getMaterialAvailable(material) });
@@ -9103,6 +9517,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/api/members") {
       const input = await body(req);
       if (!input.name || !input.name.trim()) return sendJson(res, 400, { error: "成员名称不能为空" });
+      const validRoles = Object.keys(ROLE_PERMISSIONS);
+      if (input.role && !validRoles.includes(input.role)) {
+        return sendJson(res, 400, { error: "invalid_role", message: `角色必须是以下之一：${validRoles.join("、")}` });
+      }
       const member = { id: `MB-${Date.now()}`, name: input.name.trim(), role: input.role || "", phone: input.phone || "", remark: input.remark || "" };
       db.members.unshift(member);
       await saveDb(db);
@@ -9114,6 +9532,10 @@ const server = http.createServer(async (req, res) => {
       const member = db.members.find(m => m.id === memberMatch[1]);
       if (!member) return sendJson(res, 404, { error: "member_not_found" });
       const input = await body(req);
+      const validRoles = Object.keys(ROLE_PERMISSIONS);
+      if (input.role !== undefined && input.role && !validRoles.includes(input.role)) {
+        return sendJson(res, 400, { error: "invalid_role", message: `角色必须是以下之一：${validRoles.join("、")}` });
+      }
       if (input.name !== undefined) member.name = input.name;
       if (input.role !== undefined) member.role = input.role;
       if (input.phone !== undefined) member.phone = input.phone;
@@ -9125,9 +9547,47 @@ const server = http.createServer(async (req, res) => {
     if (memberMatch && req.method === "DELETE") {
       const idx = db.members.findIndex(m => m.id === memberMatch[1]);
       if (idx === -1) return sendJson(res, 404, { error: "member_not_found" });
+      const deletedMember = db.members[idx];
       db.members.splice(idx, 1);
       await saveDb(db);
-      return sendJson(res, 200, { ok: true });
+      return sendJson(res, 200, { ok: true, deleted: deletedMember });
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/permissions/roles") {
+      return sendJson(res, 200, {
+        roles: Object.keys(ROLE_PERMISSIONS),
+        rolePermissions: ROLE_PERMISSIONS,
+        permissionLabels: PERMISSION_LABELS,
+        roleHierarchy: ROLE_HIERARCHY
+      });
+    }
+
+    const memberPermMatch = url.pathname.match(/^\/api\/members\/([^/]+)\/permissions$/);
+    if (memberPermMatch && req.method === "GET") {
+      const memberId = memberPermMatch[1];
+      const member = getMemberById(db, memberId);
+      if (!member) return sendJson(res, 404, { error: "member_not_found" });
+      
+      const role = member.role || "";
+      const permissions = ROLE_PERMISSIONS[role] || [];
+      return sendJson(res, 200, {
+        memberId: member.id,
+        memberName: member.name,
+        role: role,
+        permissions: permissions,
+        permissionLabels: permissions.map(p => ({ key: p, label: PERMISSION_LABELS[p] || p }))
+      });
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/denied-operations") {
+      if (!db.deniedOperations) db.deniedOperations = [];
+      const params = new URL(req.url, `http://${req.headers.host}`).searchParams;
+      const limit = Math.min(Number(params.get("limit")) || 100, 500);
+      const operatorId = params.get("operatorId") || "";
+      let list = db.deniedOperations;
+      if (operatorId) list = list.filter(item => item.operatorId === operatorId);
+      list = list.slice(0, limit);
+      return sendJson(res, 200, { total: db.deniedOperations.length, items: list });
     }
 
     const logsMatch = url.pathname.match(/^\/api\/commissions\/([^/]+)\/logs$/);
@@ -9577,13 +10037,13 @@ const server = http.createServer(async (req, res) => {
         commission.remark = input.remark;
       }
       if (changedFields.length > 0) {
-        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "排期更新：" + changedFields.join("、")));
+        commission.fieldSnapshots.push(createFieldSnapshot(commission, input.operator, input.operatorId, "排期更新：" + changedFields.join("、"), db));
       }
       const logDetails = [];
       if (input.status !== undefined) logDetails.push("步骤→" + input.status);
       if (input.owner !== undefined) logDetails.push("负责人→" + input.owner);
       if (input.dueDate !== undefined) logDetails.push("截止日期→" + input.dueDate);
-      if (logDetails.length) addOperationLog(commission, "schedule_update", input.operator, input.operatorId, logDetails.join("，"));
+      if (logDetails.length) addOperationLog(commission, "schedule_update", input.operator, input.operatorId, logDetails.join("，"), db);
       await saveDb(db);
       return sendJson(res, 200, commission);
     }
@@ -9637,7 +10097,7 @@ const server = http.createServer(async (req, res) => {
       commission.quotes.push(quote);
       commission.currentQuoteId = quote.id;
 
-      addOperationLog(commission, "quote_create", input.operator, input.operatorId, "创建报价 V" + quote.version);
+      addOperationLog(commission, "quote_create", input.operator, input.operatorId, "创建报价 V" + quote.version, db);
       await saveDb(db);
       return sendJson(res, 201, quote);
     }
@@ -9684,7 +10144,7 @@ const server = http.createServer(async (req, res) => {
         quote.totalAmount = quote.items.reduce((sum, item) => sum + item.amount, 0) + quote.laborCost + quote.materialCost;
       }
 
-      addOperationLog(commission, "quote_edit", input.operator, input.operatorId, "修改报价 V" + quote.version);
+      addOperationLog(commission, "quote_edit", input.operator, input.operatorId, "修改报价 V" + quote.version, db);
       await saveDb(db);
       return sendJson(res, 200, quote);
     }
@@ -9699,15 +10159,31 @@ const server = http.createServer(async (req, res) => {
         return sendJson(res, 400, { error: "only_draft_can_be_confirmed", message: "只有草稿状态的报价才能确认" });
       }
 
+      const confirmInput = await body(req);
+      const confirmOpCheck = requireOperator(confirmInput);
+      if (confirmOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: confirmOpCheck.message });
+
+      const permCheck = checkPermission(db, confirmInput.operatorId, PERMISSIONS.QUOTE_CONFIRM);
+      if (!permCheck.allowed) {
+        addDeniedOperationLog(db, {
+          operatorId: confirmInput.operatorId,
+          operator: confirmInput.operator,
+          permission: PERMISSIONS.QUOTE_CONFIRM,
+          operation: "确认报价",
+          reason: permCheck.reason,
+          targetType: "commission",
+          targetId: quoteConfirmMatch[1]
+        });
+        await saveDb(db);
+        return sendJson(res, 403, { error: "permission_denied", message: permCheck.reason });
+      }
+
       quote.status = "confirmed";
       quote.confirmedAt = new Date().toISOString();
 
       commission.currentQuoteId = quote.id;
 
-      const confirmInput = await body(req);
-      const confirmOpCheck = requireOperator(confirmInput);
-      if (confirmOpCheck.error) return sendJson(res, 400, { error: "operator_required", message: confirmOpCheck.message });
-      addOperationLog(commission, "quote_confirm", confirmInput.operator || "", confirmInput.operatorId || "", "确认报价 V" + quote.version);
+      addOperationLog(commission, "quote_confirm", confirmInput.operator || "", confirmInput.operatorId || "", "确认报价 V" + quote.version, db);
       await saveDb(db);
       return sendJson(res, 200, quote);
     }
@@ -9770,7 +10246,7 @@ const server = http.createServer(async (req, res) => {
       commission.quotes.push(newQuote);
       commission.currentQuoteId = newQuote.id;
 
-      addOperationLog(commission, "quote_revise", reviseInput.operator || "", reviseInput.operatorId || "", "重新报价 V" + newQuote.version);
+      addOperationLog(commission, "quote_revise", reviseInput.operator || "", reviseInput.operatorId || "", "重新报价 V" + newQuote.version, db);
       await saveDb(db);
       return sendJson(res, 201, newQuote);
     }
