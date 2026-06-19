@@ -4605,8 +4605,15 @@ const page = `<!doctype html>
         let created = 0, reused = 0;
         items.forEach(it => {
           const userSel = matches[it.matchKey];
-          if (it.category === "matched" || (userSel && userSel !== "__new__")) reused++;
-          else created++;
+          if (userSel === "__new__") {
+            created++;
+          } else if (userSel && userSel !== "__new__") {
+            reused++;
+          } else if (it.category === "matched") {
+            reused++;
+          } else {
+            created++;
+          }
         });
         return { created, reused };
       };
@@ -4645,16 +4652,29 @@ const page = `<!doctype html>
         const userSel = matches[it.matchKey];
         let action = "created";
         let reason = "新增";
-        if (it.category === "matched" || (userSel && userSel !== "__new__")) {
+        if (userSel === "__new__") {
+          action = "created";
+          reason = it.category === "conflict" ? "冲突，作为新建" :
+                   it.category === "unmatched" ? "无法匹配，作为新建" :
+                   it.category === "matched" ? "匹配项，作为新建" :
+                   "新增";
+        } else if (userSel && userSel !== "__new__") {
           action = "reused";
-          reason = "复用现有";
+          reason = it.category === "conflict" ? "冲突，使用现有" :
+                   it.category === "unmatched" ? "无法匹配，使用现有" :
+                   "复用现有";
+        } else if (it.category === "matched") {
+          action = "reused";
+          reason = "自动匹配，复用现有";
         } else if (it.category === "unmatched") {
-          if (userSel === "__new__") { action = "created"; reason = "无法匹配，作为新建"; }
-          else { action = "skipped"; reason = "无法匹配，未指定"; }
+          action = "skipped";
+          reason = "无法匹配，未指定";
         } else if (it.category === "conflict") {
-          if (userSel && userSel !== "__new__") { action = "reused"; reason = "冲突，使用现有"; }
-          else if (userSel === "__new__") { action = "created"; reason = "冲突，作为新建"; }
-          else { action = "reused"; reason = "冲突，默认复用"; }
+          action = "reused";
+          reason = "冲突，默认复用";
+        } else {
+          action = "created";
+          reason = "新增";
         }
         return { id: it.matchKey, name: nameFn(it), action, reason };
       });
@@ -7457,25 +7477,27 @@ const server = http.createServer(async (req, res) => {
         }
 
         const matchedId = clientMatches[matchKey];
-        if (matchedId && matchedId !== "__new__") {
+        if (matchedId === "__new__") {
+          // skip auto-matching, go to create new
+        } else if (matchedId && matchedId !== "__new__") {
           const existing = dbCopy.clients.find(cl => cl.id === matchedId);
           if (existing) return { id: existing.id, name: existing.name };
-        }
-
-        if (rawId) {
-          const byId = dbCopy.clients.find(cl => cl.id === rawId);
-          if (byId) {
-            summary.clients.reused++;
-            summary.clients.items.push({ id: byId.id, name: byId.name, action: "reused" });
-            return { id: byId.id, name: byId.name };
+        } else {
+          if (rawId) {
+            const byId = dbCopy.clients.find(cl => cl.id === rawId);
+            if (byId) {
+              summary.clients.reused++;
+              summary.clients.items.push({ id: byId.id, name: byId.name, action: "reused" });
+              return { id: byId.id, name: byId.name };
+            }
           }
-        }
-        if (rawName) {
-          const byName = dbCopy.clients.find(cl => cl.name === rawName);
-          if (byName) {
-            summary.clients.reused++;
-            summary.clients.items.push({ id: byName.id, name: byName.name, action: "reused" });
-            return { id: byName.id, name: byName.name };
+          if (rawName) {
+            const byName = dbCopy.clients.find(cl => cl.name === rawName);
+            if (byName) {
+              summary.clients.reused++;
+              summary.clients.items.push({ id: byName.id, name: byName.name, action: "reused" });
+              return { id: byName.id, name: byName.name };
+            }
           }
         }
 
@@ -7506,21 +7528,23 @@ const server = http.createServer(async (req, res) => {
         if (newMemberIdMap[name]) return newMemberIdMap[name];
 
         const matchedId = memberMatches[name];
-        if (matchedId && matchedId !== "__new__") {
+        if (matchedId === "__new__") {
+          // skip auto-matching, go to create new
+        } else if (matchedId && matchedId !== "__new__") {
           const existing = dbCopy.members.find(m => m.id === matchedId);
           if (existing) {
             summary.members.reused++;
             summary.members.items.push({ id: existing.id, name: existing.name, action: "reused" });
             return existing.id;
           }
-        }
-
-        const byName = dbCopy.members.find(m => m.name === name);
-        if (byName) {
-          summary.members.reused++;
-          summary.members.items.push({ id: byName.id, name: byName.name, action: "reused" });
-          newMemberIdMap[name] = byName.id;
-          return byName.id;
+        } else {
+          const byName = dbCopy.members.find(m => m.name === name);
+          if (byName) {
+            summary.members.reused++;
+            summary.members.items.push({ id: byName.id, name: byName.name, action: "reused" });
+            newMemberIdMap[name] = byName.id;
+            return byName.id;
+          }
         }
 
         if (!createdMemberKeys.has(name)) {
@@ -7553,38 +7577,40 @@ const server = http.createServer(async (req, res) => {
         }
 
         const matchedId = templateMatches[matchKey];
-        if (matchedId && matchedId !== "__new__") {
+        if (matchedId === "__new__") {
+          // skip auto-matching, go to create new
+        } else if (matchedId && matchedId !== "__new__") {
           const existing = dbCopy.stepTemplates.find(t => t.id === matchedId);
           if (existing) {
             summary.templates.reused++;
             summary.templates.items.push({ id: existing.id, name: existing.name, action: "reused" });
             return { id: existing.id, name: existing.name };
           }
-        }
-
-        if (tplId) {
-          const byId = dbCopy.stepTemplates.find(t => t.id === tplId);
-          if (byId) {
-            summary.templates.reused++;
-            summary.templates.items.push({ id: byId.id, name: byId.name, action: "reused" });
-            return { id: byId.id, name: byId.name };
+        } else {
+          if (tplId) {
+            const byId = dbCopy.stepTemplates.find(t => t.id === tplId);
+            if (byId) {
+              summary.templates.reused++;
+              summary.templates.items.push({ id: byId.id, name: byId.name, action: "reused" });
+              return { id: byId.id, name: byId.name };
+            }
           }
-        }
-        if (tplName) {
-          const byName = dbCopy.stepTemplates.find(t => t.name === tplName);
-          if (byName) {
-            summary.templates.reused++;
-            summary.templates.items.push({ id: byName.id, name: byName.name, action: "reused" });
-            return { id: byName.id, name: byName.name };
+          if (tplName) {
+            const byName = dbCopy.stepTemplates.find(t => t.name === tplName);
+            if (byName) {
+              summary.templates.reused++;
+              summary.templates.items.push({ id: byName.id, name: byName.name, action: "reused" });
+              return { id: byName.id, name: byName.name };
+            }
           }
-        }
-        if (steps.length > 0) {
-          const bySteps = dbCopy.stepTemplates.find(t =>
-            t.steps.length === steps.length && t.steps.every((s, i) => s === steps[i]));
-          if (bySteps) {
-            summary.templates.reused++;
-            summary.templates.items.push({ id: bySteps.id, name: bySteps.name, action: "reused" });
-            return { id: bySteps.id, name: bySteps.name };
+          if (steps.length > 0) {
+            const bySteps = dbCopy.stepTemplates.find(t =>
+              t.steps.length === steps.length && t.steps.every((s, i) => s === steps[i]));
+            if (bySteps) {
+              summary.templates.reused++;
+              summary.templates.items.push({ id: bySteps.id, name: bySteps.name, action: "reused" });
+              return { id: bySteps.id, name: bySteps.name };
+            }
           }
         }
 
@@ -7621,47 +7647,50 @@ const server = http.createServer(async (req, res) => {
         }
 
         const matchedId = materialMatches[matchKey];
-        if (matchedId && matchedId !== "__new__") {
+        if (matchedId === "__new__") {
+          // skip auto-matching, go to create new
+        } else if (matchedId && matchedId !== "__new__") {
           const existing = dbCopy.materials.find(mat => mat.id === matchedId);
           if (existing) {
             summary.materials.reused++;
             summary.materials.items.push({ id: existing.id, name: existing.name, batch: existing.batch, action: "reused" });
             return existing;
           }
-        }
-
-        if (rawId) {
-          const byId = dbCopy.materials.find(mat => mat.id === rawId);
-          if (byId) {
-            summary.materials.reused++;
-            summary.materials.items.push({ id: byId.id, name: byId.name, batch: byId.batch, action: "reused" });
-            return byId;
+        } else {
+          if (rawId) {
+            const byId = dbCopy.materials.find(mat => mat.id === rawId);
+            if (byId) {
+              summary.materials.reused++;
+              summary.materials.items.push({ id: byId.id, name: byId.name, batch: byId.batch, action: "reused" });
+              return byId;
+            }
           }
-        }
-        if (rawName && rawBatch) {
-          const byNameBatch = dbCopy.materials.find(mat => mat.name === rawName && mat.batch === rawBatch);
-          if (byNameBatch) {
-            summary.materials.reused++;
-            summary.materials.items.push({ id: byNameBatch.id, name: byNameBatch.name, batch: byNameBatch.batch, action: "reused" });
-            return byNameBatch;
+          if (rawName && rawBatch) {
+            const byNameBatch = dbCopy.materials.find(mat => mat.name === rawName && mat.batch === rawBatch);
+            if (byNameBatch) {
+              summary.materials.reused++;
+              summary.materials.items.push({ id: byNameBatch.id, name: byNameBatch.name, batch: byNameBatch.batch, action: "reused" });
+              return byNameBatch;
+            }
           }
-        }
-        if (rawName) {
-          const byName = dbCopy.materials.find(mat => mat.name === rawName);
-          if (byName) {
-            summary.materials.reused++;
-            summary.materials.items.push({ id: byName.id, name: byName.name, batch: byName.batch, action: "reused" });
-            return byName;
+          if (rawName) {
+            const byName = dbCopy.materials.find(mat => mat.name === rawName);
+            if (byName) {
+              summary.materials.reused++;
+              summary.materials.items.push({ id: byName.id, name: byName.name, batch: byName.batch, action: "reused" });
+              return byName;
+            }
           }
         }
 
         if (!createdMaterialKeys.has(matchKey) && rawName) {
+          const totalQty = newMaterialTotals[matchKey] || Number(m.quantity) || 0;
           const newMat = {
             id: `MAT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             name: rawName,
             category: m.category || "其他",
             batch: rawBatch || `BATCH-${Date.now()}`,
-            stock: 0,
+            stock: totalQty,
             unit: m.unit || "个",
             remark: "导入时自动创建",
             minStock: 0,
@@ -7677,6 +7706,22 @@ const server = http.createServer(async (req, res) => {
           return dbCopy.materials.find(mat => mat.id === newMaterialIdMap[matchKey]);
         }
         return null;
+      }
+
+      const newMaterialTotals = {};
+      for (const item of itemsToImport) {
+        if (!item.data || !Array.isArray(item.data.materials)) continue;
+        for (const m of item.data.materials) {
+          const rawId = m.materialId || "";
+          const rawName = m.name || "";
+          const rawBatch = m.batch || "";
+          const matchKey = rawId || `${rawName}||${rawBatch}`;
+          if (!matchKey || matchKey === "||") continue;
+          if (materialMatches[matchKey] === "__new__") {
+            if (!newMaterialTotals[matchKey]) newMaterialTotals[matchKey] = 0;
+            newMaterialTotals[matchKey] += Number(m.quantity) || 0;
+          }
+        }
       }
 
       try {
