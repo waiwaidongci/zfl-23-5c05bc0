@@ -1113,6 +1113,87 @@ const page = `<!doctype html>
     .import-item-actions input[type=checkbox] { width:auto; }
     .field-tag { display:inline-block; padding:1px 6px; background:#fff; border:1px solid var(--line); border-radius:4px; font-size:11px; margin:0 2px; }
 
+    .wizard-steps { display:flex; gap:2px; margin-bottom:20px; border-bottom:1px solid var(--line); padding-bottom:12px; }
+    .wizard-step { flex:1; padding:10px 14px; background:var(--bg); border:1px solid var(--line); border-radius:6px; cursor:pointer; font-size:13px; text-align:center; position:relative; }
+    .wizard-step.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+    .wizard-step.done { background:var(--green-soft); color:var(--green); border-color:var(--green); }
+    .wizard-step:disabled { opacity:0.5; cursor:not-allowed; }
+    .wizard-step .step-num { display:inline-block; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.1); color:inherit; font-weight:700; margin-right:6px; line-height:22px; text-align:center; }
+    .wizard-step.active .step-num { background:rgba(255,255,255,0.25); }
+
+    .entity-tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:16px; flex-wrap:wrap; }
+    .entity-tab { padding:10px 16px; background:var(--bg); border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0; cursor:pointer; font-size:13px; position:relative; }
+    .entity-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:700; }
+    .entity-tab .ent-count { display:inline-block; margin-left:6px; padding:1px 8px; background:rgba(0,0,0,0.1); border-radius:999px; font-size:11px; }
+    .entity-tab.active .ent-count { background:rgba(255,255,255,0.25); }
+
+    .entity-content { display:none; }
+    .entity-content.active { display:block; }
+
+    .entity-filter-tabs { display:flex; gap:4px; margin-bottom:12px; flex-wrap:wrap; }
+    .entity-filter-tab { padding:6px 12px; background:var(--bg); border:1px solid var(--line); border-radius:6px; cursor:pointer; font-size:12px; }
+    .entity-filter-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+    .entity-filter-tab .ef-count { margin-left:4px; padding:1px 6px; background:rgba(0,0,0,0.08); border-radius:999px; font-size:11px; }
+    .entity-filter-tab.active .ef-count { background:rgba(255,255,255,0.2); }
+
+    .entity-list { max-height:350px; overflow-y:auto; }
+    .entity-item { background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px 14px; margin-bottom:10px; }
+    .entity-item-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+    .entity-item-title { font-weight:700; font-size:14px; margin:0; }
+    .entity-item-badges { display:flex; gap:5px; flex-wrap:wrap; }
+    .entity-badge { padding:3px 8px; border-radius:999px; font-size:11px; font-weight:600; }
+    .entity-badge.new { background:var(--green-soft); color:var(--green); }
+    .entity-badge.matched { background:#d4e6f7; color:#1f5e9c; }
+    .entity-badge.conflict { background:var(--orange-soft); color:var(--orange); }
+    .entity-badge.unmatched { background:var(--red-soft); color:var(--red); }
+
+    .entity-item-meta { color:var(--muted); font-size:12px; margin-bottom:8px; }
+    .entity-item-detail { background:var(--bg); border-radius:6px; padding:8px 10px; font-size:12px; margin-bottom:8px; }
+    .entity-item-detail .detail-row { margin:3px 0; display:grid; grid-template-columns:70px 1fr; gap:6px; }
+    .entity-item-detail .detail-label { color:var(--muted); }
+
+    .match-select-area { margin-top:8px; padding:10px; background:var(--bg); border-radius:6px; }
+    .match-select-area label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .match-select-area select { width:100%; padding:7px; font-size:13px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+    .match-candidates { margin-top:8px; }
+    .match-candidate { padding:8px 10px; background:#fff; border:1px solid var(--line); border-radius:6px; margin-bottom:6px; cursor:pointer; transition:all 0.15s; }
+    .match-candidate:hover { border-color:var(--accent); }
+    .match-candidate.selected { border-color:var(--accent); background:var(--accent-soft); border-width:2px; }
+    .match-candidate .mc-title { font-weight:600; font-size:13px; }
+    .match-candidate .mc-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+    .match-create-new { padding:8px 10px; background:#fff; border:1px dashed var(--muted); border-radius:6px; text-align:center; color:var(--muted); font-size:12px; cursor:pointer; }
+    .match-create-new:hover { border-color:var(--green); color:var(--green); }
+    .match-create-new.selected { border-style:solid; border-color:var(--green); background:var(--green-soft); color:var(--green); font-weight:600; }
+
+    .import-summary { padding:4px; }
+    .summary-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:20px; }
+    .summary-card { background:var(--bg); border-radius:8px; padding:14px; text-align:center; }
+    .summary-card .sc-label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .summary-card .sc-value { display:block; font-size:22px; font-weight:700; }
+    .summary-card .sc-created { color:var(--green); }
+    .summary-card .sc-updated { color:var(--accent); }
+    .summary-card .sc-reused { color:#1f5e9c; }
+    .summary-card .sc-skipped { color:var(--muted); }
+
+    .summary-section { margin-bottom:18px; }
+    .summary-section h4 { margin:0 0 10px; font-size:14px; display:flex; align-items:center; justify-content:space-between; }
+    .summary-section h4 .count { font-size:12px; color:var(--muted); font-weight:400; }
+    .summary-item-list { background:var(--bg); border-radius:6px; padding:8px 10px; max-height:180px; overflow-y:auto; }
+    .summary-item-row { padding:6px 0; border-bottom:1px dashed var(--line); font-size:13px; display:flex; justify-content:space-between; align-items:center; }
+    .summary-item-row:last-child { border-bottom:none; }
+    .summary-item-row .si-action { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+    .summary-item-row .si-action.created { background:var(--green-soft); color:var(--green); }
+    .summary-item-row .si-action.updated { background:var(--orange-soft); color:var(--orange); }
+    .summary-item-row .si-action.reused { background:#d4e6f7; color:#1f5e9c; }
+    .summary-item-row .si-action.skipped { background:#eee; color:var(--muted); }
+
+    .import-wizard-footer { padding:16px 24px; border-top:1px solid var(--line); display:flex; justify-content:space-between; gap:10px; background:#faf8f5; align-items:center; }
+    .import-wizard-footer .footer-left { flex:1; font-size:13px; color:var(--muted); }
+    .import-wizard-footer .footer-right { display:flex; gap:8px; }
+    .import-badge.matched { background:#d4e6f7; color:#1f5e9c; }
+    .import-badge.unmatched { background:var(--red-soft); color:#c0392b; }
+    .import-badge.conflict { background:var(--orange-soft); color:var(--orange); }
+
     .quote-modal { max-width: 800px; }
     .quote-info { background: var(--bg); border-radius: 8px; padding: 14px; margin-bottom: 18px; }
     .quote-info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
@@ -1665,46 +1746,89 @@ const page = `<!doctype html>
         <h3 id="importModalTitle">导入委托数据</h3>
         <button class="modal-close" id="importModalClose">&times;</button>
       </div>
+      <div class="wizard-steps" id="wizardSteps">
+        <button type="button" class="wizard-step active" data-wiz-step="1"><span class="step-num">1</span>上传文件</button>
+        <button type="button" class="wizard-step" data-wiz-step="2" disabled><span class="step-num">2</span>预览与匹配</button>
+        <button type="button" class="wizard-step" data-wiz-step="3" disabled><span class="step-num">3</span>导入摘要</button>
+      </div>
       <div class="modal-body">
-        <div id="importPreview" style="display:none;">
-          <div class="import-stats">
-            <div class="import-stat import-stat-new">
-              <span class="import-stat-label">新增</span>
-              <span class="import-stat-count" id="stat-new">0</span>
+        <div id="wizStep1" class="wiz-step-content">
+          <div id="importEmpty" class="empty-state">
+            <div class="icon">📁</div>
+            <div>请选择JSON文件进行导入</div>
+            <div class="meta" style="margin-top:8px;">支持导出的JSON格式文件</div>
+            <div style="margin-top:18px;">
+              <label class="io-btn io-btn-import" style="display:inline-flex;">
+                📂 选择文件
+                <input type="file" id="importFileInputWiz" accept=".json" style="display:none;">
+              </label>
             </div>
-            <div class="import-stat import-stat-dup">
-              <span class="import-stat-label">可能重复</span>
-              <span class="import-stat-count" id="stat-dup">0</span>
-            </div>
-            <div class="import-stat import-stat-missing">
-              <span class="import-stat-label">字段缺失</span>
-              <span class="import-stat-count" id="stat-missing">0</span>
-            </div>
-            <div class="import-stat import-stat-invalid">
-              <span class="import-stat-label">步骤不合法</span>
-              <span class="import-stat-count" id="stat-invalid">0</span>
-            </div>
-          </div>
-          <div class="import-filter">
-            <div class="import-filter-tabs">
-              <button type="button" class="import-filter-tab active" data-import-filter="all">全部 <span id="filter-count-all">0</span></button>
-              <button type="button" class="import-filter-tab" data-import-filter="new">新增 <span id="filter-count-new">0</span></button>
-              <button type="button" class="import-filter-tab" data-import-filter="duplicate">可能重复 <span id="filter-count-dup">0</span></button>
-              <button type="button" class="import-filter-tab" data-import-filter="missingFields">字段缺失 <span id="filter-count-missing">0</span></button>
-              <button type="button" class="import-filter-tab" data-import-filter="invalidSteps">步骤不合法 <span id="filter-count-invalid">0</span></button>
-            </div>
-            <div id="importList" class="import-list"></div>
+            <div class="meta" id="importFileName" style="margin-top:12px;"></div>
           </div>
         </div>
-        <div id="importEmpty" class="empty-state">
-          <div class="icon">📁</div>
-          <div>请选择JSON文件进行导入</div>
-          <div class="meta" style="margin-top:8px;">支持导出的JSON格式文件</div>
+        <div id="wizStep2" class="wiz-step-content" style="display:none;">
+          <div class="entity-tabs" id="entityTabs">
+            <button type="button" class="entity-tab active" data-entity="commissions">委托 <span class="ent-count" id="ent-count-commissions">0</span></button>
+            <button type="button" class="entity-tab" data-entity="clients">客户 <span class="ent-count" id="ent-count-clients">0</span></button>
+            <button type="button" class="entity-tab" data-entity="materials">材料 <span class="ent-count" id="ent-count-materials">0</span></button>
+            <button type="button" class="entity-tab" data-entity="members">成员 <span class="ent-count" id="ent-count-members">0</span></button>
+            <button type="button" class="entity-tab" data-entity="templates">步骤模板 <span class="ent-count" id="ent-count-templates">0</span></button>
+          </div>
+          <div id="entity-commissions" class="entity-content active">
+            <div class="import-stats">
+              <div class="import-stat import-stat-new">
+                <span class="import-stat-label">新增</span>
+                <span class="import-stat-count" id="stat-new">0</span>
+              </div>
+              <div class="import-stat import-stat-dup">
+                <span class="import-stat-label">可能重复</span>
+                <span class="import-stat-count" id="stat-dup">0</span>
+              </div>
+              <div class="import-stat import-stat-missing">
+                <span class="import-stat-label">字段缺失</span>
+                <span class="import-stat-count" id="stat-missing">0</span>
+              </div>
+              <div class="import-stat import-stat-invalid">
+                <span class="import-stat-label">步骤不合法</span>
+                <span class="import-stat-count" id="stat-invalid">0</span>
+              </div>
+            </div>
+            <div class="import-filter">
+              <div class="import-filter-tabs">
+                <button type="button" class="import-filter-tab active" data-import-filter="all">全部 <span id="filter-count-all">0</span></button>
+                <button type="button" class="import-filter-tab" data-import-filter="new">新增 <span id="filter-count-new">0</span></button>
+                <button type="button" class="import-filter-tab" data-import-filter="duplicate">可能重复 <span id="filter-count-dup">0</span></button>
+                <button type="button" class="import-filter-tab" data-import-filter="missingFields">字段缺失 <span id="filter-count-missing">0</span></button>
+                <button type="button" class="import-filter-tab" data-import-filter="invalidSteps">步骤不合法 <span id="filter-count-invalid">0</span></button>
+              </div>
+              <div id="importList" class="import-list"></div>
+            </div>
+          </div>
+          <div id="entity-clients" class="entity-content">
+            <div id="clientsContent"></div>
+          </div>
+          <div id="entity-materials" class="entity-content">
+            <div id="materialsContent"></div>
+          </div>
+          <div id="entity-members" class="entity-content">
+            <div id="membersContent"></div>
+          </div>
+          <div id="entity-templates" class="entity-content">
+            <div id="templatesContent"></div>
+          </div>
+        </div>
+        <div id="wizStep3" class="wiz-step-content" style="display:none;">
+          <div id="importSummary"></div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="secondary" id="cancelImportBtn">取消</button>
-        <button type="button" id="confirmImportBtn" disabled>确认导入</button>
+      <div class="import-wizard-footer">
+        <div class="footer-left" id="wizardFooterLeft"></div>
+        <div class="footer-right">
+          <button type="button" class="secondary" id="cancelImportBtn">取消</button>
+          <button type="button" class="secondary" id="wizPrevBtn" style="display:none;">上一步</button>
+          <button type="button" id="wizNextBtn">下一步</button>
+          <button type="button" id="confirmImportBtn" style="display:none;">确认导入</button>
+        </div>
       </div>
     </div>
   </div>
@@ -3954,24 +4078,87 @@ const page = `<!doctype html>
     });
 
     let importPreviewData = null;
-    let currentImportFilter = "all";
+    let currentWizardStep = 1;
+    let currentEntityTab = "commissions";
+    let currentEntityFilter = {};
     let importOverwriteMap = {};
+    let clientMatches = {};
+    let materialMatches = {};
+    let memberMatches = {};
+    let templateMatches = {};
+    let importResultData = null;
 
     function openImportModal() {
       document.getElementById("importModal").classList.add("active");
-      document.getElementById("importEmpty").style.display = "block";
-      document.getElementById("importPreview").style.display = "none";
-      importPreviewData = null;
-      importOverwriteMap = {};
-      currentImportFilter = "all";
-      document.getElementById("confirmImportBtn").disabled = true;
-      document.getElementById("importFileInput").value = "";
+      resetImportWizard();
     }
 
     function closeImportModal() {
       document.getElementById("importModal").classList.remove("active");
       importPreviewData = null;
+      importResultData = null;
+    }
+
+    function resetImportWizard() {
+      importPreviewData = null;
+      importResultData = null;
       importOverwriteMap = {};
+      clientMatches = {};
+      materialMatches = {};
+      memberMatches = {};
+      templateMatches = {};
+      currentEntityFilter = {};
+      currentEntityTab = "commissions";
+      currentWizardStep = 1;
+      document.getElementById("importFileName").textContent = "";
+      document.getElementById("wizStep1").style.display = "block";
+      document.getElementById("wizStep2").style.display = "none";
+      document.getElementById("wizStep3").style.display = "none";
+      document.getElementById("wizPrevBtn").style.display = "none";
+      document.getElementById("wizNextBtn").style.display = "inline-block";
+      document.getElementById("wizNextBtn").disabled = true;
+      document.getElementById("confirmImportBtn").style.display = "none";
+      document.getElementById("wizardFooterLeft").textContent = "请选择要导入的JSON文件";
+      updateWizardStepUi();
+    }
+
+    function updateWizardStepUi() {
+      document.querySelectorAll(".wizard-step").forEach(btn => {
+        const step = Number(btn.dataset.wizStep);
+        btn.classList.toggle("active", step === currentWizardStep);
+        btn.classList.toggle("done", step < currentWizardStep);
+        btn.disabled = step > currentWizardStep;
+      });
+      if (currentWizardStep === 1) {
+        document.getElementById("wizPrevBtn").style.display = "none";
+        document.getElementById("wizNextBtn").style.display = "inline-block";
+        document.getElementById("confirmImportBtn").style.display = "none";
+      } else if (currentWizardStep === 2) {
+        document.getElementById("wizPrevBtn").style.display = "inline-block";
+        document.getElementById("wizNextBtn").style.display = "inline-block";
+        document.getElementById("wizNextBtn").textContent = "生成摘要";
+        document.getElementById("confirmImportBtn").style.display = "none";
+      } else if (currentWizardStep === 3) {
+        document.getElementById("wizPrevBtn").style.display = "inline-block";
+        document.getElementById("wizNextBtn").style.display = "none";
+        document.getElementById("confirmImportBtn").style.display = "inline-block";
+      }
+    }
+
+    function goToStep(step) {
+      currentWizardStep = step;
+      document.getElementById("wizStep1").style.display = step === 1 ? "block" : "none";
+      document.getElementById("wizStep2").style.display = step === 2 ? "block" : "none";
+      document.getElementById("wizStep3").style.display = step === 3 ? "block" : "none";
+      updateWizardStepUi();
+      if (step === 2) {
+        renderAllEntityTabs();
+        document.getElementById("wizardFooterLeft").textContent = "检查并匹配关联数据，冲突项请选择匹配目标";
+      }
+      if (step === 3) {
+        renderImportSummary();
+        document.getElementById("wizardFooterLeft").textContent = "请确认以下导入摘要，无误后点击确认导入";
+      }
     }
 
     async function exportCommissions() {
@@ -4018,17 +4205,23 @@ const page = `<!doctype html>
         new: "新增",
         duplicate: "可能重复",
         missingFields: "字段缺失",
-        invalidSteps: "步骤不合法"
+        invalidSteps: "步骤不合法",
+        matched: "复用",
+        conflict: "冲突",
+        unmatched: "无法匹配"
       };
       return labels[cat] || cat;
     }
 
-    function renderImportPreview() {
-      if (!importPreviewData) return;
+    function getEntityBadge(cat) {
+      const label = getCategoryLabel(cat);
+      return '<span class="entity-badge ' + cat + '">' + label + '</span>';
+    }
 
-      const preview = importPreviewData;
-      document.getElementById("importEmpty").style.display = "none";
-      document.getElementById("importPreview").style.display = "block";
+    function renderCommissionPreview() {
+      if (!importPreviewData) return;
+      const preview = importPreviewData.commissions;
+      if (!preview) return;
 
       document.getElementById("stat-new").textContent = preview.categories.new.length;
       document.getElementById("stat-dup").textContent = preview.categories.duplicate.length;
@@ -4041,13 +4234,11 @@ const page = `<!doctype html>
       document.getElementById("filter-count-missing").textContent = preview.categories.missingFields.length;
       document.getElementById("filter-count-invalid").textContent = preview.categories.invalidSteps.length;
 
-      const hasValidItems = preview.categories.new.length > 0 || preview.categories.duplicate.length > 0;
-      document.getElementById("confirmImportBtn").disabled = !hasValidItems;
-
       const listEl = document.getElementById("importList");
+      const commissionFilter = currentEntityFilter.commissions || "all";
       const filteredItems = preview.items.filter(item => {
-        if (currentImportFilter === "all") return true;
-        return item.categories.includes(currentImportFilter);
+        if (commissionFilter === "all") return true;
+        return item.categories.includes(commissionFilter);
       });
 
       if (filteredItems.length === 0) {
@@ -4145,9 +4336,201 @@ const page = `<!doctype html>
         };
       });
 
-      document.querySelectorAll(".import-filter-tab").forEach(tab => {
-        tab.classList.toggle("active", tab.dataset.importFilter === currentImportFilter);
+      document.querySelectorAll("#entity-commissions .import-filter-tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.importFilter === (currentEntityFilter.commissions || "all"));
       });
+    }
+
+    function renderEntityList(entityKey) {
+      const container = document.getElementById(entityKey + "Content");
+      if (!container || !importPreviewData) return;
+      const entity = importPreviewData[entityKey];
+      if (!entity) {
+        container.innerHTML = '<div class="empty-state" style="padding:30px 20px;"><div class="icon">📭</div><div>暂无相关数据</div></div>';
+        return;
+      }
+      const existing = importPreviewData.existing || {};
+      const existingList = existing[entityKey] || [];
+      const matchMap = getMatchMap(entityKey);
+
+      const cats = {
+        matched: entity.items.filter(i => i.category === "matched").length,
+        new: entity.items.filter(i => i.category === "new").length,
+        conflict: entity.items.filter(i => i.category === "conflict").length,
+        unmatched: entity.items.filter(i => i.category === "unmatched").length
+      };
+      const filter = currentEntityFilter[entityKey] || "all";
+
+      const filterHtml = '<div class="entity-filter-tabs">' +
+        '<button type="button" class="entity-filter-tab ' + (filter === "all" ? "active" : "") + '" data-ef-entity="' + entityKey + '" data-ef-filter="all">全部 <span class="ef-count">' + entity.items.length + '</span></button>' +
+        '<button type="button" class="entity-filter-tab ' + (filter === "new" ? "active" : "") + '" data-ef-entity="' + entityKey + '" data-ef-filter="new">新增 <span class="ef-count">' + cats.new + '</span></button>' +
+        '<button type="button" class="entity-filter-tab ' + (filter === "matched" ? "active" : "") + '" data-ef-entity="' + entityKey + '" data-ef-filter="matched">复用 <span class="ef-count">' + cats.matched + '</span></button>' +
+        '<button type="button" class="entity-filter-tab ' + (filter === "conflict" ? "active" : "") + '" data-ef-entity="' + entityKey + '" data-ef-filter="conflict">冲突 <span class="ef-count">' + cats.conflict + '</span></button>' +
+        '<button type="button" class="entity-filter-tab ' + (filter === "unmatched" ? "active" : "") + '" data-ef-entity="' + entityKey + '" data-ef-filter="unmatched">无法匹配 <span class="ef-count">' + cats.unmatched + '</span></button>' +
+      '</div>';
+
+      const filteredItems = filter === "all" ? entity.items : entity.items.filter(i => i.category === filter);
+
+      const itemsHtml = filteredItems.length === 0 
+        ? '<div class="empty-state" style="padding:30px 20px;"><div class="icon">📭</div><div>暂无符合条件的数据</div></div>'
+        : '<div class="entity-list">' + filteredItems.map(item => renderEntityItem(entityKey, item, existingList, matchMap)).join("") + '</div>';
+
+      container.innerHTML = filterHtml + itemsHtml;
+
+      container.querySelectorAll(".entity-filter-tab").forEach(btn => {
+        btn.onclick = () => {
+          currentEntityFilter[btn.dataset.efEntity] = btn.dataset.efFilter;
+          renderEntityList(btn.dataset.efEntity);
+        };
+      });
+    }
+
+    function getMatchMap(entityKey) {
+      if (entityKey === "clients") return clientMatches;
+      if (entityKey === "materials") return materialMatches;
+      if (entityKey === "members") return memberMatches;
+      if (entityKey === "templates") return templateMatches;
+      return {};
+    }
+
+    function setMatch(entityKey, matchKey, value) {
+      if (entityKey === "clients") clientMatches[matchKey] = value;
+      else if (entityKey === "materials") materialMatches[matchKey] = value;
+      else if (entityKey === "members") memberMatches[matchKey] = value;
+      else if (entityKey === "templates") templateMatches[matchKey] = value;
+    }
+
+    function renderEntityItem(entityKey, item, existingList, matchMap) {
+      const currentMatch = matchMap[item.matchKey];
+      const needsMatch = item.category === "conflict" || item.category === "unmatched" || (item.category === "new" && existingList.length > 0);
+
+      const badgesHtml = getEntityBadge(item.category);
+
+      let detailHtml = "";
+      if (entityKey === "clients") {
+        detailHtml = '<div class="entity-item-detail">' +
+          '<div class="detail-row"><span class="detail-label">客户名</span><span>' + escapeHtml(item.imported.name || "-") + '</span></div>' +
+          (item.imported.contact ? '<div class="detail-row"><span class="detail-label">联系人</span><span>' + escapeHtml(item.imported.contact) + '</span></div>' : "") +
+          (item.imported.phone ? '<div class="detail-row"><span class="detail-label">电话</span><span>' + escapeHtml(item.imported.phone) + '</span></div>' : "") +
+          (item.imported.address ? '<div class="detail-row"><span class="detail-label">地址</span><span>' + escapeHtml(item.imported.address) + '</span></div>' : "") +
+        '</div>';
+      } else if (entityKey === "materials") {
+        detailHtml = '<div class="entity-item-detail">' +
+          '<div class="detail-row"><span class="detail-label">材料名</span><span>' + escapeHtml(item.imported.name || "-") + '</span></div>' +
+          (item.imported.category ? '<div class="detail-row"><span class="detail-label">分类</span><span>' + escapeHtml(item.imported.category) + '</span></div>' : "") +
+          (item.imported.batch ? '<div class="detail-row"><span class="detail-label">批次</span><span>' + escapeHtml(item.imported.batch) + '</span></div>' : "") +
+          (typeof item.imported.stock === "number" ? '<div class="detail-row"><span class="detail-label">库存</span><span>' + item.imported.stock + " " + escapeHtml(item.imported.unit || "") + '</span></div>' : "") +
+        '</div>';
+      } else if (entityKey === "members") {
+        detailHtml = '<div class="entity-item-detail">' +
+          '<div class="detail-row"><span class="detail-label">姓名</span><span>' + escapeHtml(item.imported.name || "-") + '</span></div>' +
+          (item.imported.role ? '<div class="detail-row"><span class="detail-label">角色</span><span>' + escapeHtml(item.imported.role) + '</span></div>' : "") +
+          (item.imported.phone ? '<div class="detail-row"><span class="detail-label">电话</span><span>' + escapeHtml(item.imported.phone) + '</span></div>' : "") +
+        '</div>';
+      } else if (entityKey === "templates") {
+        const stepsText = (item.imported.steps || []).join(" → ");
+        detailHtml = '<div class="entity-item-detail">' +
+          '<div class="detail-row"><span class="detail-label">模板名</span><span>' + escapeHtml(item.imported.name || "-") + '</span></div>' +
+          (stepsText ? '<div class="detail-row"><span class="detail-label">步骤</span><span>' + escapeHtml(stepsText) + '</span></div>' : "") +
+        '</div>';
+      }
+
+      let diffHtml = "";
+      if (item.category === "conflict" && item.matchedExisting) {
+        const diffs = item.diff || [];
+        if (diffs.length > 0) {
+          diffHtml = '<div class="entity-item-meta" style="color:var(--orange);">⚠️ 数据差异：' + diffs.map(d => escapeHtml(d.field) + ("expected" in d ? " (导入值:" + escapeHtml(String(d.imported)) + ")" : "")).join("，") + '</div>';
+        }
+      }
+
+      let matchHtml = "";
+      if (needsMatch) {
+        const candidates = (item.candidates || existingList).slice(0, 6);
+        const candidateCards = candidates.map(cand => {
+          let title = "", meta = "";
+          if (entityKey === "clients") { title = cand.name || "-"; meta = [cand.contact, cand.phone].filter(Boolean).join(" · "); }
+          else if (entityKey === "materials") { title = cand.name || "-"; meta = [cand.category, cand.batch].filter(Boolean).join(" · "); }
+          else if (entityKey === "members") { title = cand.name || "-"; meta = [cand.role, cand.phone].filter(Boolean).join(" · "); }
+          else if (entityKey === "templates") { title = cand.name || "-"; meta = (cand.steps || []).join(" → ").slice(0, 40); }
+          const selected = currentMatch === cand.id;
+          return '<div class="match-candidate ' + (selected ? "selected" : "") + '" data-entity="' + entityKey + '" data-matchkey="' + encodeURIComponent(item.matchKey) + '" data-matchid="' + cand.id + '">' +
+            '<div class="mc-title">' + escapeHtml(title) + '</div>' +
+            (meta ? '<div class="mc-meta">' + escapeHtml(meta) + '</div>' : "") +
+          '</div>';
+        }).join("");
+        const createNewSelected = currentMatch === "__new__";
+        matchHtml = '<div class="match-select-area">' +
+          '<label>' + (item.category === "conflict" ? "选择匹配目标（或使用已匹配数据）：" : "选择匹配到现有数据，或作为新建：") + '</label>' +
+          '<div class="match-candidates">' +
+            candidateCards +
+            '<div class="match-create-new ' + (createNewSelected ? "selected" : "") + '" data-entity="' + entityKey + '" data-matchkey="' + encodeURIComponent(item.matchKey) + '" data-matchid="__new__">✨ 作为新建数据导入</div>' +
+          '</div>' +
+        '</div>';
+      } else if (item.category === "matched" && item.matchedExisting) {
+        let matchInfo = "";
+        if (entityKey === "clients") matchInfo = item.matchedExisting.name;
+        else if (entityKey === "materials") matchInfo = item.matchedExisting.name + (item.matchedExisting.batch ? " (" + item.matchedExisting.batch + ")" : "");
+        else if (entityKey === "members") matchInfo = item.matchedExisting.name;
+        else if (entityKey === "templates") matchInfo = item.matchedExisting.name;
+        matchHtml = '<div class="entity-item-meta">✅ 自动匹配到：' + escapeHtml(matchInfo) + '（可切换到其他匹配）</div>';
+        const candidates = existingList.slice(0, 6);
+        const candidateCards = candidates.map(cand => {
+          let title = "", meta = "";
+          if (entityKey === "clients") { title = cand.name || "-"; meta = [cand.contact, cand.phone].filter(Boolean).join(" · "); }
+          else if (entityKey === "materials") { title = cand.name || "-"; meta = [cand.category, cand.batch].filter(Boolean).join(" · "); }
+          else if (entityKey === "members") { title = cand.name || "-"; meta = [cand.role, cand.phone].filter(Boolean).join(" · "); }
+          else if (entityKey === "templates") { title = cand.name || "-"; meta = (cand.steps || []).join(" → ").slice(0, 40); }
+          const selected = (currentMatch || (item.matchedExisting ? item.matchedExisting.id : null)) === cand.id;
+          return '<div class="match-candidate ' + (selected ? "selected" : "") + '" data-entity="' + entityKey + '" data-matchkey="' + encodeURIComponent(item.matchKey) + '" data-matchid="' + cand.id + '">' +
+            '<div class="mc-title">' + escapeHtml(title) + '</div>' +
+            (meta ? '<div class="mc-meta">' + escapeHtml(meta) + '</div>' : "") +
+          '</div>';
+        }).join("");
+        matchHtml += '<div class="match-select-area">' +
+          '<label>更改匹配：</label>' +
+          '<div class="match-candidates">' + candidateCards +
+          '<div class="match-create-new" data-entity="' + entityKey + '" data-matchkey="' + encodeURIComponent(item.matchKey) + '" data-matchid="__new__">✨ 改为新建数据导入</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      return '<div class="entity-item">' +
+        '<div class="entity-item-header">' +
+          '<h4 class="entity-item-title">' + escapeHtml(item.displayName) + '</h4>' +
+          '<div class="entity-item-badges">' + badgesHtml + '</div>' +
+        '</div>' +
+        (item.category === "matched" && item.matchedExisting ? "" : (item.notes ? '<div class="entity-item-meta">' + escapeHtml(item.notes) + '</div>' : "")) +
+        diffHtml +
+        detailHtml +
+        matchHtml +
+      '</div>';
+    }
+
+    function escapeHtml(s) {
+      if (s === null || s === undefined) return "";
+      return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    function renderAllEntityTabs() {
+      if (!importPreviewData) return;
+      document.getElementById("ent-count-commissions").textContent = importPreviewData.commissions ? importPreviewData.commissions.total : 0;
+      document.getElementById("ent-count-clients").textContent = importPreviewData.clients ? importPreviewData.clients.items.length : 0;
+      document.getElementById("ent-count-materials").textContent = importPreviewData.materials ? importPreviewData.materials.items.length : 0;
+      document.getElementById("ent-count-members").textContent = importPreviewData.members ? importPreviewData.members.items.length : 0;
+      document.getElementById("ent-count-templates").textContent = importPreviewData.templates ? importPreviewData.templates.items.length : 0;
+
+      renderCommissionPreview();
+      renderEntityList("clients");
+      renderEntityList("materials");
+      renderEntityList("members");
+      renderEntityList("templates");
+      switchEntityTab(currentEntityTab);
+    }
+
+    function switchEntityTab(tab) {
+      currentEntityTab = tab;
+      document.querySelectorAll(".entity-tab").forEach(b => b.classList.toggle("active", b.dataset.entity === tab));
+      document.querySelectorAll(".entity-content").forEach(c => c.classList.toggle("active", c.id === "entity-" + tab));
     }
 
     async function handleImportFile(file) {
@@ -4157,6 +4540,8 @@ const page = `<!doctype html>
         return;
       }
 
+      document.getElementById("importFileName").textContent = "已选择：" + file.name + "（正在分析...）";
+
       try {
         const text = await file.text();
         let data;
@@ -4164,6 +4549,7 @@ const page = `<!doctype html>
           data = JSON.parse(text);
         } catch (e) {
           alert("JSON解析失败，请检查文件格式");
+          document.getElementById("importFileName").textContent = "⚠️ JSON解析失败";
           return;
         }
 
@@ -4174,17 +4560,127 @@ const page = `<!doctype html>
 
         importPreviewData = preview;
         importOverwriteMap = {};
-        currentImportFilter = "all";
-        renderImportPreview();
+        clientMatches = {};
+        materialMatches = {};
+        memberMatches = {};
+        templateMatches = {};
+        currentEntityFilter = {};
+
+        document.getElementById("importFileName").textContent = "已选择：" + file.name + " ✅";
+        document.getElementById("wizNextBtn").disabled = false;
+        goToStep(2);
       } catch (e) {
         alert("导入预览失败：" + e.message);
+        document.getElementById("importFileName").textContent = "⚠️ 分析失败：" + e.message;
       }
+    }
+
+    function renderImportSummary() {
+      const container = document.getElementById("importSummary");
+      if (!importPreviewData) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><div>暂无数据</div></div>';
+        return;
+      }
+
+      const commissions = importPreviewData.commissions || { items: [], categories: { new: [], duplicate: [] } };
+      const totalCommissionsValid = commissions.categories.new.length + 
+        commissions.categories.duplicate.filter((_, i) => {
+          const origItem = commissions.items.find(it => it.index === commissions.categories.duplicate.indexOf(commissions.categories.duplicate[i]));
+          return importOverwriteMap[i] || false;
+        }).length;
+
+      const commissionItemsToImport = commissions.items.filter(item => {
+        const hasBlocking = item.categories.includes("missingFields") || item.categories.includes("invalidSteps");
+        if (hasBlocking) return false;
+        if (item.categories.includes("duplicate") && !importOverwriteMap[item.index]) return false;
+        return true;
+      });
+
+      const clients = importPreviewData.clients || { items: [] };
+      const materials = importPreviewData.materials || { items: [] };
+      const members = importPreviewData.members || { items: [] };
+      const templates = importPreviewData.templates || { items: [] };
+
+      const summarize = (items, matches) => {
+        let created = 0, reused = 0;
+        items.forEach(it => {
+          const userSel = matches[it.matchKey];
+          if (it.category === "matched" || (userSel && userSel !== "__new__")) reused++;
+          else created++;
+        });
+        return { created, reused };
+      };
+
+      const sClients = summarize(clients.items, clientMatches);
+      const sMaterials = summarize(materials.items, materialMatches);
+      const sMembers = summarize(members.items, memberMatches);
+      const sTemplates = summarize(templates.items, templateMatches);
+
+      const totalEntities = sClients.created + sMaterials.created + sMembers.created + sTemplates.created;
+
+      container.innerHTML = 
+        '<div class="import-summary">' +
+          '<div class="summary-grid">' +
+            '<div class="summary-card"><span class="sc-label">委托导入</span><span class="sc-value sc-created">' + commissionItemsToImport.length + '</span></div>' +
+            '<div class="summary-card"><span class="sc-label">新建实体</span><span class="sc-value sc-created">' + (sClients.created + sMaterials.created + sMembers.created + sTemplates.created) + '</span></div>' +
+            '<div class="summary-card"><span class="sc-label">复用实体</span><span class="sc-value sc-reused">' + (sClients.reused + sMaterials.reused + sMembers.reused + sTemplates.reused) + '</span></div>' +
+            '<div class="summary-card"><span class="sc-label">跳过委托</span><span class="sc-value sc-skipped">' + (commissions.total - commissionItemsToImport.length) + '</span></div>' +
+            '<div class="summary-card"><span class="sc-label">总涉及项</span><span class="sc-value sc-updated">' + (commissionItemsToImport.length + clients.items.length + materials.items.length + members.items.length + templates.items.length) + '</span></div>' +
+          '</div>' +
+          renderSummarySection("委托", commissionItemsToImport.map(it => ({
+            id: it.data ? (it.data.id || it.index) : it.index,
+            name: it.data ? (it.data.roleName || "未命名角色") : "无效条目",
+            action: it.categories.includes("duplicate") ? "updated" : "created",
+            reason: it.categories.includes("duplicate") ? "覆盖现有" : "新增"
+          })), commissions.total) +
+          renderSummarySection("客户", buildEntitySummary(clients.items, clientMatches, (it) => it.imported.name || "-"), clients.items.length) +
+          renderSummarySection("材料", buildEntitySummary(materials.items, materialMatches, (it) => it.imported.name + (it.imported.batch ? " (" + it.imported.batch + ")" : "")), materials.items.length) +
+          renderSummarySection("成员", buildEntitySummary(members.items, memberMatches, (it) => it.imported.name || "-"), members.items.length) +
+          renderSummarySection("步骤模板", buildEntitySummary(templates.items, templateMatches, (it) => it.imported.name || (it.imported.steps || []).join("→")), templates.items.length) +
+        '</div>';
+    }
+
+    function buildEntitySummary(items, matches, nameFn) {
+      return items.map(it => {
+        const userSel = matches[it.matchKey];
+        let action = "created";
+        let reason = "新增";
+        if (it.category === "matched" || (userSel && userSel !== "__new__")) {
+          action = "reused";
+          reason = "复用现有";
+        } else if (it.category === "unmatched") {
+          if (userSel === "__new__") { action = "created"; reason = "无法匹配，作为新建"; }
+          else { action = "skipped"; reason = "无法匹配，未指定"; }
+        } else if (it.category === "conflict") {
+          if (userSel && userSel !== "__new__") { action = "reused"; reason = "冲突，使用现有"; }
+          else if (userSel === "__new__") { action = "created"; reason = "冲突，作为新建"; }
+          else { action = "reused"; reason = "冲突，默认复用"; }
+        }
+        return { id: it.matchKey, name: nameFn(it), action, reason };
+      });
+    }
+
+    function renderSummarySection(title, items, total) {
+      if (items.length === 0) {
+        return '<div class="summary-section"><h4>' + title + ' <span class="count">共 ' + total + ' 项 · 0 项导入</span></h4>' +
+          '<div class="empty-state" style="padding:20px;"><div>无可用数据</div></div></div>';
+      }
+      const listHtml = items.slice(0, 50).map(it => 
+        '<div class="summary-item-row">' +
+          '<span>' + escapeHtml(it.name) + (it.reason ? ' <span style="color:var(--muted);font-size:11px;">· ' + escapeHtml(it.reason) + '</span>' : '') + '</span>' +
+          '<span class="si-action ' + it.action + '">' + getCategoryLabel(it.action === "updated" ? "duplicate" : it.action === "created" ? "new" : it.action === "reused" ? "matched" : "unmatched") + '</span>' +
+        '</div>'
+      ).join("");
+      const moreHtml = items.length > 50 ? '<div style="text-align:center;color:var(--muted);font-size:12px;padding:6px;">... 还有 ' + (items.length - 50) + ' 项</div>' : "";
+      return '<div class="summary-section"><h4>' + title + ' <span class="count">共 ' + total + ' 项 · ' + items.length + ' 项涉及</span></h4>' +
+        '<div class="summary-item-list">' + listHtml + moreHtml + '</div></div>';
     }
 
     async function confirmImport() {
       if (!importPreviewData) return;
 
-      const itemsToImport = importPreviewData.items.filter(item => {
+      const commissions = importPreviewData.commissions || { items: [] };
+      const itemsToImport = commissions.items.filter(item => {
         const hasBlockingIssues = item.categories.includes("missingFields") || item.categories.includes("invalidSteps");
         if (hasBlockingIssues) return false;
         const isDuplicate = item.categories.includes("duplicate");
@@ -4196,27 +4692,47 @@ const page = `<!doctype html>
       }));
 
       if (itemsToImport.length === 0) {
-        alert("没有可导入的数据，请检查数据问题");
+        alert("没有可导入的委托数据，请检查数据问题");
         return;
       }
 
-      if (!confirm("确定要导入 " + itemsToImport.length + " 条委托数据吗？")) return;
+      if (!confirm("确认后将批量导入数据，操作不可撤销。是否继续？")) return;
+
+      document.getElementById("confirmImportBtn").disabled = true;
+      document.getElementById("wizPrevBtn").disabled = true;
 
       try {
         const result = await api("/api/commissions/import", {
           method: "POST",
-          body: JSON.stringify({ items: itemsToImport })
+          body: JSON.stringify({ 
+            items: itemsToImport,
+            clientMatches,
+            materialMatches,
+            memberMatches,
+            templateMatches
+          })
         });
 
         if (result.success) {
-          alert("导入成功！共导入 " + result.imported + " 条数据");
+          importResultData = result;
+          const msg = "导入成功！\\n\\n" +
+            "委托：新增 " + (result.summary.commissions.created || 0) + "，更新 " + (result.summary.commissions.updated || 0) + "，跳过 " + (result.summary.commissions.skipped || 0) + "\\n" +
+            "客户：新建 " + (result.summary.clients.created || 0) + "，复用 " + (result.summary.clients.reused || 0) + "\\n" +
+            "材料：新建 " + (result.summary.materials.created || 0) + "，复用 " + (result.summary.materials.reused || 0) + "\\n" +
+            "成员：新建 " + (result.summary.members.created || 0) + "，复用 " + (result.summary.members.reused || 0) + "\\n" +
+            "步骤模板：新建 " + (result.summary.templates.created || 0) + "，复用 " + (result.summary.templates.reused || 0);
+          alert(msg);
           closeImportModal();
           await loadAll();
         } else {
           alert("导入失败：" + (result.error || "未知错误"));
+          document.getElementById("confirmImportBtn").disabled = false;
+          document.getElementById("wizPrevBtn").disabled = false;
         }
       } catch (e) {
         alert("导入失败：" + e.message);
+        document.getElementById("confirmImportBtn").disabled = false;
+        document.getElementById("wizPrevBtn").disabled = false;
       }
     }
 
@@ -4227,19 +4743,62 @@ const page = `<!doctype html>
         openImportModal();
         handleImportFile(file);
       }
+      e.target.value = "";
     };
+    if (document.getElementById("importFileInputWiz")) {
+      document.getElementById("importFileInputWiz").onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) handleImportFile(file);
+        e.target.value = "";
+      };
+    }
 
     document.getElementById("importModalClose").onclick = closeImportModal;
     document.getElementById("cancelImportBtn").onclick = closeImportModal;
     document.getElementById("importModal").onclick = (e) => {
       if (e.target.id === "importModal") closeImportModal();
     };
+
+    document.getElementById("wizNextBtn").onclick = () => {
+      if (currentWizardStep === 1 && !importPreviewData) {
+        alert("请先选择要导入的文件");
+        return;
+      }
+      if (currentWizardStep < 3) goToStep(currentWizardStep + 1);
+    };
+
+    document.getElementById("wizPrevBtn").onclick = () => {
+      if (currentWizardStep > 1) goToStep(currentWizardStep - 1);
+    };
+
     document.getElementById("confirmImportBtn").onclick = confirmImport;
 
-    document.querySelectorAll(".import-filter-tab").forEach(tab => {
+    document.querySelectorAll("#entity-commissions .import-filter-tab").forEach(tab => {
       tab.onclick = () => {
-        currentImportFilter = tab.dataset.importFilter;
-        renderImportPreview();
+        currentEntityFilter.commissions = tab.dataset.importFilter;
+        renderCommissionPreview();
+      };
+    });
+
+    document.querySelectorAll(".entity-tab").forEach(tab => {
+      tab.onclick = () => switchEntityTab(tab.dataset.entity);
+    });
+
+    document.addEventListener("click", (e) => {
+      const matchCandidate = e.target.closest(".match-candidate, .match-create-new");
+      if (matchCandidate) {
+        const entityKey = matchCandidate.dataset.entity;
+        const matchKey = decodeURIComponent(matchCandidate.dataset.matchkey);
+        const matchId = matchCandidate.dataset.matchid;
+        setMatch(entityKey, matchKey, matchId);
+        renderEntityList(entityKey);
+      }
+    });
+
+    document.querySelectorAll(".wizard-step").forEach(btn => {
+      btn.onclick = () => {
+        const step = Number(btn.dataset.wizStep);
+        if (step <= currentWizardStep) goToStep(step);
       };
     });
 
@@ -6108,6 +6667,390 @@ function addOperationLog(commission, type, operator, operatorId, detail) {
   });
 }
 
+function analyzeImportClients(commissions, existingClients) {
+  const clientMap = new Map();
+  for (const c of commissions) {
+    if (!c || typeof c !== "object" || Array.isArray(c)) continue;
+    const key = (c.clientId || "").trim() || (c.client || "").trim();
+    if (!key) continue;
+    if (!clientMap.has(key)) {
+      clientMap.set(key, {
+        matchKey: key,
+        id: c.clientId || "",
+        name: c.client || "",
+        contact: c.clientContact || "",
+        phone: c.clientPhone || "",
+        address: c.clientAddress || "",
+        references: 0
+      });
+    }
+    clientMap.get(key).references++;
+  }
+
+  const result = {
+    total: clientMap.size,
+    categories: { new: [], matched: [], conflict: [], unmatched: [] },
+    items: []
+  };
+
+  let idx = 0;
+  for (const [key, info] of clientMap) {
+    const categories = [];
+    const matchCandidates = [];
+
+    if (info.id) {
+      const byId = existingClients.find(cl => cl.id === info.id);
+      if (byId) matchCandidates.push(byId);
+    }
+    if (info.name) {
+      const byName = existingClients.find(cl => cl.name === info.name);
+      if (byName && !matchCandidates.find(m => m.id === byName.id)) {
+        matchCandidates.push(byName);
+      }
+    }
+
+    let matchedExisting = null;
+    let diff = [];
+
+    if (matchCandidates.length === 0) {
+      if (info.name) {
+        categories.push("new");
+        result.categories.new.push(idx);
+      } else {
+        categories.push("unmatched");
+        result.categories.unmatched.push(idx);
+      }
+    } else if (matchCandidates.length === 1) {
+      const m = matchCandidates[0];
+      const hasConflict = (info.name && info.name !== m.name) ||
+        (info.contact && info.contact !== m.contact) ||
+        (info.phone && info.phone !== m.phone) ||
+        (info.address && info.address !== m.address);
+      if (hasConflict) {
+        categories.push("conflict");
+        result.categories.conflict.push(idx);
+        diff = [];
+        if (info.name && info.name !== m.name) diff.push({ field: "name", imported: info.name, expected: m.name });
+        if (info.contact && info.contact !== m.contact) diff.push({ field: "contact", imported: info.contact, expected: m.contact });
+        if (info.phone && info.phone !== m.phone) diff.push({ field: "phone", imported: info.phone, expected: m.phone });
+        if (info.address && info.address !== m.address) diff.push({ field: "address", imported: info.address, expected: m.address });
+        matchedExisting = { id: m.id, name: m.name, contact: m.contact, phone: m.phone, address: m.address };
+      } else {
+        categories.push("matched");
+        result.categories.matched.push(idx);
+        matchedExisting = { id: m.id, name: m.name, contact: m.contact, phone: m.phone, address: m.address };
+      }
+    } else {
+      categories.push("conflict");
+      result.categories.conflict.push(idx);
+      matchedExisting = { id: matchCandidates[0].id, name: matchCandidates[0].name, contact: matchCandidates[0].contact, phone: matchCandidates[0].phone, address: matchCandidates[0].address };
+    }
+
+    const displayName = info.name || "未命名客户";
+    result.items.push({
+      matchKey: key,
+      displayName,
+      index: idx,
+      imported: info,
+      data: info,
+      category: categories[0],
+      categories,
+      candidates: matchCandidates.map(m => ({ id: m.id, name: m.name, contact: m.contact, phone: m.phone, address: m.address })),
+      matchCandidates: matchCandidates.map(m => ({ id: m.id, name: m.name, contact: m.contact, phone: m.phone, address: m.address })),
+      matchedExisting,
+      diff,
+      selectedMatchId: matchCandidates.length === 1 ? matchCandidates[0].id : "",
+      notes: info.references > 1 ? "被 " + info.references + " 个委托引用" : ""
+    });
+    idx++;
+  }
+
+  return result;
+}
+
+function analyzeImportMaterials(commissions, existingMaterials) {
+  const materialMap = new Map();
+  for (const c of commissions) {
+    if (!c || typeof c !== "object" || Array.isArray(c)) continue;
+    if (!Array.isArray(c.materials)) continue;
+    for (const m of c.materials) {
+      if (!m || typeof m !== "object") continue;
+      const key = (m.materialId || "").trim() || `${(m.name || "").trim()}||${(m.batch || "").trim()}`;
+      if (!key || key === "||") continue;
+      if (!materialMap.has(key)) {
+        materialMap.set(key, {
+          matchKey: key,
+          materialId: m.materialId || "",
+          name: m.name || "",
+          batch: m.batch || "",
+          category: m.category || "",
+          unit: m.unit || "",
+          stock: Number(m.quantity) || 0,
+          quantity: 0,
+          references: 0
+        });
+      }
+      const entry = materialMap.get(key);
+      entry.quantity += Number(m.quantity) || 0;
+      entry.references++;
+      if (!entry.category && m.category) entry.category = m.category;
+      if (!entry.unit && m.unit) entry.unit = m.unit;
+    }
+  }
+
+  const result = {
+    total: materialMap.size,
+    categories: { new: [], matched: [], conflict: [], unmatched: [] },
+    items: []
+  };
+
+  let idx = 0;
+  for (const [key, info] of materialMap) {
+    const categories = [];
+    const matchCandidates = [];
+
+    if (info.materialId) {
+      const byId = existingMaterials.find(m => m.id === info.materialId);
+      if (byId) matchCandidates.push(byId);
+    }
+    if (info.name) {
+      const byNameBatch = existingMaterials.find(m => m.name === info.name && m.batch === info.batch);
+      if (byNameBatch && !matchCandidates.find(mm => mm.id === byNameBatch.id)) {
+        matchCandidates.push(byNameBatch);
+      }
+      const byName = existingMaterials.filter(m => m.name === info.name);
+      for (const bn of byName) {
+        if (!matchCandidates.find(mm => mm.id === bn.id)) {
+          matchCandidates.push(bn);
+        }
+      }
+    }
+
+    let matchedExisting = null;
+    let diff = [];
+
+    if (matchCandidates.length === 0) {
+      if (info.name) {
+        categories.push("new");
+        result.categories.new.push(idx);
+      } else {
+        categories.push("unmatched");
+        result.categories.unmatched.push(idx);
+      }
+    } else if (matchCandidates.length === 1) {
+      const m = matchCandidates[0];
+      const hasConflict = (info.name && info.name !== m.name) ||
+        (info.batch && info.batch !== m.batch) ||
+        (info.category && info.category !== m.category);
+      if (hasConflict) {
+        categories.push("conflict");
+        result.categories.conflict.push(idx);
+        diff = [];
+        if (info.name && info.name !== m.name) diff.push({ field: "name", imported: info.name, expected: m.name });
+        if (info.batch && info.batch !== m.batch) diff.push({ field: "batch", imported: info.batch, expected: m.batch });
+        if (info.category && info.category !== m.category) diff.push({ field: "category", imported: info.category, expected: m.category });
+        matchedExisting = { id: m.id, name: m.name, batch: m.batch, category: m.category, stock: m.stock, unit: m.unit };
+      } else {
+        categories.push("matched");
+        result.categories.matched.push(idx);
+        matchedExisting = { id: m.id, name: m.name, batch: m.batch, category: m.category, stock: m.stock, unit: m.unit };
+      }
+    } else {
+      categories.push("conflict");
+      result.categories.conflict.push(idx);
+      matchedExisting = { id: matchCandidates[0].id, name: matchCandidates[0].name, batch: matchCandidates[0].batch, category: matchCandidates[0].category, stock: matchCandidates[0].stock, unit: matchCandidates[0].unit };
+    }
+
+    const displayName = info.name ? (info.name + (info.batch ? " (" + info.batch + ")" : "")) : "未命名材料";
+    result.items.push({
+      matchKey: key,
+      displayName,
+      index: idx,
+      imported: info,
+      data: info,
+      category: categories[0],
+      categories,
+      candidates: matchCandidates.map(m => ({ id: m.id, name: m.name, batch: m.batch, category: m.category, stock: m.stock, unit: m.unit })),
+      matchCandidates: matchCandidates.map(m => ({ id: m.id, name: m.name, batch: m.batch, category: m.category, stock: m.stock, unit: m.unit })),
+      matchedExisting,
+      diff,
+      selectedMatchId: matchCandidates.length === 1 ? matchCandidates[0].id : "",
+      notes: info.references > 1 ? "被 " + info.references + " 个委托引用" : ""
+    });
+    idx++;
+  }
+
+  return result;
+}
+
+function analyzeImportMembers(commissions, existingMembers) {
+  const memberMap = new Map();
+  for (const c of commissions) {
+    if (!c || typeof c !== "object" || Array.isArray(c)) continue;
+    const owner = (c.owner || "").trim();
+    if (!owner) continue;
+    if (!memberMap.has(owner)) {
+      memberMap.set(owner, { matchKey: owner, name: owner, role: "", references: 0 });
+    }
+    memberMap.get(owner).references++;
+  }
+
+  const result = {
+    total: memberMap.size,
+    categories: { new: [], matched: [], conflict: [], unmatched: [] },
+    items: []
+  };
+
+  let idx = 0;
+  for (const [key, info] of memberMap) {
+    const categories = [];
+    const matchCandidates = existingMembers.filter(m => m.name === info.name);
+    let matchedExisting = null;
+    let diff = [];
+
+    if (matchCandidates.length === 0) {
+      categories.push("new");
+      result.categories.new.push(idx);
+    } else if (matchCandidates.length === 1) {
+      categories.push("matched");
+      result.categories.matched.push(idx);
+      matchedExisting = { id: matchCandidates[0].id, name: matchCandidates[0].name, role: matchCandidates[0].role, phone: matchCandidates[0].phone };
+    } else {
+      categories.push("conflict");
+      result.categories.conflict.push(idx);
+      matchedExisting = { id: matchCandidates[0].id, name: matchCandidates[0].name, role: matchCandidates[0].role, phone: matchCandidates[0].phone };
+    }
+
+    const displayName = info.name || "未命名成员";
+    result.items.push({
+      matchKey: key,
+      displayName,
+      index: idx,
+      imported: info,
+      data: info,
+      category: categories[0],
+      categories,
+      candidates: matchCandidates.map(m => ({ id: m.id, name: m.name, role: m.role, phone: m.phone })),
+      matchCandidates: matchCandidates.map(m => ({ id: m.id, name: m.name, role: m.role, phone: m.phone })),
+      matchedExisting,
+      diff,
+      selectedMatchId: matchCandidates.length === 1 ? matchCandidates[0].id : "",
+      notes: info.references > 1 ? "被 " + info.references + " 个委托引用" : ""
+    });
+    idx++;
+  }
+
+  return result;
+}
+
+function analyzeImportTemplates(commissions, existingTemplates) {
+  const templateMap = new Map();
+  for (const c of commissions) {
+    if (!c || typeof c !== "object" || Array.isArray(c)) continue;
+    const tplId = (c.templateId || "").trim();
+    const tplName = (c.templateName || "").trim();
+    const steps = Array.isArray(c.steps) ? c.steps : [];
+    const key = tplId || tplName || (steps.length ? steps.join("|") : "");
+    if (!key) continue;
+    if (!templateMap.has(key)) {
+      templateMap.set(key, {
+        matchKey: key,
+        templateId: tplId,
+        name: tplName,
+        steps: [...steps],
+        references: 0
+      });
+    }
+    templateMap.get(key).references++;
+  }
+
+  const result = {
+    total: templateMap.size,
+    categories: { new: [], matched: [], conflict: [], unmatched: [] },
+    items: []
+  };
+
+  let idx = 0;
+  for (const [key, info] of templateMap) {
+    const categories = [];
+    const matchCandidates = [];
+
+    if (info.templateId) {
+      const byId = existingTemplates.find(t => t.id === info.templateId);
+      if (byId) matchCandidates.push(byId);
+    }
+    if (info.name) {
+      const byName = existingTemplates.find(t => t.name === info.name);
+      if (byName && !matchCandidates.find(m => m.id === byName.id)) {
+        matchCandidates.push(byName);
+      }
+    }
+    if (info.steps.length > 0) {
+      for (const t of existingTemplates) {
+        if (matchCandidates.find(m => m.id === t.id)) continue;
+        if (t.steps.length === info.steps.length && t.steps.every((s, i) => s === info.steps[i])) {
+          matchCandidates.push(t);
+        }
+      }
+    }
+
+    let matchedExisting = null;
+    let diff = [];
+
+    if (matchCandidates.length === 0) {
+      if (info.name || info.steps.length > 0) {
+        categories.push("new");
+        result.categories.new.push(idx);
+      } else {
+        categories.push("unmatched");
+        result.categories.unmatched.push(idx);
+      }
+    } else if (matchCandidates.length === 1) {
+      const t = matchCandidates[0];
+      const hasConflict = (info.name && info.name !== t.name) ||
+        (info.steps.length > 0 && (t.steps.length !== info.steps.length || !t.steps.every((s, i) => s === info.steps[i])));
+      if (hasConflict) {
+        categories.push("conflict");
+        result.categories.conflict.push(idx);
+        diff = [];
+        if (info.name && info.name !== t.name) diff.push({ field: "name", imported: info.name, expected: t.name });
+        if (info.steps.length > 0 && (t.steps.length !== info.steps.length || !t.steps.every((s, i) => s === info.steps[i]))) {
+          diff.push({ field: "steps", imported: info.steps.join("→"), expected: t.steps.join("→") });
+        }
+        matchedExisting = { id: t.id, name: t.name, description: t.description, steps: t.steps };
+      } else {
+        categories.push("matched");
+        result.categories.matched.push(idx);
+        matchedExisting = { id: t.id, name: t.name, description: t.description, steps: t.steps };
+      }
+    } else {
+      categories.push("conflict");
+      result.categories.conflict.push(idx);
+      matchedExisting = { id: matchCandidates[0].id, name: matchCandidates[0].name, description: matchCandidates[0].description, steps: matchCandidates[0].steps };
+    }
+
+    const displayName = info.name || (info.steps.length ? "步骤：" + info.steps.join("→") : "未命名模板");
+    result.items.push({
+      matchKey: key,
+      displayName,
+      index: idx,
+      imported: info,
+      data: info,
+      category: categories[0],
+      categories,
+      candidates: matchCandidates.map(t => ({ id: t.id, name: t.name, description: t.description, steps: t.steps })),
+      matchCandidates: matchCandidates.map(t => ({ id: t.id, name: t.name, description: t.description, steps: t.steps })),
+      matchedExisting,
+      diff,
+      selectedMatchId: matchCandidates.length === 1 ? matchCandidates[0].id : "",
+      notes: info.references > 1 ? "被 " + info.references + " 个委托引用" : ""
+    });
+    idx++;
+  }
+
+  return result;
+}
+
 const detailFieldLabels = {
   roleName: "角色名称", era: "年代", damage: "破损部位", missingParts: "缺失零件",
   colorNotes: "补色记录", reinforcement: "加固材料", owner: "负责人", dueDate: "截止日期",
@@ -6364,7 +7307,7 @@ const server = http.createServer(async (req, res) => {
       db.stepTemplates.forEach(t => t.steps.forEach(s => allSteps.add(s)));
       defaultSteps.forEach(s => allSteps.add(s));
 
-      const preview = {
+      const commissions = {
         total: importedData.length,
         categories: {
           new: [],
@@ -6394,28 +7337,28 @@ const server = http.createServer(async (req, res) => {
 
         if (hasNotAnObject) {
           categories.push("invalidSteps");
-          preview.categories.invalidSteps.push(i);
+          commissions.categories.invalidSteps.push(i);
         } else if (!hasBlockingIssues) {
           const hasDuplicate = issues.some(issue => issue.type === "duplicate");
           if (hasDuplicate) {
             categories.push("duplicate");
-            preview.categories.duplicate.push(i);
+            commissions.categories.duplicate.push(i);
           } else {
             categories.push("new");
-            preview.categories.new.push(i);
+            commissions.categories.new.push(i);
           }
         } else {
           for (const issue of issues) {
             if (issue.type === "duplicate") {
               if (!categories.includes("duplicate")) {
                 categories.push("duplicate");
-                preview.categories.duplicate.push(i);
+                commissions.categories.duplicate.push(i);
               }
             }
             if (issue.type === "missingFields") {
               if (!categories.includes("missingFields")) {
                 categories.push("missingFields");
-                preview.categories.missingFields.push(i);
+                commissions.categories.missingFields.push(i);
               }
             }
             if (issue.type === "invalidStep" || 
@@ -6426,7 +7369,7 @@ const server = http.createServer(async (req, res) => {
                 issue.type === "invalidMaterialQuantity") {
               if (!categories.includes("invalidSteps")) {
                 categories.push("invalidSteps");
-                preview.categories.invalidSteps.push(i);
+                commissions.categories.invalidSteps.push(i);
               }
             }
           }
@@ -6434,11 +7377,11 @@ const server = http.createServer(async (req, res) => {
 
         if (categories.length === 0) {
           categories.push("valid");
-          preview.categories.valid.push(i);
+          commissions.categories.valid.push(i);
         }
 
         const safeData = hasNotAnObject ? { _raw: String(item) } : item;
-        preview.items.push({
+        commissions.items.push({
           index: i,
           data: safeData,
           categories,
@@ -6446,10 +7389,24 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      preview.categories.new = [...new Set(preview.categories.new)];
-      preview.categories.duplicate = [...new Set(preview.categories.duplicate)];
-      preview.categories.missingFields = [...new Set(preview.categories.missingFields)];
-      preview.categories.invalidSteps = [...new Set(preview.categories.invalidSteps)];
+      commissions.categories.new = [...new Set(commissions.categories.new)];
+      commissions.categories.duplicate = [...new Set(commissions.categories.duplicate)];
+      commissions.categories.missingFields = [...new Set(commissions.categories.missingFields)];
+      commissions.categories.invalidSteps = [...new Set(commissions.categories.invalidSteps)];
+
+      const preview = {
+        commissions,
+        clients: analyzeImportClients(importedData, db.clients),
+        materials: analyzeImportMaterials(importedData, db.materials),
+        members: analyzeImportMembers(importedData, db.members),
+        templates: analyzeImportTemplates(importedData, db.stepTemplates),
+        existing: {
+          clients: db.clients.map(c => ({ id: c.id, name: c.name, contact: c.contact, phone: c.phone, address: c.address })),
+          materials: db.materials.map(m => ({ id: m.id, name: m.name, batch: m.batch, category: m.category, stock: m.stock, unit: m.unit })),
+          members: db.members.map(m => ({ id: m.id, name: m.name, role: m.role })),
+          templates: db.stepTemplates.map(t => ({ id: t.id, name: t.name, description: t.description, steps: t.steps }))
+        }
+      };
 
       return sendJson(res, 200, preview);
     }
@@ -6457,6 +7414,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === "POST" && url.pathname === "/api/commissions/import") {
       const input = await body(req);
       const itemsToImport = Array.isArray(input) ? input : (input.items || []);
+      const clientMatches = input.clientMatches || {};
+      const materialMatches = input.materialMatches || {};
+      const memberMatches = input.memberMatches || {};
+      const templateMatches = input.templateMatches || {};
       
       if (!Array.isArray(itemsToImport) || itemsToImport.length === 0) {
         return sendJson(res, 400, { error: "没有可导入的数据" });
@@ -6467,13 +7428,263 @@ const server = http.createServer(async (req, res) => {
       defaultSteps.forEach(s => allSteps.add(s));
 
       const dbCopy = deepClone(db);
-      const newCommissions = [];
+      const summary = {
+        commissions: { created: 0, updated: 0, skipped: 0, items: [] },
+        clients: { created: 0, reused: 0, items: [] },
+        materials: { created: 0, reused: 0, items: [] },
+        members: { created: 0, reused: 0, items: [] },
+        templates: { created: 0, reused: 0, items: [] }
+      };
+      const newClientIdMap = {};
+      const newMaterialIdMap = {};
+      const newMemberIdMap = {};
+      const newTemplateIdMap = {};
       const processedIds = new Set();
-      let importError = null;
+      const createdClientKeys = new Set();
+      const createdMaterialKeys = new Set();
+      const createdMemberKeys = new Set();
+      const createdTemplateKeys = new Set();
+
+      function resolveClient(c) {
+        const rawId = c.clientId || "";
+        const rawName = c.client || "";
+        const matchKey = rawId || rawName;
+        if (!matchKey) return { id: "", name: "" };
+
+        if (newClientIdMap[matchKey]) {
+          const nc = dbCopy.clients.find(cl => cl.id === newClientIdMap[matchKey]);
+          return { id: nc.id, name: nc.name };
+        }
+
+        const matchedId = clientMatches[matchKey];
+        if (matchedId && matchedId !== "__new__") {
+          const existing = dbCopy.clients.find(cl => cl.id === matchedId);
+          if (existing) return { id: existing.id, name: existing.name };
+        }
+
+        if (rawId) {
+          const byId = dbCopy.clients.find(cl => cl.id === rawId);
+          if (byId) {
+            summary.clients.reused++;
+            summary.clients.items.push({ id: byId.id, name: byId.name, action: "reused" });
+            return { id: byId.id, name: byId.name };
+          }
+        }
+        if (rawName) {
+          const byName = dbCopy.clients.find(cl => cl.name === rawName);
+          if (byName) {
+            summary.clients.reused++;
+            summary.clients.items.push({ id: byName.id, name: byName.name, action: "reused" });
+            return { id: byName.id, name: byName.name };
+          }
+        }
+
+        if (!createdClientKeys.has(matchKey)) {
+          const newClient = {
+            id: `CL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: rawName,
+            contact: c.clientContact || "",
+            phone: c.clientPhone || "",
+            address: c.clientAddress || "",
+            remark: "",
+            followUps: []
+          };
+          dbCopy.clients.unshift(newClient);
+          newClientIdMap[matchKey] = newClient.id;
+          createdClientKeys.add(matchKey);
+          summary.clients.created++;
+          summary.clients.items.push({ id: newClient.id, name: newClient.name, action: "created" });
+        }
+        const nc = dbCopy.clients.find(cl => cl.id === newClientIdMap[matchKey]);
+        return { id: nc.id, name: nc.name };
+      }
+
+      function resolveMember(ownerName) {
+        if (!ownerName || !ownerName.trim()) return "";
+        const name = ownerName.trim();
+
+        if (newMemberIdMap[name]) return newMemberIdMap[name];
+
+        const matchedId = memberMatches[name];
+        if (matchedId && matchedId !== "__new__") {
+          const existing = dbCopy.members.find(m => m.id === matchedId);
+          if (existing) {
+            summary.members.reused++;
+            summary.members.items.push({ id: existing.id, name: existing.name, action: "reused" });
+            return existing.id;
+          }
+        }
+
+        const byName = dbCopy.members.find(m => m.name === name);
+        if (byName) {
+          summary.members.reused++;
+          summary.members.items.push({ id: byName.id, name: byName.name, action: "reused" });
+          newMemberIdMap[name] = byName.id;
+          return byName.id;
+        }
+
+        if (!createdMemberKeys.has(name)) {
+          const newMember = {
+            id: `MB-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: name,
+            role: "修复师",
+            phone: "",
+            remark: "导入时自动创建"
+          };
+          dbCopy.members.unshift(newMember);
+          newMemberIdMap[name] = newMember.id;
+          createdMemberKeys.add(name);
+          summary.members.created++;
+          summary.members.items.push({ id: newMember.id, name: newMember.name, action: "created" });
+        }
+        return newMemberIdMap[name];
+      }
+
+      function resolveTemplate(c) {
+        const tplId = c.templateId || "";
+        const tplName = c.templateName || "";
+        const steps = Array.isArray(c.steps) ? c.steps : [];
+        const matchKey = tplId || tplName || (steps.length ? steps.join("|") : "");
+        if (!matchKey) return { id: "", name: "" };
+
+        if (newTemplateIdMap[matchKey]) {
+          const nt = dbCopy.stepTemplates.find(t => t.id === newTemplateIdMap[matchKey]);
+          return { id: nt.id, name: nt.name };
+        }
+
+        const matchedId = templateMatches[matchKey];
+        if (matchedId && matchedId !== "__new__") {
+          const existing = dbCopy.stepTemplates.find(t => t.id === matchedId);
+          if (existing) {
+            summary.templates.reused++;
+            summary.templates.items.push({ id: existing.id, name: existing.name, action: "reused" });
+            return { id: existing.id, name: existing.name };
+          }
+        }
+
+        if (tplId) {
+          const byId = dbCopy.stepTemplates.find(t => t.id === tplId);
+          if (byId) {
+            summary.templates.reused++;
+            summary.templates.items.push({ id: byId.id, name: byId.name, action: "reused" });
+            return { id: byId.id, name: byId.name };
+          }
+        }
+        if (tplName) {
+          const byName = dbCopy.stepTemplates.find(t => t.name === tplName);
+          if (byName) {
+            summary.templates.reused++;
+            summary.templates.items.push({ id: byName.id, name: byName.name, action: "reused" });
+            return { id: byName.id, name: byName.name };
+          }
+        }
+        if (steps.length > 0) {
+          const bySteps = dbCopy.stepTemplates.find(t =>
+            t.steps.length === steps.length && t.steps.every((s, i) => s === steps[i]));
+          if (bySteps) {
+            summary.templates.reused++;
+            summary.templates.items.push({ id: bySteps.id, name: bySteps.name, action: "reused" });
+            return { id: bySteps.id, name: bySteps.name };
+          }
+        }
+
+        if (!createdTemplateKeys.has(matchKey) && (tplName || steps.length > 0)) {
+          const newTpl = {
+            id: `TPL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: tplName || "导入模板-" + (steps[0] || "自定义"),
+            description: "导入时自动创建",
+            steps: steps.length > 0 ? [...steps] : [...defaultSteps]
+          };
+          dbCopy.stepTemplates.unshift(newTpl);
+          newTemplateIdMap[matchKey] = newTpl.id;
+          createdTemplateKeys.add(matchKey);
+          summary.templates.created++;
+          summary.templates.items.push({ id: newTpl.id, name: newTpl.name, action: "created" });
+        }
+        if (newTemplateIdMap[matchKey]) {
+          const nt = dbCopy.stepTemplates.find(t => t.id === newTemplateIdMap[matchKey]);
+          return { id: nt.id, name: nt.name };
+        }
+        return { id: "", name: "" };
+      }
+
+      function resolveMaterial(m) {
+        const rawId = m.materialId || "";
+        const rawName = m.name || "";
+        const rawBatch = m.batch || "";
+        const matchKey = rawId || `${rawName}||${rawBatch}`;
+        if (!matchKey || matchKey === "||") return null;
+
+        if (newMaterialIdMap[matchKey]) {
+          const nm = dbCopy.materials.find(mat => mat.id === newMaterialIdMap[matchKey]);
+          return nm;
+        }
+
+        const matchedId = materialMatches[matchKey];
+        if (matchedId && matchedId !== "__new__") {
+          const existing = dbCopy.materials.find(mat => mat.id === matchedId);
+          if (existing) {
+            summary.materials.reused++;
+            summary.materials.items.push({ id: existing.id, name: existing.name, batch: existing.batch, action: "reused" });
+            return existing;
+          }
+        }
+
+        if (rawId) {
+          const byId = dbCopy.materials.find(mat => mat.id === rawId);
+          if (byId) {
+            summary.materials.reused++;
+            summary.materials.items.push({ id: byId.id, name: byId.name, batch: byId.batch, action: "reused" });
+            return byId;
+          }
+        }
+        if (rawName && rawBatch) {
+          const byNameBatch = dbCopy.materials.find(mat => mat.name === rawName && mat.batch === rawBatch);
+          if (byNameBatch) {
+            summary.materials.reused++;
+            summary.materials.items.push({ id: byNameBatch.id, name: byNameBatch.name, batch: byNameBatch.batch, action: "reused" });
+            return byNameBatch;
+          }
+        }
+        if (rawName) {
+          const byName = dbCopy.materials.find(mat => mat.name === rawName);
+          if (byName) {
+            summary.materials.reused++;
+            summary.materials.items.push({ id: byName.id, name: byName.name, batch: byName.batch, action: "reused" });
+            return byName;
+          }
+        }
+
+        if (!createdMaterialKeys.has(matchKey) && rawName) {
+          const newMat = {
+            id: `MAT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            name: rawName,
+            category: m.category || "其他",
+            batch: rawBatch || `BATCH-${Date.now()}`,
+            stock: 0,
+            unit: m.unit || "个",
+            remark: "导入时自动创建",
+            minStock: 0,
+            reserved: 0
+          };
+          dbCopy.materials.unshift(newMat);
+          newMaterialIdMap[matchKey] = newMat.id;
+          createdMaterialKeys.add(matchKey);
+          summary.materials.created++;
+          summary.materials.items.push({ id: newMat.id, name: newMat.name, batch: newMat.batch, action: "created" });
+        }
+        if (newMaterialIdMap[matchKey]) {
+          return dbCopy.materials.find(mat => mat.id === newMaterialIdMap[matchKey]);
+        }
+        return null;
+      }
 
       try {
         for (const item of itemsToImport) {
-          if (!item.data) continue;
+          if (!item.data) {
+            summary.commissions.skipped++;
+            continue;
+          }
 
           const issues = validateCommission(item.data, dbCopy.commissions, allSteps);
           const hasBlockingIssues = issues.some(issue => 
@@ -6488,41 +7699,31 @@ const server = http.createServer(async (req, res) => {
           );
 
           if (hasBlockingIssues) {
+            summary.commissions.skipped++;
+            summary.commissions.items.push({ name: item.data.roleName || "未命名", action: "skipped", reason: "数据验证失败" });
             continue;
           }
 
           const isDuplicate = issues.some(issue => issue.type === "duplicate");
           if (isDuplicate && !item.forceOverwrite) {
+            summary.commissions.skipped++;
+            summary.commissions.items.push({ name: item.data.roleName || "未命名", action: "skipped", reason: "重复且未选择覆盖" });
             continue;
           }
 
           const c = item.data;
-          let clientId = c.clientId || "";
-          let clientName = c.client || "";
-
-          if (clientId) {
-            const existingClient = dbCopy.clients.find(cl => cl.id === clientId);
-            if (existingClient) clientName = existingClient.name;
-          } else if (clientName) {
-            const existingClient = dbCopy.clients.find(cl => cl.name === clientName);
-            if (existingClient) {
-              clientId = existingClient.id;
-              clientName = existingClient.name;
-            } else {
-              const newClient = {
-                id: `CL-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                name: clientName,
-                contact: c.clientContact || "",
-                phone: c.clientPhone || "",
-                address: c.clientAddress || "",
-                remark: ""
-              };
-              dbCopy.clients.unshift(newClient);
-              clientId = newClient.id;
-            }
-          }
+          const { id: clientId, name: clientName } = resolveClient(c);
+          const ownerId = resolveMember(c.owner);
+          const tpl = resolveTemplate(c);
+          let templateId = tpl.id;
+          let templateName = tpl.name;
 
           let commissionSteps = c.steps && Array.isArray(c.steps) && c.steps.length ? [...c.steps] : [...defaultSteps];
+          if (!templateId && commissionSteps.length > 0) {
+            const autoTpl = resolveTemplate({ steps: commissionSteps });
+            templateId = autoTpl.id;
+            templateName = autoTpl.name;
+          }
           const firstStep = commissionSteps[0];
           const currentStatus = c.status && commissionSteps.includes(c.status) ? c.status : firstStep;
           const consumeStepName = c.consumeStepName || DEFAULT_CONSUME_STEP_NAME;
@@ -6530,41 +7731,28 @@ const server = http.createServer(async (req, res) => {
           const selectedMaterials = [];
           if (Array.isArray(c.materials)) {
             for (const m of c.materials) {
-              const mat = m.materialId ? dbCopy.materials.find(item => item.id === m.materialId) : null;
-              if (mat && m.quantity > 0) {
-                const available = (Number(mat.stock) || 0) - (Number(mat.reserved) || 0);
-                if (available >= m.quantity) {
-                  selectedMaterials.push({
-                    materialId: mat.id,
-                    name: mat.name,
-                    batch: mat.batch,
-                    quantity: m.quantity,
-                    reservedQty: Number(m.reservedQty) || 0,
-                    consumedQty: Number(m.consumedQty) || 0,
-                    consumedAt: m.consumedAt || "",
-                    consumedBy: m.consumedBy || "",
-                    consumedStep: m.consumedStep || ""
-                  });
-                }
-              } else if (m.name && m.quantity > 0) {
-                selectedMaterials.push({
-                  materialId: m.materialId || "",
-                  name: m.name,
-                  batch: m.batch || "",
-                  quantity: m.quantity,
-                  reservedQty: Number(m.reservedQty) || 0,
-                  consumedQty: Number(m.consumedQty) || 0,
-                  consumedAt: m.consumedAt || "",
-                  consumedBy: m.consumedBy || "",
-                  consumedStep: m.consumedStep || ""
-                });
-              }
+              const resolved = resolveMaterial(m);
+              const qty = Number(m.quantity) || 0;
+              if (qty <= 0) continue;
+              const entry = {
+                materialId: resolved ? resolved.id : (m.materialId || ""),
+                name: resolved ? resolved.name : (m.name || ""),
+                batch: resolved ? resolved.batch : (m.batch || ""),
+                quantity: qty,
+                reservedQty: Number(m.reservedQty) || 0,
+                consumedQty: Number(m.consumedQty) || 0,
+                consumedAt: m.consumedAt || "",
+                consumedBy: m.consumedBy || "",
+                consumedStep: m.consumedStep || ""
+              };
+              selectedMaterials.push(entry);
             }
           }
 
           let newId;
           const importOp = item.operator || "导入系统";
           const importOpId = item.operatorId || "";
+
           if (isDuplicate && item.forceOverwrite) {
             const dupIssue = issues.find(issue => issue.type === "duplicate");
             newId = dupIssue.existingId;
@@ -6591,8 +7779,8 @@ const server = http.createServer(async (req, res) => {
                 dueDate: c.dueDate || existing.dueDate,
                 status: currentStatus,
                 steps: commissionSteps,
-                templateId: c.templateId || existing.templateId,
-                templateName: c.templateName || existing.templateName,
+                templateId: templateId || existing.templateId,
+                templateName: templateName || existing.templateName,
                 records: c.records && Array.isArray(c.records) ? c.records : existing.records,
                 images: c.images || existing.images
               };
@@ -6602,7 +7790,8 @@ const server = http.createServer(async (req, res) => {
                 throw new Error(`委托【${commission.roleName}】导入失败：${e.message}`);
               }
               dbCopy.commissions[existingIdx] = commission;
-              newCommissions.push(commission);
+              summary.commissions.updated++;
+              summary.commissions.items.push({ id: commission.id, name: commission.roleName, action: "updated" });
               continue;
             }
           }
@@ -6633,10 +7822,15 @@ const server = http.createServer(async (req, res) => {
             dueDate: c.dueDate,
             status: currentStatus,
             steps: commissionSteps,
-            templateId: c.templateId || "",
-            templateName: c.templateName || "",
+            templateId: templateId || "",
+            templateName: templateName || "",
             records,
-            images: c.images || { before: [], during: [], after: [] }
+            images: c.images || { before: [], during: [], after: [] },
+            quotes: [],
+            currentQuoteId: "",
+            acceptance: null,
+            operationLogs: [],
+            fieldSnapshots: []
           };
 
           try {
@@ -6645,8 +7839,11 @@ const server = http.createServer(async (req, res) => {
             throw new Error(`委托【${commission.roleName}】导入失败：${e.message}`);
           }
 
+          commission.fieldSnapshots.push(createFieldSnapshot(commission, importOp, importOpId, "导入委托"));
+          addOperationLog(commission, "import", importOp, importOpId, "批量导入创建委托");
           dbCopy.commissions.unshift(commission);
-          newCommissions.push(commission);
+          summary.commissions.created++;
+          summary.commissions.items.push({ id: commission.id, name: commission.roleName, action: "created" });
         }
 
         await saveDbAtomic(dbCopy);
@@ -6660,13 +7857,12 @@ const server = http.createServer(async (req, res) => {
 
         return sendJson(res, 200, {
           success: true,
-          imported: newCommissions.length,
-          total: itemsToImport.length,
-          commissions: newCommissions
+          summary,
+          totalImported: summary.commissions.created + summary.commissions.updated,
+          totalProcessed: itemsToImport.length
         });
       } catch (error) {
-        importError = error;
-        return sendJson(res, 500, { error: "导入失败，现有数据未被修改：" + error.message });
+        return sendJson(res, 500, { error: "导入失败，所有数据未被修改：" + error.message });
       }
     }
     if (req.method === "POST" && url.pathname === "/api/commissions") {

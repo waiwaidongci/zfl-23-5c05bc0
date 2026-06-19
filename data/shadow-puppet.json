@@ -930,7 +930,7 @@
       "unit": "张",
       "remark": "陕西洛川产，厚度0.8mm",
       "minStock": 0,
-      "reserved": 8
+      "reserved": 11
     },
     {
       "id": "MAT-2",
@@ -941,7 +941,7 @@
       "unit": "克",
       "remark": "特级纯天然朱砂粉",
       "minStock": 0,
-      "reserved": 30
+      "reserved": 45
     },
     {
       "id": "MAT-3",
@@ -952,7 +952,7 @@
       "unit": "克",
       "remark": "老矿坑料，色泽沉稳",
       "minStock": 0,
-      "reserved": 0
+      "reserved": 20
     },
     {
       "id": "MAT-4",
@@ -963,7 +963,7 @@
       "unit": "克",
       "remark": "传统手工熬制",
       "minStock": 0,
-      "reserved": 5
+      "reserved": 15
     },
     {
       "id": "MAT-5",
@@ -1058,6 +1058,102 @@
       "remark": ""
     }
   ],
-  "stockLedger": [],
+  "stockLedger": [
+    {
+      "id": "LEDGER-1781845357373-i2hwxz",
+      "materialId": "MAT-3",
+      "materialName": "石黄矿物颜料",
+      "batch": "SH-2026-B01",
+      "type": "reserve",
+      "quantity": 20,
+      "stockBefore": 150,
+      "stockAfter": 150,
+      "reservedBefore": 0,
+      "reservedAfter": 20,
+      "commissionId": "SP-1781845357372-d9tw",
+      "commissionName": "测试皮影-全流程",
+      "step": "清洁",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "委托创建占用",
+      "at": "2026-06-19T05:02:37.373Z"
+    },
+    {
+      "id": "LEDGER-1781845357372-nsx162",
+      "materialId": "MAT-1",
+      "materialName": "薄驴皮补片",
+      "batch": "LP-2026-A01",
+      "type": "reserve",
+      "quantity": 1,
+      "stockBefore": 58,
+      "stockAfter": 58,
+      "reservedBefore": 10,
+      "reservedAfter": 11,
+      "commissionId": "SP-1781845357372-d9tw",
+      "commissionName": "测试皮影-全流程",
+      "step": "清洁",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "委托创建占用",
+      "at": "2026-06-19T05:02:37.372Z"
+    },
+    {
+      "id": "LEDGER-1781845357371-k3ez51",
+      "materialId": "MAT-4",
+      "materialName": "鱼鳔胶",
+      "batch": "YJ-2026-C02",
+      "type": "reserve",
+      "quantity": 10,
+      "stockBefore": 85,
+      "stockAfter": 85,
+      "reservedBefore": 5,
+      "reservedAfter": 15,
+      "commissionId": "SP-1781845357370-5ad4",
+      "commissionName": "孙悟空武生靠旗",
+      "step": "接收",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "委托创建占用",
+      "at": "2026-06-19T05:02:37.371Z"
+    },
+    {
+      "id": "LEDGER-1781845357371-jkfkx5",
+      "materialId": "MAT-2",
+      "materialName": "朱砂矿物颜料",
+      "batch": "ZS-2026-B03",
+      "type": "reserve",
+      "quantity": 15,
+      "stockBefore": 230,
+      "stockAfter": 230,
+      "reservedBefore": 30,
+      "reservedAfter": 45,
+      "commissionId": "SP-1781845357370-5ad4",
+      "commissionName": "孙悟空武生靠旗",
+      "step": "接收",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "委托创建占用",
+      "at": "2026-06-19T05:02:37.371Z"
+    },
+    {
+      "id": "LEDGER-1781845357370-iyclka",
+      "materialId": "MAT-1",
+      "materialName": "薄驴皮补片",
+      "batch": "LP-2026-A01",
+      "type": "reserve",
+      "quantity": 2,
+      "stockBefore": 58,
+      "stockAfter": 58,
+      "reservedBefore": 8,
+      "reservedAfter": 10,
+      "commissionId": "SP-1781845357370-5ad4",
+      "commissionName": "孙悟空武生靠旗",
+      "step": "接收",
+      "operator": "导入系统",
+      "operatorId": "",
+      "note": "委托创建占用",
+      "at": "2026-06-19T05:02:37.370Z"
+    }
+  ],
   "_stockMigratedV2": "2026-06-19T02:30:02.881Z"
 }

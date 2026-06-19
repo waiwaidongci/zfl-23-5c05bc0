@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "exportedAt": "2026-06-17T00:00:00.000Z",
+  "count": 2,
+  "commissions": [
+    {
+      "roleName": "孙悟空武生靠旗",
+      "era": "清代晚期",
+      "damage": "左腿断裂，靠旗缺两片，颜色氧化",
+      "missingParts": "靠旗两片",
+      "colorNotes": "朱红褪色",
+      "reinforcement": "宣纸衬底",
+      "client": "陕西省博物馆",
+      "clientContact": "王主任",
+      "clientPhone": "029-88881234",
+      "owner": "许岚",
+      "dueDate": "2026-08-20",
+      "templateName": "武生靠旗",
+      "steps": ["接收", "拆解", "清洁", "补片", "缝制靠旗", "补色", "组装", "交付"],
+      "status": "接收",
+      "records": [
+        {"at": "2026-06-15T10:00:00.000Z", "step": "接收", "note": "新委托登记，博物馆送修"}
+      ],
+      "materials": [
+        {"name": "驴皮补片", "batch": "LP-2026-A01", "category": "皮料", "quantity": 2, "unit": "张"},
+        {"name": "朱砂矿物颜料", "batch": "ZS-2026-B03", "category": "颜料", "quantity": 15, "unit": "克"},
+        {"name": "鱼鳔胶", "batch": "YJ-2026-C02", "category": "胶料", "quantity": 10, "unit": "克"}
+      ]
+    },
+    {
+      "roleName": "测试皮影-全流程",
+      "era": "民国",
+      "damage": "表面污渍，边缘轻微破损",
+      "client": "洛川民俗馆",
+      "owner": "张三",
+      "dueDate": "2026-07-30",
+      "steps": ["接收", "清洁", "补片", "补色", "交付"],
+      "status": "清洁",
+      "records": [
+        {"at": "2026-06-10T09:00:00.000Z", "step": "接收", "note": "入库"},
+        {"at": "2026-06-12T14:00:00.000Z", "step": "清洁", "note": "开始清洁处理"}
+      ],
+      "materials": [
+        {"name": "驴皮补片", "batch": "LP-2026-A01", "category": "皮料", "quantity": 1, "unit": "张"},
+        {"name": "石黄矿物颜料", "batch": "SH-2026-B01", "category": "颜料", "quantity": 20, "unit": "克"}
+      ]
+    }
+  ]
+}
