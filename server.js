@@ -999,7 +999,35 @@ function formatDate(dateStr) {
   }
 }
 
-function generateArchiveHtml(archive) {
+function getMimeType(ext) {
+  const map = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".webp": "image/webp",
+    ".bmp": "image/bmp"
+  };
+  return map[ext.toLowerCase()] || "image/jpeg";
+}
+
+async function imagePathToBase64(urlPath) {
+  try {
+    if (!urlPath) return urlPath;
+    const relativePath = urlPath.startsWith("/") ? urlPath.slice(1) : urlPath;
+    const absPath = join(__dirname, relativePath);
+    const ext = extname(absPath);
+    const data = await readFile(absPath);
+    const base64 = data.toString("base64");
+    const mimeType = getMimeType(ext);
+    return `data:${mimeType};base64,${base64}`;
+  } catch (e) {
+    console.error("Failed to embed image:", urlPath, e.message);
+    return urlPath;
+  }
+}
+
+async function generateArchiveHtml(archive, embedImages = false) {
   const snap = archive.snapshot;
   const comm = snap.commission;
   const client = snap.client;
@@ -1014,6 +1042,15 @@ function generateArchiveHtml(archive) {
     const imgs = comm.images[type.key] || [];
     for (const img of imgs) {
       allImages.push({ ...img, stage: type.key, stageLabel: type.label });
+    }
+  }
+
+  if (embedImages) {
+    for (const type of imgTypes) {
+      const imgs = comm.images[type.key] || [];
+      for (const img of imgs) {
+        img.embeddedSrc = await imagePathToBase64(img.filename);
+      }
     }
   }
   const quoteCount = (comm.quotes || []).length;
@@ -1087,9 +1124,10 @@ function generateArchiveHtml(archive) {
     if (imgs.length === 0) continue;
     let imgCards = "";
     for (const img of imgs) {
+      const imgSrc = embedImages && img.embeddedSrc ? img.embeddedSrc : escapeHtml(img.filename);
       imgCards += `
         <div class="archive-image-card">
-          <img src="${escapeHtml(img.filename)}" alt="${escapeHtml(img.caption || img.originalName || "")}">
+          <img src="${imgSrc}" alt="${escapeHtml(img.caption || img.originalName || "")}">
           <div class="archive-image-caption">${escapeHtml(img.caption || img.originalName || "")}</div>
         </div>`;
     }
@@ -9876,7 +9914,7 @@ const server = http.createServer(async (req, res) => {
         }
       }
       if (!archive) return sendJson(res, 404, { error: "archive_not_found" });
-      const html = generateArchiveHtml(archive);
+      const html = await generateArchiveHtml(archive, true);
       const filename = `${archive.snapshot.commission.roleName}-归档包V${archive.version}.html`;
       const safeFilename = encodeURIComponent(filename).replace(/['()]/g, escape);
       res.writeHead(200, {
@@ -9901,7 +9939,7 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
         return res.end("<h1>归档包不存在</h1>");
       }
-      const html = generateArchiveHtml(archive);
+      const html = await generateArchiveHtml(archive, false);
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(html);
     }
